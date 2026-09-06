@@ -1,0 +1,69 @@
+---
+import type { Locale } from '../i18n/utils';
+import { getDictionary } from '../i18n/utils';
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+const t = getDictionary(locale);
+const f = t.footer;
+
+const githubRepo = 'https://github.com/thucne/EiSen';
+---
+
+<footer class="border-t border-white/10 bg-[#0c0d12] py-14 text-slate-400 text-sm">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
+      <!-- Brand & Tagline -->
+      <div class="md:col-span-2 space-y-4">
+        <div class="flex items-center gap-3">
+          <img src="/brand/eisen-horizontal-reversed.svg" alt="EiSen Logo" class="h-8 w-auto object-contain" width="130" height="48" />
+        </div>
+        <p class="text-sm text-slate-300 max-w-md">
+          {f.tagline}
+        </p>
+        <p class="text-xs text-slate-400 max-w-md leading-relaxed border-l-2 border-emerald-500/50 pl-3">
+          🛡️ {f.privacyCommitment}
+        </p>
+      </div>
+
+      <!-- Links Column 1: Product -->
+      <div>
+        <h4 class="text-xs font-bold uppercase tracking-wider text-white font-mono mb-4">Product</h4>
+        <ul class="space-y-2 text-xs">
+          <li><a href="#features" class="hover:text-white transition-colors">{t.nav.features}</a></li>
+          <li><a href="#setup" class="hover:text-white transition-colors">{t.nav.shortcuts}</a></li>
+          <li><a href="#comparison" class="hover:text-white transition-colors">{t.nav.comparison}</a></li>
+          <li><a href="#download" class="hover:text-white transition-colors">{t.nav.download}</a></li>
+          <li><a href="/story" class="hover:text-indigo-300 text-indigo-400 transition-colors flex items-center gap-1 font-semibold"><span>🎬</span><span>Story Demo (9:16)</span></a></li>
+        </ul>
+      </div>
+
+      <!-- Links Column 2: Open Source -->
+      <div>
+        <h4 class="text-xs font-bold uppercase tracking-wider text-white font-mono mb-4">{f.linksTitle}</h4>
+        <ul class="space-y-2 text-xs">
+          <li><a href={githubRepo} target="_blank" rel="noopener noreferrer" class="hover:text-white transition-colors">{f.sourceCode}</a></li>
+          <li><a href={`${githubRepo}/releases`} target="_blank" rel="noopener noreferrer" class="hover:text-white transition-colors">{f.releases}</a></li>
+          <li><a href={`${githubRepo}/blob/main/PRIVACY.md`} target="_blank" rel="noopener noreferrer" class="hover:text-white transition-colors">{f.privacyDoc}</a></li>
+          <li><a href={`${githubRepo}/blob/main/LICENSE`} target="_blank" rel="noopener noreferrer" class="hover:text-white transition-colors">{f.mitLicense}</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Bottom line -->
+    <div class="pt-8 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-400 gap-4">
+      <div>
+        © {new Date().getFullYear()} EiSen. Released under the <a href={`${githubRepo}/blob/main/LICENSE`} target="_blank" rel="noopener noreferrer" class="underline hover:text-slate-300">MIT License</a>.
+      </div>
+      <div class="flex items-center gap-1">
+        <span>{f.author}</span>
+        <a href="https://github.com/thucne" target="_blank" rel="noopener noreferrer" class="text-indigo-400 hover:text-indigo-300 font-medium">@thucne</a>
+        <span>•</span>
+        <span class="font-mono text-slate-400">eisen.a302.link</span>
+      </div>
+    </div>
+  </div>
+</footer>

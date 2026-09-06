@@ -1,0 +1,845 @@
+---
+import "../styles/global.css";
+import AppleIcon from "../components/AppleIcon.astro";
+import GithubIcon from "../components/GithubIcon.astro";
+---
+
+<!doctype html>
+<html lang="vi" class="h-full bg-[#07080c] text-white">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>EiSen — The Native macOS Screenshot Tool (Story Demo)</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <style>
+      @keyframes pulse-glow {
+        0%, 100% { opacity: 0.35; transform: scale(1); }
+        50% { opacity: 0.75; transform: scale(1.06); }
+      }
+      @keyframes float {
+        0%, 100% { transform: translateY(0px); }
+        50% { transform: translateY(-6px); }
+      }
+      @keyframes scan-line {
+        0% { top: 4%; opacity: 0; }
+        15% { opacity: 1; }
+        85% { opacity: 1; }
+        100% { top: 94%; opacity: 0; }
+      }
+      @keyframes ripple-wave {
+        0% { transform: scale(0.9); opacity: 0.8; }
+        100% { transform: scale(2.1); opacity: 0; }
+      }
+      .animate-scan {
+        animation: scan-line 2.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+      }
+      .animate-glow {
+        animation: pulse-glow 4s ease-in-out infinite;
+      }
+      .animate-float {
+        animation: float 3.5s ease-in-out infinite;
+      }
+      .animate-ripple {
+        animation: ripple-wave 1.6s ease-out infinite;
+      }
+
+      /* Aggressively eliminate Astro Dev Toolbar everywhere */
+      astro-dev-toolbar,
+      #astro-dev-toolbar,
+      [data-astro-dev-toolbar],
+      div[data-astro-dev-toolbar] {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+        width: 0 !important;
+        height: 0 !important;
+        position: absolute !important;
+        left: -9999px !important;
+      }
+
+      /* Exact EiSen Selection Crop Frame & Handles styling */
+      .eisen-crop-frame {
+        position: absolute;
+        outline: 2px solid #6366f1;
+        outline-offset: -1px;
+        box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.52), 0 8px 32px rgba(99, 102, 241, 0.25);
+      }
+      .eisen-handle {
+        position: absolute;
+        width: 10px;
+        height: 10px;
+        background: #ffffff;
+        border: 1.5px solid #6366f1;
+        border-radius: 2px;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+      }
+      .eisen-handle.nw { top: -5px; left: -5px; }
+      .eisen-handle.ne { top: -5px; right: -5px; }
+      .eisen-handle.sw { bottom: -5px; left: -5px; }
+      .eisen-handle.se { bottom: -5px; right: -5px; }
+
+      /* Exact Floating Toolbar styling */
+      .eisen-floating-toolbar {
+        background: rgba(18, 20, 29, 0.94);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        border-radius: 12px;
+        box-shadow: 0 12px 32px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(99, 102, 241, 0.22);
+      }
+
+      /* Exact Editor Toolbar Pill styling */
+      .eisen-editor-toolbar {
+        background: rgba(18, 20, 29, 0.94);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        border-radius: 9999px;
+        box-shadow: 0 8px 28px rgba(0, 0, 0, 0.6);
+      }
+
+      /* Strict Responsive 9:16 Container (Zero Overflow on Any Viewport) */
+      #story-container {
+        width: min(430px, calc(100vw - 16px), calc((100dvh - 20px) * 9 / 16));
+        aspect-ratio: 9 / 16;
+        max-height: calc(100dvh - 20px);
+        border-radius: 28px;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.05);
+        overflow-y: auto;
+        scrollbar-width: none;
+      }
+      #story-container::-webkit-scrollbar {
+        display: none;
+      }
+      @media (max-width: 640px) {
+        #story-container {
+          width: 100vw !important;
+          height: 100dvh !important;
+          max-width: 100vw !important;
+          max-height: 100dvh !important;
+          border-radius: 0 !important;
+          border: none !important;
+          box-shadow: none !important;
+        }
+      }
+    </style>
+  </head>
+  <body class="h-full w-full flex items-center justify-center p-0 sm:p-2.5 md:p-4 bg-[#07080c] select-none overflow-hidden font-sans">
+    <!-- Story Container (Strict 9:16 Aspect Ratio) -->
+    <div
+      id="story-container"
+      class="relative bg-[#0c0e17] overflow-hidden flex flex-col justify-between"
+    >
+      <!-- Ambient Background Glows -->
+      <div class="absolute inset-0 pointer-events-none overflow-hidden">
+        <div class="absolute -top-20 -left-20 w-80 h-80 bg-indigo-600/25 rounded-full blur-[90px] animate-glow"></div>
+        <div class="absolute top-1/2 -right-20 w-80 h-80 bg-purple-600/20 rounded-full blur-[100px] animate-glow" style="animation-delay: -2s;"></div>
+        <div class="absolute -bottom-20 left-1/3 w-80 h-80 bg-cyan-600/20 rounded-full blur-[90px] animate-glow" style="animation-delay: -3s;"></div>
+      </div>
+
+      <!-- Interactive Tap Zones (Instagram-style tap left/right) -->
+      <div id="tap-prev" class="absolute left-0 top-16 bottom-16 w-1/3 z-20 cursor-pointer" title="Lùi lại"></div>
+      <div id="tap-next" class="absolute right-0 top-16 bottom-16 w-2/3 z-20 cursor-pointer" title="Tiếp tục"></div>
+
+      <!-- Top Story Header: Instagram-style Progress Bars -->
+      <div class="relative z-30 pt-2.5 sm:pt-3 px-3.5 sm:px-4 space-y-1.5 sm:space-y-2 flex-shrink-0">
+        <!-- Progress Bars (4 Scenes) -->
+        <div class="grid grid-cols-4 gap-1.5 h-1 w-full">
+          <div class="h-full bg-white/20 rounded-full overflow-hidden">
+            <div id="bar-1" class="h-full bg-white w-0"></div>
+          </div>
+          <div class="h-full bg-white/20 rounded-full overflow-hidden">
+            <div id="bar-2" class="h-full bg-white w-0"></div>
+          </div>
+          <div class="h-full bg-white/20 rounded-full overflow-hidden">
+            <div id="bar-3" class="h-full bg-white w-0"></div>
+          </div>
+          <div class="h-full bg-white/20 rounded-full overflow-hidden">
+            <div id="bar-4" class="h-full bg-white w-0"></div>
+          </div>
+        </div>
+
+        <!-- App Brand Header with Official Branding Logo -->
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <!-- Official Horizontal Reversed Logo from assets/branding -->
+            <img
+              src="/brand/eisen-horizontal-reversed.svg"
+              alt="EiSen"
+              class="h-5 sm:h-6 w-auto object-contain"
+              width="100"
+              height="38"
+            />
+            <div class="flex items-center gap-1">
+              <span class="text-[9px] px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 font-mono font-semibold border border-indigo-500/30">macOS</span>
+              <span class="text-[9px] px-1 py-0.5 rounded bg-emerald-500/10 text-emerald-400 font-mono font-semibold">v0.1.0</span>
+            </div>
+          </div>
+
+          <!-- Video Record / Replay Button -->
+          <button
+            id="btn-record"
+            class="px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full bg-white/10 hover:bg-white/20 border border-white/15 text-[10px] font-medium flex items-center gap-1.5 backdrop-blur-md transition-all active:scale-95 text-slate-200"
+            title="Tự động quay clip"
+          >
+            <span class="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></span>
+            <span id="record-text">Auto Clip</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Main Animated Stage (Balanced 9:16 layout without empty gaps) -->
+      <div class="relative z-20 flex-1 min-h-0 px-3 sm:px-4 py-1.5 sm:py-2 flex flex-col justify-between overflow-hidden">
+
+        <!-- ================= SCENE 1: INSTANT CAPTURE & HOTKEY ================= -->
+        <div id="scene-1" class="h-full flex flex-col justify-between transition-all duration-400 opacity-100 transform translate-y-0">
+          <!-- Top Title Block -->
+          <div class="space-y-0.5 sm:space-y-1 text-center flex-shrink-0 pt-0.5 sm:pt-1">
+            <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-indigo-500/15 border border-indigo-500/30 text-indigo-300 text-[10px] sm:text-xs font-semibold">
+              <span>⚡ 01 • TỐC ĐỘ VƯỢT TRỘI</span>
+            </div>
+            <h1 class="text-xl sm:text-2xl font-black tracking-tight text-white leading-tight">
+              Chụp Màn Hình Siêu Tốc
+            </h1>
+            <p class="text-[11px] sm:text-xs text-slate-300">
+              Nhấn đúp phím <span class="font-mono text-indigo-300 font-bold bg-indigo-500/20 px-1.5 py-0.5 rounded">⌥ Option</span> là chụp tức thì, phản hồi &lt;5ms
+            </p>
+          </div>
+
+          <!-- Central macOS Window Mockup (Adaptive Height, No clipping) -->
+          <div class="flex-1 min-h-0 my-auto py-1 flex flex-col items-center justify-center w-full">
+            <div class="w-full max-w-[420px] rounded-xl sm:rounded-2xl bg-[#141622] border border-white/15 shadow-2xl overflow-hidden relative flex flex-col">
+              <!-- macOS Window Titlebar -->
+              <div class="px-3 py-1.5 sm:py-2 bg-[#1b1e2e] border-b border-white/10 flex items-center justify-between flex-shrink-0">
+                <div class="flex items-center gap-1.5">
+                  <div class="w-2.5 h-2.5 rounded-full bg-[#ff5f56]"></div>
+                  <div class="w-2.5 h-2.5 rounded-full bg-[#ffbd2e]"></div>
+                  <div class="w-2.5 h-2.5 rounded-full bg-[#27c93f]"></div>
+                </div>
+                <span class="text-[11px] sm:text-xs font-mono text-slate-400 flex items-center gap-1.5">
+                  <span>App.tsx</span>
+                  <span class="text-slate-600">—</span>
+                  <span class="text-slate-500">VS Code</span>
+                </span>
+                <span class="text-[9px] sm:text-[10px] font-mono px-1.5 py-0.5 rounded bg-white/10 text-slate-300 font-medium">Retina 2x</span>
+              </div>
+
+              <!-- Window Content: Realistic Code Editor -->
+              <div class="p-2.5 sm:p-3 bg-[#0d0f18] font-mono text-[11px] sm:text-xs leading-relaxed relative overflow-hidden flex flex-col justify-between h-[210px] sm:h-[240px]">
+                <div class="space-y-0.5 text-slate-400 select-none text-[10px] sm:text-[11px]">
+                  <div class="text-slate-500">// EiSen: Native Screen Capture Engine</div>
+                  <div><span class="text-purple-400">import</span> &#123; <span class="text-cyan-300">captureRegion</span> &#125; <span class="text-purple-400">from</span> <span class="text-emerald-300">"@eisen/core"</span>;</div>
+                  <div><span class="text-blue-400">const</span> <span class="text-yellow-300">snap</span> = <span class="text-purple-400">await</span> captureRegion(&#123;</div>
+                  <div class="pl-3">mode: <span class="text-amber-300">"instant-crop"</span>, latency: <span class="text-emerald-400">"&lt; 5ms"</span></div>
+                  <div>&#125;);</div>
+                </div>
+
+                <!-- EiSen Active Crop Selection Frame Overlay -->
+                <div class="absolute inset-2 sm:inset-3 rounded eisen-crop-frame flex flex-col justify-between p-1.5 sm:p-2">
+                  <!-- 4 Corner Handles -->
+                  <div class="eisen-handle nw"></div>
+                  <div class="eisen-handle ne"></div>
+                  <div class="eisen-handle sw"></div>
+                  <div class="eisen-handle se"></div>
+
+                  <!-- Size Tooltip Badge -->
+                  <div class="self-start px-2 py-0.5 rounded-md bg-[#0f1015]/95 border border-white/20 text-[9px] sm:text-[10px] font-mono font-bold text-white shadow-lg flex items-center gap-1">
+                    <span>1280 × 800 px</span>
+                    <span class="text-indigo-400 font-semibold">• 2x Retina</span>
+                  </div>
+
+                  <!-- Center Double-tap Hotkey Visualizer -->
+                  <div class="my-auto self-center flex flex-col items-center gap-1.5 py-1">
+                    <div class="relative flex items-center gap-2">
+                      <div class="absolute inset-0 bg-indigo-500/25 rounded-xl blur-md animate-ripple"></div>
+                      <kbd id="key-opt-1" class="relative px-3 py-1 sm:px-3.5 sm:py-1.5 rounded-lg sm:rounded-xl bg-indigo-600/40 border border-indigo-400/50 text-white font-mono font-bold text-xs sm:text-sm shadow-lg transition-all">
+                        ⌥ Option
+                      </kbd>
+                      <span class="text-indigo-300 font-bold text-xs sm:text-sm">+</span>
+                      <kbd id="key-opt-2" class="relative px-3 py-1 sm:px-3.5 sm:py-1.5 rounded-lg sm:rounded-xl bg-indigo-600/40 border border-indigo-400/50 text-white font-mono font-bold text-xs sm:text-sm shadow-lg transition-all">
+                        ⌥ Option
+                      </kbd>
+                    </div>
+                    <span class="text-[10px] text-emerald-300 font-mono font-bold flex items-center gap-1 bg-black/70 px-2.5 py-0.5 rounded-full border border-emerald-500/40 shadow">
+                      <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                      Double-tap để chụp tức thì!
+                    </span>
+                  </div>
+
+                  <!-- Attached Floating Action Toolbar -->
+                  <div class="self-center eisen-floating-toolbar px-2.5 py-1 flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-xs shadow-xl">
+                    <button class="w-5 h-5 rounded hover:bg-red-500/20 text-red-400 flex items-center justify-center font-bold">✕</button>
+                    <div class="w-[1px] h-3.5 bg-white/15"></div>
+                    <button class="px-1.5 py-0.5 rounded hover:bg-white/10 text-slate-300 flex items-center gap-1">
+                      <svg class="w-3 h-3 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 8h10"/><path d="M7 12h10"/><path d="M7 16h6"/></svg>
+                      <span>Scan</span>
+                    </button>
+                    <button class="px-1.5 py-0.5 rounded hover:bg-white/10 text-slate-300 flex items-center gap-1">
+                      <svg class="w-3 h-3 text-slate-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+                      <span>Lưu</span>
+                    </button>
+                    <button class="px-1.5 py-0.5 rounded hover:bg-white/10 text-slate-300 flex items-center gap-1">
+                      <svg class="w-3 h-3 text-slate-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+                      <span>Sửa</span>
+                    </button>
+                    <button class="px-2.5 py-0.5 rounded-md bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-semibold flex items-center gap-1 shadow-md shadow-indigo-500/30">
+                      <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                      <span>Sao chép</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bottom Feature Badges -->
+          <div class="space-y-1.5 flex-shrink-0 pb-0.5 sm:pb-1 w-full max-w-[420px] mx-auto">
+            <div class="grid grid-cols-3 gap-1.5 text-center text-xs">
+              <div class="py-1.5 px-1 rounded-xl bg-white/[0.04] border border-white/10 flex flex-col items-center gap-0.5 shadow">
+                <span class="text-emerald-400 font-bold text-xs sm:text-sm">⚡ &lt;5ms</span>
+                <span class="text-slate-300 text-[10px]">Khởi động tức thì</span>
+              </div>
+              <div class="py-1.5 px-1 rounded-xl bg-white/[0.04] border border-white/10 flex flex-col items-center gap-0.5 shadow">
+                <span class="text-indigo-400 font-bold text-xs sm:text-sm">🎯 Auto</span>
+                <span class="text-slate-300 text-[10px]">Bắt viền cửa sổ</span>
+              </div>
+              <div class="py-1.5 px-1 rounded-xl bg-white/[0.04] border border-white/10 flex flex-col items-center gap-0.5 shadow">
+                <span class="text-purple-400 font-bold text-xs sm:text-sm">💎 Retina</span>
+                <span class="text-slate-300 text-[10px]">Sắc nét chuẩn 5K</span>
+              </div>
+            </div>
+            <p class="text-[10px] text-center text-slate-400 font-mono">
+              🦀 Viết bằng Rust • Dung lượng nhẹ chỉ 4.1MB • 0% Telemetry
+            </p>
+          </div>
+        </div>
+
+        <!-- ================= SCENE 2: ANNOTATION TOOLS & PRIVACY BLUR ================= -->
+        <div id="scene-2" class="hidden h-full flex flex-col justify-between transition-all duration-400 opacity-0 transform translate-y-4">
+          <!-- Top Title Block -->
+          <div class="space-y-0.5 sm:space-y-1 text-center flex-shrink-0 pt-0.5 sm:pt-1">
+            <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-purple-500/15 border border-purple-500/30 text-purple-300 text-[10px] sm:text-xs font-semibold">
+              <span>🎨 02 • BỘ CÔNG CỤ CHÚ THÍCH</span>
+            </div>
+            <h2 class="text-xl sm:text-2xl font-black tracking-tight text-white leading-tight">
+              Kho Chú Thích &amp; Che Riêng Tư
+            </h2>
+            <p class="text-[11px] sm:text-xs text-slate-300">
+              Thanh công cụ nổi thông minh, che mờ API key &amp; thông tin nhạy cảm
+            </p>
+          </div>
+
+          <!-- Central macOS Window with Authentic EiSen Editor -->
+          <div class="flex-1 min-h-0 my-auto py-1 flex flex-col items-center justify-center w-full">
+            <!-- Floating Editor Toolbar Pill -->
+            <div class="mb-1 sm:mb-1.5 eisen-editor-toolbar px-2.5 py-1 flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-xs shadow-xl">
+              <span class="p-0.5 text-slate-400 hover:text-white cursor-pointer" title="Select (V)">↖</span>
+              <span class="px-1.5 py-0.5 rounded bg-indigo-600 text-white font-bold cursor-pointer shadow" title="Step (S)">①</span>
+              <span class="p-0.5 text-slate-400 hover:text-white cursor-pointer" title="Rect (R)">▢</span>
+              <span class="p-0.5 text-slate-400 hover:text-white cursor-pointer" title="Circle (E)">◯</span>
+              <span class="p-0.5 text-slate-400 hover:text-white cursor-pointer" title="Highlight (H)">✦</span>
+              <span class="px-1.5 py-0.5 rounded bg-red-500/30 text-red-300 font-bold cursor-pointer" title="Blur (B)">▓</span>
+              <span class="p-0.5 text-slate-400 hover:text-white cursor-pointer" title="Arrow (A)">↗</span>
+              <span class="p-0.5 text-slate-400 hover:text-white cursor-pointer" title="Text (T)">T</span>
+              <span class="p-0.5 text-slate-400 hover:text-white cursor-pointer" title="Pen (P)">✎</span>
+              <div class="w-[1px] h-3 bg-white/20"></div>
+              <span class="w-3 h-3 rounded-full bg-[#6366f1] border border-white/60 shadow"></span>
+              <span class="text-[10px] font-mono text-slate-300 font-semibold">16px</span>
+              <div class="w-[1px] h-3 bg-white/20"></div>
+              <span class="text-slate-400 hover:text-white cursor-pointer">↶</span>
+              <span class="text-slate-400 hover:text-white cursor-pointer">↷</span>
+            </div>
+
+            <!-- macOS App Window Mockup -->
+            <div class="w-full max-w-[420px] rounded-xl sm:rounded-2xl bg-[#141622] border border-white/15 shadow-2xl overflow-hidden relative flex flex-col">
+              <div class="px-3 py-1.5 sm:py-2 bg-[#1b1e2e] border-b border-white/10 flex items-center justify-between flex-shrink-0">
+                <div class="flex items-center gap-1.5">
+                  <div class="w-2.5 h-2.5 rounded-full bg-[#ff5f56]"></div>
+                  <div class="w-2.5 h-2.5 rounded-full bg-[#ffbd2e]"></div>
+                  <div class="w-2.5 h-2.5 rounded-full bg-[#27c93f]"></div>
+                </div>
+                <span class="text-[11px] sm:text-xs font-mono text-slate-400">Settings — API Keys (Prod)</span>
+                <span class="text-[9px] sm:text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-bold">Encrypted</span>
+              </div>
+
+              <!-- Content with Realistic Annotations -->
+              <div class="p-2.5 sm:p-3 bg-[#0d0f18] text-xs font-sans space-y-2 relative h-[210px] sm:h-[240px] flex flex-col justify-between">
+                <div class="space-y-2">
+                  <!-- Step 1 Annotation -->
+                  <div class="flex items-center gap-2">
+                    <span class="w-5 h-5 rounded-full bg-indigo-600 text-white font-bold text-[10px] flex items-center justify-center shadow">1</span>
+                    <div class="px-2.5 py-1 rounded-md bg-indigo-950/80 border border-indigo-500/40 text-[11px] text-indigo-200 font-medium">
+                      Xác thực Production API Secret Key
+                    </div>
+                  </div>
+
+                  <!-- EiSen Privacy Blur Area -->
+                  <div class="p-2 rounded-lg bg-black/80 border border-red-500/50 flex items-center justify-between shadow-inner">
+                    <div class="flex items-center gap-2">
+                      <span class="text-[9px] font-bold text-red-400 uppercase tracking-wider font-mono">🔒 BLUR</span>
+                      <span class="font-mono text-[11px] text-slate-400 blur-[4px] select-none tracking-widest">sk_live_51M004928A49B8820Z</span>
+                    </div>
+                    <span class="text-[9px] bg-red-500/20 text-red-300 px-1.5 py-0.5 rounded font-mono font-semibold">Che an toàn</span>
+                  </div>
+
+                  <!-- Step 2 Annotation with Arrow -->
+                  <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                      <span class="w-5 h-5 rounded-full bg-purple-600 text-white font-bold text-[10px] flex items-center justify-center shadow">2</span>
+                      <div class="px-2.5 py-1 rounded-md bg-purple-950/80 border border-purple-500/40 text-[11px] text-purple-200 font-medium flex items-center gap-1.5">
+                        <span>Bấm Lưu &amp; Đồng Bộ</span>
+                        <span class="text-purple-400 font-bold">↗</span>
+                      </div>
+                    </div>
+                    <span class="text-[10px] font-mono text-emerald-400 font-semibold bg-emerald-500/15 px-2 py-0.5 rounded border border-emerald-500/30">200 OK</span>
+                  </div>
+                </div>
+
+                <!-- EiSen Floating Action Toolbar in Editor Mode -->
+                <div class="self-center eisen-floating-toolbar px-2.5 py-1 flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-xs shadow-xl">
+                  <button class="w-5 h-5 rounded hover:bg-red-500/20 text-red-400 flex items-center justify-center font-bold">✕</button>
+                  <div class="w-[1px] h-3.5 bg-white/15"></div>
+                  <button class="px-2 py-0.5 rounded hover:bg-white/10 text-slate-300 flex items-center gap-1">
+                    <svg class="w-3 h-3 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 8h10"/><path d="M7 12h10"/><path d="M7 16h6"/></svg>
+                    <span>OCR</span>
+                  </button>
+                  <button class="px-2 py-0.5 rounded hover:bg-white/10 text-slate-300 flex items-center gap-1">
+                    <svg class="w-3 h-3 text-slate-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+                    <span>Lưu PNG</span>
+                  </button>
+                  <button class="px-2.5 py-0.5 rounded-md bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-semibold flex items-center gap-1 shadow-md shadow-indigo-500/30">
+                    <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                    <span>Sao chép</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bottom Feature Badges -->
+          <div class="space-y-1.5 flex-shrink-0 pb-0.5 sm:pb-1 w-full max-w-[420px] mx-auto">
+            <div class="grid grid-cols-3 gap-1.5 text-center text-xs">
+              <div class="py-1.5 px-1 rounded-xl bg-white/[0.04] border border-white/10 flex flex-col items-center gap-0.5 shadow">
+                <span class="text-red-400 font-bold text-xs sm:text-sm">🔒 Privacy Blur</span>
+                <span class="text-slate-300 text-[10px]">Không lộ bí mật</span>
+              </div>
+              <div class="py-1.5 px-1 rounded-xl bg-white/[0.04] border border-white/10 flex flex-col items-center gap-0.5 shadow">
+                <span class="text-indigo-400 font-bold text-xs sm:text-sm">① Auto Step</span>
+                <span class="text-slate-300 text-[10px]">Tự tăng số bước</span>
+              </div>
+              <div class="py-1.5 px-1 rounded-xl bg-white/[0.04] border border-white/10 flex flex-col items-center gap-0.5 shadow">
+                <span class="text-purple-400 font-bold text-xs sm:text-sm">🎨 Full Vector</span>
+                <span class="text-slate-300 text-[10px]">Mũi tên, chữ, khối</span>
+              </div>
+            </div>
+            <p class="text-[10px] text-center text-slate-400 font-mono">
+              Phím tắt nhanh: S (Step) • B (Blur) • A (Arrow) • T (Text) • P (Pen)
+            </p>
+          </div>
+        </div>
+
+        <!-- ================= SCENE 3: ON-DEVICE OCR & LOUPE ================= -->
+        <div id="scene-3" class="hidden h-full flex flex-col justify-between transition-all duration-400 opacity-0 transform translate-y-4">
+          <!-- Top Title Block -->
+          <div class="space-y-0.5 sm:space-y-1 text-center flex-shrink-0 pt-0.5 sm:pt-1">
+            <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-cyan-500/15 border border-cyan-500/30 text-cyan-300 text-[10px] sm:text-xs font-semibold">
+              <span>🍏 03 • APPLE VISION NEURAL ENGINE</span>
+            </div>
+            <h2 class="text-xl sm:text-2xl font-black tracking-tight text-white leading-tight">
+              OCR Trích Xuất Chữ Tức Thì
+            </h2>
+            <p class="text-[11px] sm:text-xs text-slate-300">
+              Nhận diện text trong ảnh bằng AI của macOS, hoàn toàn Offline 100%
+            </p>
+          </div>
+
+          <!-- Central macOS Window with OCR Laser Scan & Eyedropper Loupe -->
+          <div class="flex-1 min-h-0 my-auto py-1 flex flex-col items-center justify-center w-full">
+            <div class="w-full max-w-[420px] rounded-xl sm:rounded-2xl bg-[#141622] border border-cyan-500/40 shadow-2xl shadow-cyan-500/15 overflow-hidden relative flex flex-col">
+              <!-- macOS Window Header -->
+              <div class="px-3 py-1.5 sm:py-2 bg-[#1b1e2e] border-b border-white/10 flex items-center justify-between flex-shrink-0">
+                <div class="flex items-center gap-1.5">
+                  <div class="w-2.5 h-2.5 rounded-full bg-[#ff5f56]"></div>
+                  <div class="w-2.5 h-2.5 rounded-full bg-[#ffbd2e]"></div>
+                  <div class="w-2.5 h-2.5 rounded-full bg-[#27c93f]"></div>
+                </div>
+                <span class="text-[11px] sm:text-xs font-mono text-cyan-300">Terminal — zsh (80×24)</span>
+                <span class="text-[9px] sm:text-[10px] font-mono bg-cyan-500/20 text-cyan-300 px-1.5 py-0.5 rounded font-bold border border-cyan-500/30">Vision Active</span>
+              </div>
+
+              <!-- Terminal Content with Laser Beam & Detected Word Boxes -->
+              <div class="p-2.5 sm:p-3 bg-[#0a0c14] font-mono text-[11px] sm:text-xs leading-relaxed relative overflow-hidden space-y-2 h-[210px] sm:h-[240px] flex flex-col justify-between">
+                <!-- Laser Scan Beam -->
+                <div class="absolute left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-cyan-400 to-transparent shadow-[0_0_12px_#22d3ee] animate-scan pointer-events-none z-10"></div>
+
+                <!-- Terminal Lines -->
+                <div class="space-y-1.5 text-slate-300 text-[10px] sm:text-[11px]">
+                  <div class="flex items-center gap-1.5">
+                    <span class="text-cyan-400 font-bold">$</span>
+                    <span class="px-1.5 py-0.5 rounded bg-cyan-500/20 text-white border border-cyan-400/50 font-medium">git clone https://github.com/thucne/EiSen.git</span>
+                  </div>
+                  <div class="flex items-center gap-1.5">
+                    <span class="text-cyan-400 font-bold">$</span>
+                    <span class="px-1.5 py-0.5 rounded bg-cyan-500/20 text-white border border-cyan-400/50 font-medium">npm run tauri dev</span>
+                  </div>
+                  <div class="text-emerald-400 text-[10px] pt-0.5 flex items-center gap-1">
+                    <span>✔</span>
+                    <span>Neural Engine: Apple Vision Native OCR</span>
+                  </div>
+                  <div class="text-slate-500 text-[9px] sm:text-[10px]">
+                    [INFO] 100% On-Device • 0ms Latency • Zero Cloud
+                  </div>
+                </div>
+
+                <!-- Floating EiSen Eyedropper Loupe (9x Zoom Color Picker) -->
+                <div class="absolute top-2.5 right-2.5 flex flex-col items-center gap-1 bg-[#10131e]/95 p-1.5 sm:p-2 rounded-xl border border-indigo-500/40 shadow-xl backdrop-blur-md">
+                  <!-- Circular Pixel Grid -->
+                  <div class="w-12 h-12 rounded-full border-2 border-indigo-400 overflow-hidden relative grid grid-cols-5 grid-rows-5 shadow-inner">
+                    <div class="bg-indigo-900"></div><div class="bg-indigo-800"></div><div class="bg-indigo-700"></div><div class="bg-indigo-800"></div><div class="bg-indigo-900"></div>
+                    <div class="bg-indigo-800"></div><div class="bg-indigo-600"></div><div class="bg-indigo-500"></div><div class="bg-indigo-600"></div><div class="bg-indigo-800"></div>
+                    <div class="bg-indigo-700"></div><div class="bg-indigo-500"></div><div class="bg-[#6366f1] ring-1 ring-white"></div><div class="bg-indigo-500"></div><div class="bg-indigo-700"></div>
+                    <div class="bg-indigo-800"></div><div class="bg-indigo-600"></div><div class="bg-indigo-500"></div><div class="bg-indigo-600"></div><div class="bg-indigo-800"></div>
+                    <div class="bg-indigo-900"></div><div class="bg-indigo-800"></div><div class="bg-indigo-700"></div><div class="bg-indigo-800"></div><div class="bg-indigo-900"></div>
+                    <!-- Center Crosshair Target -->
+                    <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+                      <div class="w-2.5 h-[1.5px] bg-red-400"></div>
+                      <div class="h-2.5 w-[1.5px] bg-red-400 -ml-[1.5px]"></div>
+                    </div>
+                  </div>
+                  <!-- Color Hex Label -->
+                  <div class="flex items-center gap-1 text-[9px] font-mono font-bold text-white">
+                    <span class="w-2 h-2 rounded-full bg-[#6366f1]"></span>
+                    <span>#6366F1</span>
+                  </div>
+                </div>
+
+                <!-- Toast Success Result -->
+                <div>
+                  <div class="p-2 rounded-lg bg-gradient-to-r from-emerald-500/20 to-teal-500/20 border border-emerald-500/40 flex items-center gap-2 shadow">
+                    <div class="w-5 h-5 rounded bg-emerald-500 text-white font-bold flex items-center justify-center text-xs shadow-sm">
+                      ✓
+                    </div>
+                    <div>
+                      <p class="text-[11px] font-bold text-white leading-none">Đã copy chữ vào Clipboard!</p>
+                      <p class="text-[9px] text-emerald-300 font-mono mt-0.5">0ms độ trễ • Không cần gõ lại thủ công</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bottom Feature Badges -->
+          <div class="space-y-1.5 flex-shrink-0 pb-0.5 sm:pb-1 w-full max-w-[420px] mx-auto">
+            <div class="grid grid-cols-3 gap-1.5 text-center text-xs">
+              <div class="py-1.5 px-1 rounded-xl bg-white/[0.04] border border-white/10 flex flex-col items-center gap-0.5 shadow">
+                <span class="text-cyan-400 font-bold text-xs sm:text-sm">🍎 Vision AI</span>
+                <span class="text-slate-300 text-[10px]">Apple Native API</span>
+              </div>
+              <div class="py-1.5 px-1 rounded-xl bg-white/[0.04] border border-white/10 flex flex-col items-center gap-0.5 shadow">
+                <span class="text-emerald-400 font-bold text-xs sm:text-sm">🛡️ 100% Offline</span>
+                <span class="text-slate-300 text-[10px]">Không gửi ảnh ra ngoài</span>
+              </div>
+              <div class="py-1.5 px-1 rounded-xl bg-white/[0.04] border border-white/10 flex flex-col items-center gap-0.5 shadow">
+                <span class="text-indigo-400 font-bold text-xs sm:text-sm">🔍 Loupe 9x</span>
+                <span class="text-slate-300 text-[10px]">Lấy mã màu HEX/RGB</span>
+              </div>
+            </div>
+            <p class="text-[10px] text-center text-slate-400 font-mono">
+              Apple Neural Engine • 0% Tesseract • Tối ưu M1/M2/M3/M4
+            </p>
+          </div>
+        </div>
+
+        <!-- ================= SCENE 4: PAYOFF & DOWNLOAD CTA ================= -->
+        <div id="scene-4" class="hidden h-full flex flex-col justify-between text-center transition-all duration-400 opacity-0 transform translate-y-4">
+          <!-- Top Title Block (No competitor mentions, elegant & professional) -->
+          <div class="space-y-0.5 sm:space-y-1 text-center flex-shrink-0 pt-0.5 sm:pt-1">
+            <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-[10px] sm:text-xs font-semibold">
+              <span>🚀 04 • 100% FREE &amp; OPEN SOURCE</span>
+            </div>
+            <h2 class="text-xl sm:text-2xl font-black tracking-tight text-white leading-tight">
+              Mạnh Mẽ &amp; Thuần Native Cho Mac
+            </h2>
+            <p class="text-[11px] sm:text-xs text-slate-300">
+              Công cụ chụp màn hình mã nguồn mở tối ưu hàng đầu cho macOS
+            </p>
+          </div>
+
+          <!-- Central Brand Presentation Card (Adaptive Height) -->
+          <div class="flex-1 min-h-0 my-auto py-1 flex flex-col items-center justify-center w-full">
+            <div class="w-full max-w-[420px] rounded-xl sm:rounded-2xl bg-[#141622] border border-white/15 p-3 sm:p-3.5 shadow-2xl space-y-2.5 relative overflow-hidden">
+              <!-- Glow backdrop -->
+              <div class="absolute -top-10 -right-10 w-36 h-36 bg-indigo-500/20 rounded-full blur-2xl pointer-events-none"></div>
+              <div class="absolute -bottom-10 -left-10 w-36 h-36 bg-purple-500/15 rounded-full blur-2xl pointer-events-none"></div>
+
+              <!-- Official Vector Mark + Wordmark -->
+              <div class="flex flex-col items-center gap-1.5">
+                <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 via-purple-500 to-cyan-400 p-[1.5px] shadow-lg shadow-indigo-500/35 animate-float">
+                  <div class="w-full h-full bg-[#12141d] rounded-[10px] flex items-center justify-center p-2.5">
+                    <img src="/brand/eisen-mark-reversed.svg" alt="EiSen Logo" class="w-8 h-8 object-contain" width="32" height="32" />
+                  </div>
+                </div>
+                <img src="/brand/eisen-wordmark-reversed.svg" alt="EiSen" class="h-6 w-auto object-contain drop-shadow-[0_2px_10px_rgba(99,102,241,0.4)]" width="110" height="36" />
+              </div>
+
+              <!-- Technical Highlights Table (No competitor or price comparisons) -->
+              <div class="rounded-lg bg-black/40 border border-white/10 divide-y divide-white/10 text-[11px]">
+                <div class="py-1.5 px-2.5 flex items-center justify-between">
+                  <span class="text-slate-400">Mô hình giấy phép:</span>
+                  <span class="text-emerald-400 font-bold font-mono">100% Mã nguồn mở (Free)</span>
+                </div>
+                <div class="py-1.5 px-2.5 flex items-center justify-between">
+                  <span class="text-slate-400">Dung lượng ứng dụng:</span>
+                  <span class="text-indigo-300 font-mono font-bold">Chỉ 4.1 MB (Siêu nhẹ)</span>
+                </div>
+                <div class="py-1.5 px-2.5 flex items-center justify-between">
+                  <span class="text-slate-400">Quyền riêng tư:</span>
+                  <span class="text-cyan-300 font-mono font-bold">100% Offline • 0% Telemetry</span>
+                </div>
+                <div class="py-1.5 px-2.5 flex items-center justify-between">
+                  <span class="text-slate-400">Hiệu năng &amp; AI:</span>
+                  <span class="text-purple-300 font-mono font-bold">Rust + Tauri v2 + Apple Vision</span>
+                </div>
+              </div>
+
+              <!-- Extra trust badges -->
+              <div class="grid grid-cols-2 gap-1.5 text-center text-[10px]">
+                <div class="py-1 px-1.5 rounded-md bg-white/[0.03] border border-white/5 text-slate-300">
+                  ⭐️ 100% Open Source
+                </div>
+                <div class="py-1 px-1.5 rounded-md bg-white/[0.03] border border-white/5 text-slate-300">
+                  🚫 Không quảng cáo, tài khoản
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bottom Direct Download CTA Card -->
+          <div class="space-y-1.5 flex-shrink-0 pb-0.5 sm:pb-1 w-full max-w-[420px] mx-auto">
+            <a
+              href="/download"
+              class="w-full inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-indigo-500 via-indigo-600 to-purple-600 text-white font-bold text-sm shadow-xl shadow-indigo-500/30 hover:brightness-110 active:scale-98 transition-all"
+            >
+              <AppleIcon class="w-4 h-4 text-white" size={18} />
+              <span>Tải EiSen Cho Mac (DMG 4.1 MB)</span>
+            </a>
+
+            <div class="flex items-center justify-center gap-2 text-[10px] text-slate-400 font-mono">
+              <span>v0.1.0</span>
+              <span>•</span>
+              <span>Apple Silicon (M1–M4)</span>
+              <span>•</span>
+              <span class="text-indigo-400 font-semibold">macOS 11+</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Bottom Story Footer -->
+      <div class="relative z-30 pb-2 sm:pb-2.5 px-3 sm:px-4 text-center flex-shrink-0">
+        <div class="py-1.5 sm:py-2 px-3 rounded-xl bg-white/[0.04] border border-white/10 backdrop-blur-md flex items-center justify-between text-[11px] text-slate-400">
+          <div class="flex items-center gap-2">
+            <!-- Official Wordmark from assets/branding -->
+            <img src="/brand/eisen-wordmark-reversed.svg" alt="EiSen" class="h-3.5 sm:h-4 w-auto object-contain opacity-80" width="70" height="24" />
+            <span class="text-slate-600 font-mono">•</span>
+            <span class="font-mono text-slate-300">eisen.a302.link</span>
+          </div>
+          <span class="text-indigo-300 font-semibold flex items-center gap-1">
+            <span>Link trên Bio</span>
+            <span>↗</span>
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Client Script: Automated 4-Scene Loop + Recording Controls -->
+    <script is:inline>
+      // Aggressive suppression of Astro Dev Toolbar
+      const cleanAstroToolbar = () => {
+        document.querySelectorAll("astro-dev-toolbar, #astro-dev-toolbar, [data-astro-dev-toolbar]").forEach((el) => {
+          el.remove();
+        });
+      };
+      cleanAstroToolbar();
+      setInterval(cleanAstroToolbar, 100);
+
+      const scenes = [
+        { id: "scene-1", bar: "bar-1", duration: 3500 },
+        { id: "scene-2", bar: "bar-2", duration: 3700 },
+        { id: "scene-3", bar: "bar-3", duration: 3700 },
+        { id: "scene-4", bar: "bar-4", duration: 4100 },
+      ];
+
+      let currentIndex = 0;
+      let timer = null;
+      let keyTimer1 = null;
+      let keyTimer2 = null;
+
+      // Check clean/export mode for headless automation
+      const urlParams = new URLSearchParams(window.location.search);
+      const isClean = urlParams.get("clean") === "1" || urlParams.get("export") === "1";
+      if (isClean) {
+        const btn = document.getElementById("btn-record");
+        if (btn) btn.style.display = "none";
+      }
+
+      function animateKeys() {
+        const k1 = document.getElementById("key-opt-1");
+        const k2 = document.getElementById("key-opt-2");
+        if (!k1 || !k2) return;
+
+        clearTimeout(keyTimer1);
+        clearTimeout(keyTimer2);
+
+        // Reset
+        k1.classList.remove("bg-indigo-500", "scale-95", "ring-4", "ring-indigo-400/50");
+        k2.classList.remove("bg-indigo-500", "scale-95", "ring-4", "ring-indigo-400/50");
+
+        // Tap 1
+        keyTimer1 = setTimeout(() => {
+          k1.classList.add("bg-indigo-500", "scale-95", "ring-4", "ring-indigo-400/50");
+          setTimeout(() => {
+            k1.classList.remove("bg-indigo-500", "scale-95", "ring-4", "ring-indigo-400/50");
+          }, 200);
+        }, 500);
+
+        // Tap 2
+        keyTimer2 = setTimeout(() => {
+          k2.classList.add("bg-indigo-500", "scale-95", "ring-4", "ring-indigo-400/50");
+          setTimeout(() => {
+            k2.classList.remove("bg-indigo-500", "scale-95", "ring-4", "ring-indigo-400/50");
+          }, 200);
+        }, 800);
+      }
+
+      function switchScene(index) {
+        currentIndex = (index + scenes.length) % scenes.length;
+        clearTimeout(timer);
+
+        scenes.forEach((s, i) => {
+          const el = document.getElementById(s.id);
+          const bar = document.getElementById(s.bar);
+          if (!el || !bar) return;
+
+          if (i < currentIndex) {
+            // Completed scenes
+            bar.style.transition = "none";
+            bar.style.width = "100%";
+            el.classList.add("opacity-0", "translate-y-4");
+            el.classList.remove("opacity-100", "translate-y-0");
+            setTimeout(() => { if (currentIndex !== i) el.classList.add("hidden"); }, 300);
+          } else if (i === currentIndex) {
+            // Active scene
+            el.classList.remove("hidden");
+            requestAnimationFrame(() => {
+              el.classList.remove("opacity-0", "translate-y-4");
+              el.classList.add("opacity-100", "translate-y-0");
+            });
+
+            // Smooth linear fill over duration
+            bar.style.transition = "none";
+            bar.style.width = "0%";
+            void bar.offsetWidth; // force reflow
+            bar.style.transition = "width " + s.duration + "ms linear";
+            bar.style.width = "100%";
+
+            if (i === 0) {
+              animateKeys();
+            }
+          } else {
+            // Future scenes
+            bar.style.transition = "none";
+            bar.style.width = "0%";
+            el.classList.add("opacity-0", "translate-y-4");
+            el.classList.remove("opacity-100", "translate-y-0");
+            setTimeout(() => { if (currentIndex !== i) el.classList.add("hidden"); }, 300);
+          }
+        });
+
+        timer = setTimeout(() => {
+          switchScene(currentIndex + 1);
+        }, scenes[currentIndex].duration);
+      }
+
+      // Tap navigation
+      const tapPrev = document.getElementById("tap-prev");
+      const tapNext = document.getElementById("tap-next");
+      if (tapPrev) tapPrev.addEventListener("click", () => switchScene(currentIndex - 1));
+      if (tapNext) tapNext.addEventListener("click", () => switchScene(currentIndex + 1));
+
+      // Start automatic story playback
+      switchScene(0);
+
+      // Expose to window for automation/playwright
+      window.EiSenStory = {
+        switchScene,
+        scenes,
+        getCurrentIndex: () => currentIndex,
+        getTotalDuration: () => scenes.reduce((acc, s) => acc + s.duration, 0),
+      };
+
+      // In-browser MediaRecorder recording button
+      const btnRecord = document.getElementById("btn-record");
+      const recordText = document.getElementById("record-text");
+      let mediaRecorder = null;
+      let recordedChunks = [];
+
+      if (btnRecord) {
+        btnRecord.addEventListener("click", async () => {
+          if (mediaRecorder && mediaRecorder.state === "recording") {
+            mediaRecorder.stop();
+            return;
+          }
+
+          try {
+            recordText.textContent = "Recording...";
+            btnRecord.classList.add("bg-red-500/30", "border-red-500");
+
+            switchScene(0);
+
+            const stream = await navigator.mediaDevices.getDisplayMedia({
+              video: { displaySurface: "browser" },
+              audio: false,
+            });
+
+            mediaRecorder = new MediaRecorder(stream, { mimeType: "video/webm;codecs=vp9" });
+            recordedChunks = [];
+
+            mediaRecorder.ondataavailable = (e) => {
+              if (e.data.size > 0) recordedChunks.push(e.data);
+            };
+
+            mediaRecorder.onstop = () => {
+              const blob = new Blob(recordedChunks, { type: "video/webm" });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement("a");
+              a.href = url;
+              a.download = "eisen-story-promo.webm";
+              a.click();
+              URL.revokeObjectURL(url);
+              stream.getTracks().forEach((t) => t.stop());
+              recordText.textContent = "Auto Clip";
+              btnRecord.classList.remove("bg-red-500/30", "border-red-500");
+            };
+
+            mediaRecorder.start();
+
+            setTimeout(() => {
+              if (mediaRecorder && mediaRecorder.state === "recording") {
+                mediaRecorder.stop();
+              }
+            }, 15000);
+          } catch (err) {
+            console.error(err);
+            recordText.textContent = "Auto Clip";
+            btnRecord.classList.remove("bg-red-500/30", "border-red-500");
+          }
+        });
+      }
+    </script>
+  </body>
+</html>

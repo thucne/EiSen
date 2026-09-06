@@ -1,0 +1,83 @@
+---
+import type { Locale } from '../i18n/utils';
+import { getDictionary } from '../i18n/utils';
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+const t = getDictionary(locale);
+const s = t.setup;
+---
+
+<section id="setup" class="py-20 bg-white/[0.02] border-y border-white/10 relative">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="text-center max-w-3xl mx-auto mb-16 space-y-4">
+      <div class="text-xs font-bold tracking-widest text-indigo-400 uppercase font-mono">
+        {s.eyebrow}
+      </div>
+      <h2 class="text-3xl sm:text-5xl font-extrabold tracking-tight text-white">
+        {s.title}
+      </h2>
+      <p class="text-base sm:text-lg text-slate-300">
+        {s.subtitle}
+      </p>
+    </div>
+
+    <!-- 3 Steps Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+      <!-- Step 1 -->
+      <div class="relative p-6 rounded-2xl bg-[#161822] border border-white/10 flex flex-col">
+        <div class="w-10 h-10 rounded-full bg-indigo-500/20 text-indigo-400 font-mono font-bold text-lg flex items-center justify-center mb-5 border border-indigo-500/40">
+          1
+        </div>
+        <h3 class="text-lg font-bold text-white mb-2">{s.step1Title}</h3>
+        <p class="text-sm text-slate-300 leading-relaxed flex-grow">
+          {s.step1Desc}
+        </p>
+        <div class="mt-6 pt-4 border-t border-white/5 text-xs text-slate-400 font-mono flex items-center gap-2">
+          <span>📁</span>
+          <span>/Applications/EiSen.app</span>
+        </div>
+      </div>
+
+      <!-- Step 2 -->
+      <div class="relative p-6 rounded-2xl bg-[#161822] border border-indigo-500/40 shadow-lg shadow-indigo-500/10 flex flex-col">
+        <div class="w-10 h-10 rounded-full bg-indigo-500 text-white font-mono font-bold text-lg flex items-center justify-center mb-5 shadow-md shadow-indigo-500/30">
+          2
+        </div>
+        <h3 class="text-lg font-bold text-white mb-2">{s.step2Title}</h3>
+        <p class="text-sm text-slate-300 leading-relaxed flex-grow">
+          {s.step2Desc}
+        </p>
+        <div class="mt-6 pt-4 border-t border-white/5 text-xs text-indigo-300 font-mono flex items-center gap-2">
+          <span>⚙️</span>
+          <span>Privacy & Security → Screen Recording</span>
+        </div>
+      </div>
+
+      <!-- Step 3 -->
+      <div class="relative p-6 rounded-2xl bg-[#161822] border border-white/10 flex flex-col">
+        <div class="w-10 h-10 rounded-full bg-emerald-500/20 text-emerald-400 font-mono font-bold text-lg flex items-center justify-center mb-5 border border-emerald-500/40">
+          3
+        </div>
+        <h3 class="text-lg font-bold text-white mb-2">{s.step3Title}</h3>
+        <p class="text-sm text-slate-300 leading-relaxed flex-grow">
+          {s.step3Desc}
+        </p>
+        <div class="mt-6 pt-4 border-t border-white/5 text-xs text-emerald-300 font-mono flex items-center gap-2">
+          <span>⚡</span>
+          <span>Default: ⌥⌥ (Double Option)</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tip Banner -->
+    <div class="mt-10 p-4 rounded-xl bg-indigo-950/40 border border-indigo-500/20 text-center max-w-2xl mx-auto">
+      <p class="text-xs sm:text-sm text-indigo-200">
+        💡 {s.note}
+      </p>
+    </div>
+  </div>
+</section>

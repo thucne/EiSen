@@ -1,0 +1,26 @@
+# Tooling / junk
+.DS_Store
+.worktrees/
+.cursor/
+.wrangler/
+.env
+.env.local
+.eisen-release.env
+
+# Signing material — never commit
+*.p12
+*.key
+*.cer
+*.certSigningRequest
+APPLE_CERTIFICATE.b64
+p12-password.txt
+
+# Kitchen: agent plans, skills, private notes. Kept on disk, not published.
+AGENTS.md
+.agents/
+.superpowers/
+plans/
+docs/superpowers/
+skills-lock.json
+docs/capture-latency-baseline.md
+reference-logos.png

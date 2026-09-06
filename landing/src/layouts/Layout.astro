@@ -1,0 +1,41 @@
+---
+import SeoHead from '../components/SeoHead.astro';
+import Navbar from '../components/Navbar.astro';
+import Footer from '../components/Footer.astro';
+import type { Locale } from '../i18n/utils';
+import '../styles/global.css';
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+---
+
+<!doctype html>
+<html lang={locale} class="scroll-smooth">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="alternate icon" type="image/png" href="/favicon.png" />
+    <meta name="theme-color" content="#0f1015" />
+    <SeoHead locale={locale} />
+  </head>
+  <body class="min-h-screen bg-[#0f1015] text-slate-100 selection:bg-indigo-500 selection:text-white relative">
+    <!-- Ambient Background Lighting -->
+    <div class="fixed inset-0 pointer-events-none overflow-hidden z-0">
+      <div class="absolute -top-40 left-1/2 -translate-x-1/2 w-[700px] h-[500px] bg-indigo-600/15 blur-[140px] rounded-full"></div>
+      <div class="absolute top-[800px] -left-40 w-[500px] h-[500px] bg-purple-600/10 blur-[130px] rounded-full"></div>
+      <div class="absolute top-[1800px] -right-40 w-[600px] h-[600px] bg-cyan-600/10 blur-[140px] rounded-full"></div>
+    </div>
+
+    <div class="relative z-10 flex flex-col min-h-screen">
+      <Navbar locale={locale} />
+      <main class="flex-grow">
+        <slot />
+      </main>
+      <Footer locale={locale} />
+    </div>
+  </body>
+</html>

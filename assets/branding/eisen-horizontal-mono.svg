@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="600"
+     viewBox="0 0 1600 600" role="img" aria-labelledby="title">
+  <title id="title">EiSen monochrome horizontal logo</title>
+
+
+  <g transform="translate(18 -5) scale(.59)"><g id="frame">
+    <path d="M396 293H281L228 346V649L281 702H313"
+          fill="none" stroke="#2B323A" stroke-width="40"
+          stroke-linecap="square" stroke-linejoin="bevel"/>
+    <g transform="matrix(-1 0 0 1 1030 0)">
+      <path d="M396 293H281L228 346V649L281 702H313"
+            fill="none" stroke="#2B323A" stroke-width="40"
+            stroke-linecap="square" stroke-linejoin="bevel"/>
+    </g>
+  </g>
+
+  <g id="brackets">
+    <path d="M299 397V352H349"
+          fill="none" stroke="#2B323A" stroke-width="16"
+          stroke-linecap="square" stroke-linejoin="miter"/>
+    <path d="M299 586V633H349"
+          fill="none" stroke="#2B323A" stroke-width="16"
+          stroke-linecap="square" stroke-linejoin="miter"/>
+    <g transform="matrix(-1 0 0 1 1030 0)">
+      <path d="M299 397V352H349"
+            fill="none" stroke="#2B323A" stroke-width="16"
+            stroke-linecap="square" stroke-linejoin="miter"/>
+      <path d="M299 586V633H349"
+            fill="none" stroke="#2B323A" stroke-width="16"
+            stroke-linecap="square" stroke-linejoin="miter"/>
+    </g>
+  </g>
+
+  <g id="axe">
+    <path d="M480 135C411 147 349 185 301 251H438V303L480 277Z"
+          fill="#2B323A"/>
+    <g transform="matrix(-1 0 0 1 1030 0)">
+      <path d="M480 135C411 147 349 185 301 251H438V303L480 277Z"
+            fill="#2B323A"/>
+    </g>
+  </g>
+  <rect x="499" y="117" width="32" height="144" rx="2"
+        fill="#2B323A"/>
+
+  <g id="helmet">
+    <path d="M414 348C370 377 344 428 344 486C344 548 370 594 414 624C414 608 414 592 414 578C390 552 378 522 378 485C378 448 390 418 414 392Z"
+          fill="#2B323A"/>
+    <path d="M414 392C414 419 434 440 462 440C474 440 482 446 482 458V512C482 524 474 530 462 530C434 530 414 551 414 578C390 552 378 522 378 485C378 448 390 418 414 392Z"
+          fill="#2B323A"/>
+    <g transform="matrix(-1 0 0 1 1030 0)">
+      <path d="M414 348C370 377 344 428 344 486C344 548 370 594 414 624C414 608 414 592 414 578C390 552 378 522 378 485C378 448 390 418 414 392Z"
+            fill="#2B323A"/>
+      <path d="M414 392C414 419 434 440 462 440C474 440 482 446 482 458V512C482 524 474 530 462 530C434 530 414 551 414 578C390 552 378 522 378 485C378 448 390 418 414 392Z"
+            fill="#2B323A"/>
+    </g>
+    <path d="M473 526H557V880H533V640H497V880H473Z"
+          fill="#2B323A"/>
+  </g>
+
+  <g id="controls">
+    <rect x="500" y="414" width="30" height="41" rx="2"
+          fill="#2B323A"/>
+    <rect x="500" y="472" width="30" height="33" rx="2"
+          fill="#2B323A"/>
+  </g>
+
+  <g id="beard">
+    <rect x="355" y="673" width="28" height="171" fill="#2B323A"/>
+    <rect x="414" y="624" width="27" height="255" fill="#2B323A"/>
+    <rect x="470" y="526" width="28" height="389" fill="#2B323A"/>
+    <g transform="matrix(-1 0 0 1 1030 0)">
+      <rect x="355" y="673" width="28" height="171" fill="#2B323A"/>
+      <rect x="414" y="624" width="27" height="255" fill="#2B323A"/>
+      <rect x="470" y="526" width="28" height="389" fill="#2B323A"/>
+    </g>
+  </g></g><g transform="translate(690 174) scale(1.25)">
+  <path fill="#2B323A" d="M8 16H126V48H42V88H114V120H42V172H126V204H8Z"/>
+  <rect x="154" y="72" width="30" height="132" fill="#2B323A"/>
+  <rect x="154" y="16" width="30" height="30" rx="2" fill="#2B323A"/>
+  <path fill="#2B323A" d="M226 16H344V48H252L238 62V88L250 100H322L348 126V174L318 204H214V172H302L316 158V138L306 128H236L204 96V50Z"/>
+  <path fill="#2B323A" fill-rule="evenodd" d="M374 92L398 68H466L492 94V148H406V166L414 174H486V204H398L374 180ZM406 98V120H460V106L452 98Z"/>
+  <path fill="#2B323A" d="M518 68H548V84L566 68H620L646 94V204H614V108L604 98H570L550 118V204H518Z"/>
+</g>
+</svg>

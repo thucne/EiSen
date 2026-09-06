@@ -1,0 +1,198 @@
+---
+import type { Locale } from '../i18n/utils';
+import { getDictionary, dmgDownloadPath } from '../i18n/utils';
+import AppleIcon from './AppleIcon.astro';
+import GithubIcon from './GithubIcon.astro';
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+const t = getDictionary(locale);
+
+const dmgUrl = dmgDownloadPath;
+const githubUrl = 'https://github.com/thucne/EiSen';
+---
+
+<section class="relative pt-12 pb-20 lg:pt-20 lg:pb-28 overflow-hidden">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- Hero Text Content -->
+    <div class="text-center max-w-4xl mx-auto space-y-6">
+      <!-- Exclusivity Badge -->
+      <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/30 backdrop-blur-md text-indigo-300 text-xs sm:text-sm font-medium animate-fade-in shadow-inner shadow-indigo-500/10">
+        <span class="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+        <span>{t.hero.badge}</span>
+      </div>
+
+      <!-- Main H1 Headline -->
+      <h1 class="text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight text-white leading-[1.1]">
+        {t.hero.titleStart}{' '}
+        <span class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-400 to-cyan-400">
+          {t.hero.titleHighlight}
+        </span>{' '}
+        {t.hero.titleEnd}
+      </h1>
+
+      <!-- Subtitle Description -->
+      <p class="text-lg sm:text-xl text-slate-300 max-w-2xl mx-auto font-normal leading-relaxed">
+        {t.hero.description}
+      </p>
+
+      <!-- CTAs & Action Buttons -->
+      <div class="pt-4 flex flex-col sm:flex-row items-center justify-center gap-4">
+        <!-- Direct Download Button -->
+        <a
+          href={dmgUrl}
+          class="w-full sm:w-auto inline-flex items-center justify-center gap-3 px-7 py-3.5 rounded-2xl bg-gradient-to-r from-indigo-500 via-indigo-600 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-semibold text-base shadow-xl shadow-indigo-500/25 hover:shadow-indigo-500/40 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 group focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+        >
+          <!-- Apple Logo Icon -->
+          <AppleIcon class="w-5 h-5" size={20} />
+          <span>{t.hero.downloadCta}</span>
+          <span class="text-xs px-2 py-0.5 rounded-full bg-white/20 font-mono font-medium">DMG (4.1MB)</span>
+        </a>
+
+        <!-- GitHub Secondary Button -->
+        <a
+          href={githubUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/15 text-slate-200 hover:text-white font-medium text-base backdrop-blur-md hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
+        >
+          <GithubIcon class="w-5 h-5" size={20} />
+          <span>{t.hero.githubCta}</span>
+        </a>
+      </div>
+
+      <!-- Microcopy info -->
+      <p class="text-xs text-slate-400 font-medium">
+        {t.hero.requirements}
+      </p>
+    </div>
+
+    <!-- Interactive Hero Mockup / App Showcase UI -->
+    <div class="mt-12 lg:mt-16 max-w-5xl mx-auto">
+      <div class="relative rounded-2xl p-2 sm:p-4 bg-gradient-to-b from-white/15 to-white/5 border border-white/10 shadow-2xl shadow-black/80 backdrop-blur-2xl">
+        <!-- macOS Window Titlebar Mockup -->
+        <div class="flex items-center justify-between pb-3 px-3 border-b border-white/5 text-xs text-slate-400 font-mono">
+          <div class="flex items-center gap-2">
+            <span class="w-3 h-3 rounded-full bg-[#ff5f56]/80 inline-block"></span>
+            <span class="w-3 h-3 rounded-full bg-[#ffbd2e]/80 inline-block"></span>
+            <span class="w-3 h-3 rounded-full bg-[#27c93f]/80 inline-block"></span>
+            <span class="ml-2 text-slate-400 font-sans text-xs font-medium">EiSen Screen Capture Overlay</span>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="hidden sm:inline-flex items-center gap-1 text-[11px] bg-white/10 px-2 py-0.5 rounded text-slate-300">
+              <kbd class="font-mono">⌥⌥</kbd> Trigger
+            </span>
+            <span class="text-indigo-400 font-mono text-[11px]">1920 × 1080 @ 2x Retina</span>
+          </div>
+        </div>
+
+        <!-- Simulated Workspace / Screenshot Area -->
+        <div class="relative mt-3 rounded-xl overflow-hidden bg-[#161822] border border-white/10 min-h-[380px] sm:min-h-[480px] flex items-center justify-center p-4">
+          <!-- Background Grid / Code Snippet Illusion -->
+          <div class="absolute inset-0 opacity-20 font-mono text-[11px] text-indigo-300 p-6 select-none overflow-hidden leading-relaxed pointer-events-none">
+            <p>// EiSen Core - Native Rust Capture Orchestrator</p>
+            <p>use objc2_app_kit::&#123;NSApplication, NSImage&#125;;</p>
+            <p>pub fn capture_region(display_id: u32, crop: Rect) -&gt; Result&lt;CaptureResult&gt; &#123;</p>
+            <p>&nbsp;&nbsp;let display = find_display_under_cursor(cursor_pos)?;</p>
+            <p>&nbsp;&nbsp;let image = screencapture::capture_rect(crop)?;</p>
+            <p>&nbsp;&nbsp;let text = vision::recognize_text_local(&amp;image)?;</p>
+            <p>&nbsp;&nbsp;Ok(CaptureResult &#123; image, ocr_text: text &#125;)</p>
+            <p>&#125;</p>
+          </div>
+
+          <!-- Highlighted Crop Selection Area -->
+          <div class="relative w-full max-w-2xl rounded-xl border-2 border-indigo-500 bg-indigo-500/5 shadow-[0_0_50px_-10px_rgba(99,102,241,0.4)] p-6 z-10 flex flex-col justify-between min-h-[300px]">
+            <!-- Crop Dimension Badge -->
+            <div class="absolute -top-3.5 left-4 px-2.5 py-0.5 rounded-md bg-indigo-600 text-white font-mono text-[11px] font-semibold shadow-md flex items-center gap-1.5">
+              <span>840 × 460</span>
+              <span class="text-indigo-200">|</span>
+              <span class="text-xs">Retina</span>
+            </div>
+
+            <!-- Inside Crop: Simulated Annotations -->
+            <div class="space-y-4">
+              <!-- Numbered Step 1 + Arrow -->
+              <div class="flex items-center gap-3">
+                <span class="w-7 h-7 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 text-white text-xs font-bold flex items-center justify-center shadow-lg shadow-indigo-500/40">1</span>
+                <span class="text-sm font-semibold text-white bg-slate-900/80 px-3 py-1 rounded-lg border border-white/10 backdrop-blur-md">
+                  Select screen crop with pixel-level fine tuning
+                </span>
+              </div>
+
+              <!-- Blur / Redaction Box Simulation -->
+              <div class="inline-flex items-center gap-2 p-2.5 rounded-lg bg-slate-950/80 border border-red-500/30 backdrop-blur-md max-w-sm">
+                <span class="text-xs text-red-400 font-medium">🔒 Redacted:</span>
+                <span class="font-mono text-xs text-slate-400 blur-sm select-none">sk_live_99812938472918237</span>
+                <span class="text-[10px] px-1.5 py-0.5 rounded bg-red-500/20 text-red-300 font-semibold uppercase">Blur</span>
+              </div>
+
+              <!-- On-Device OCR Popup Simulation -->
+              <div class="inline-flex items-center gap-3 p-3 rounded-xl bg-[#1e2235]/95 border border-indigo-500/40 shadow-xl backdrop-blur-md">
+                <div class="w-6 h-6 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold text-xs">
+                  T
+                </div>
+                <div class="text-left">
+                  <div class="text-[11px] text-indigo-300 font-semibold flex items-center gap-1.5">
+                    <span>Apple Vision OCR</span>
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                    <span class="text-[10px] text-emerald-400 font-mono">Copied to Clipboard!</span>
+                  </div>
+                  <p class="text-xs text-slate-200 font-mono">&quot;use objc2_app_kit::&#123;NSApplication, NSImage&#125;;&quot;</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Loupe Eyedropper Simulator at bottom right -->
+            <div class="self-end flex items-center gap-2.5 bg-black/85 border border-white/20 px-3 py-1.5 rounded-xl shadow-2xl backdrop-blur-lg">
+              <div class="w-5 h-5 rounded-full bg-[#6366f1] border border-white/50 shadow-sm"></div>
+              <div class="font-mono text-xs">
+                <span class="text-indigo-400 font-bold">#6366F1</span>
+                <span class="text-slate-400 text-[10px] ml-1.5">RGB(99, 102, 241)</span>
+              </div>
+            </div>
+
+            <!-- Floating Overlay Action Toolbar (EiSen signature) -->
+            <div class="absolute -bottom-6 left-1/2 -translate-x-1/2 w-auto max-w-[95%] bg-[#12141d]/95 border border-white/20 rounded-2xl px-3 py-2 shadow-2xl shadow-black/90 backdrop-blur-xl flex items-center gap-1 sm:gap-2">
+              <!-- Select -->
+              <button class="p-2 rounded-lg bg-white/10 text-white hover:bg-white/20 transition-colors" title="Select">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122"/></svg>
+              </button>
+              <!-- Text -->
+              <button class="p-2 rounded-lg text-slate-300 hover:bg-white/10 hover:text-white transition-colors" title="Text">
+                <span class="font-bold text-sm">T</span>
+              </button>
+              <!-- Arrow -->
+              <button class="p-2 rounded-lg text-slate-300 hover:bg-white/10 hover:text-white transition-colors" title="Arrow">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+              </button>
+              <!-- Step -->
+              <button class="p-2 rounded-lg text-indigo-400 bg-indigo-500/15 font-bold text-xs" title="Numbered Step">
+                ①
+              </button>
+              <!-- Blur -->
+              <button class="p-2 rounded-lg text-slate-300 hover:bg-white/10 hover:text-white transition-colors" title="Blur Redact">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
+              </button>
+              <!-- OCR -->
+              <button class="px-2.5 py-1.5 rounded-lg bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-semibold text-xs flex items-center gap-1 shadow-md shadow-indigo-500/30" title="Apple Vision OCR">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                <span>OCR</span>
+              </button>
+              <div class="h-4 w-px bg-white/15 mx-1"></div>
+              <!-- Copy -->
+              <button class="px-3 py-1.5 rounded-lg bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-xs font-semibold hover:bg-emerald-500/30 transition-colors">
+                Copy
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="text-center text-xs text-slate-400 mt-5 font-mono">
+        {t.hero.demoCaption}
+      </p>
+    </div>
+  </div>
+</section>

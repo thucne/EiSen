@@ -1,0 +1,73 @@
+---
+import type { Locale } from '../i18n/utils';
+import { getDictionary, getLocalizedPath, dmgDownloadPath } from '../i18n/utils';
+import AppleIcon from './AppleIcon.astro';
+import GithubIcon from './GithubIcon.astro';
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+const t = getDictionary(locale);
+
+const currentPath = Astro.url.pathname;
+const targetLocale: Locale = locale === 'en' ? 'vi' : 'en';
+const switchPath = getLocalizedPath(currentPath, targetLocale);
+
+const dmgDownloadUrl = dmgDownloadPath;
+---
+
+<header class="sticky top-0 z-50 w-full backdrop-blur-xl bg-[#0f1015]/80 border-b border-white/10 transition-colors">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+    <!-- Logo & Brand with Official Logo Asset -->
+    <a href={locale === 'vi' ? '/vi/' : '/'} class="flex items-center gap-2.5 group focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded-lg p-1">
+      <img
+        src="/brand/eisen-horizontal-reversed.svg"
+        alt="EiSen Logo"
+        class="h-9 w-auto object-contain group-hover:scale-105 transition-transform duration-200"
+        width="144"
+        height="54"
+      />
+      <span class="text-[10px] uppercase font-mono font-semibold px-1.5 py-0.5 rounded bg-white/10 text-indigo-300 border border-white/10">v0.1.0</span>
+    </a>
+
+    <!-- Navigation links -->
+    <nav class="hidden md:flex items-center gap-8 text-sm font-medium text-slate-300">
+      <a href="#features" class="hover:text-white transition-colors">{t.nav.features}</a>
+      <a href="#setup" class="hover:text-white transition-colors">{t.nav.shortcuts}</a>
+      <a href="#comparison" class="hover:text-white transition-colors">{t.nav.comparison}</a>
+      <a href="#faq" class="hover:text-white transition-colors">{t.nav.faq}</a>
+      <a href="/story" class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-indigo-500/15 border border-indigo-500/30 text-indigo-300 hover:text-white hover:bg-indigo-500/25 transition-all text-xs font-semibold">
+        <span>✨</span>
+        <span>Story Demo</span>
+      </a>
+      <a href="https://github.com/thucne/EiSen" target="_blank" rel="noopener noreferrer" class="hover:text-white transition-colors flex items-center gap-1.5">
+        <GithubIcon class="w-4 h-4" size={16} />
+        <span>{t.nav.github}</span>
+      </a>
+    </nav>
+
+    <!-- Right Controls: Language Switcher & Download CTA -->
+    <div class="flex items-center gap-3">
+      <!-- Language Switcher -->
+      <a
+        href={switchPath}
+        class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-medium text-slate-300 hover:text-white transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+        title={locale === 'en' ? 'Chuyển sang Tiếng Việt' : 'Switch to English'}
+      >
+        <span class="text-sm">🌐</span>
+        <span class="uppercase tracking-wider font-semibold">{locale === 'en' ? 'VI' : 'EN'}</span>
+      </a>
+
+      <!-- Download Button -->
+      <a
+        href={dmgDownloadUrl}
+        class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 text-white text-xs sm:text-sm font-semibold shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+      >
+        <AppleIcon class="w-4 h-4" size={16} />
+        <span>{t.nav.download}</span>
+      </a>
+    </div>
+  </div>
+</header>

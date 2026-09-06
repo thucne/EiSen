@@ -1,0 +1,42 @@
+---
+import type { Locale } from '../i18n/utils';
+import { getDictionary } from '../i18n/utils';
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+const t = getDictionary(locale);
+const f = t.faq;
+---
+
+<section id="faq" class="py-24 bg-white/[0.01] border-t border-white/10 relative">
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="text-center mb-16 space-y-4">
+      <div class="text-xs font-bold tracking-widest text-indigo-400 uppercase font-mono">
+        {f.eyebrow}
+      </div>
+      <h2 class="text-3xl sm:text-5xl font-extrabold tracking-tight text-white">
+        {f.title}
+      </h2>
+    </div>
+
+    <!-- FAQ Accordion / Cards List -->
+    <div class="space-y-4">
+      {f.items.map((item) => (
+        <details class="group rounded-2xl bg-[#161822] border border-white/10 p-6 transition-all duration-200 open:border-indigo-500/40 open:shadow-lg open:shadow-indigo-500/5">
+          <summary class="flex items-center justify-between cursor-pointer font-semibold text-base sm:text-lg text-white list-none select-none focus:outline-none focus-visible:text-indigo-400">
+            <span>{item.q}</span>
+            <span class="ml-4 text-slate-400 group-open:rotate-180 group-open:text-indigo-400 transition-transform duration-200 flex-shrink-0">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+            </span>
+          </summary>
+          <div class="mt-4 pt-4 border-t border-white/5 text-sm sm:text-base text-slate-300 leading-relaxed">
+            {item.a}
+          </div>
+        </details>
+      ))}
+    </div>
+  </div>
+</section>

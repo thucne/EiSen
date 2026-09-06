@@ -1,0 +1,103 @@
+---
+import type { Locale } from '../i18n/utils';
+import { getDictionary } from '../i18n/utils';
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+const t = getDictionary(locale);
+
+const siteUrl = 'https://eisen.a302.link';
+const currentUrl = locale === 'vi' ? `${siteUrl}/vi/` : `${siteUrl}/`;
+const enUrl = `${siteUrl}/`;
+const viUrl = `${siteUrl}/vi/`;
+const ogImageUrl = `${siteUrl}/brand/eisen-mark-reversed-1024.png`;
+const dmgUrl = 'https://github.com/thucne/EiSen/releases/download/v0.1.0/EiSen_0.1.0_aarch64.dmg';
+
+const softwareSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'SoftwareApplication',
+  name: 'EiSen',
+  operatingSystem: 'macOS 11.0+',
+  applicationCategory: 'UtilitiesApplication',
+  applicationSubCategory: 'Screen Capture & Annotation',
+  inLanguage: locale === 'vi' ? 'vi' : 'en',
+  offers: {
+    '@type': 'Offer',
+    price: '0',
+    priceCurrency: 'USD',
+    availability: 'https://schema.org/InStock',
+  },
+  description: t.meta.description,
+  softwareVersion: '0.1.0',
+  fileSize: '4.1MB',
+  url: siteUrl,
+  downloadUrl: dmgUrl,
+  sameAs: ['https://github.com/thucne/EiSen'],
+  author: {
+    '@type': 'Person',
+    name: 'Tran Trong Thuc',
+    url: 'https://github.com/thucne',
+  },
+  screenshot: `${siteUrl}/brand/eisen-mark-1024.png`,
+  featureList: [
+    'Native Rust capture overlay',
+    'On-device Apple Vision OCR',
+    'Zero telemetry — capture, save, and OCR stay on this Mac',
+    'Menu bar accessory (no Dock icon)',
+    'Numbered-step annotation',
+    'Privacy blur baked into exported PNGs',
+    'Eyedropper pixel loupe',
+  ],
+};
+
+const faqSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: t.faq.items.map((item) => ({
+    '@type': 'Question',
+    name: item.q,
+    acceptedAnswer: {
+      '@type': 'Answer',
+      text: item.a,
+    },
+  })),
+};
+---
+
+<!-- Basic Meta Tags -->
+<title>{t.meta.title}</title>
+<meta name="description" content={t.meta.description} />
+<meta name="keywords" content={t.meta.keywords} />
+<meta name="author" content="Tran Trong Thuc" />
+<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+
+<!-- Canonical and Alternate Languages (hreflang) -->
+<link rel="canonical" href={currentUrl} />
+<link rel="alternate" hreflang="en" href={enUrl} />
+<link rel="alternate" hreflang="vi" href={viUrl} />
+<link rel="alternate" hreflang="x-default" href={enUrl} />
+
+<!-- Open Graph / Facebook -->
+<meta property="og:type" content="website" />
+<meta property="og:url" content={currentUrl} />
+<meta property="og:title" content={t.meta.ogTitle} />
+<meta property="og:description" content={t.meta.ogDescription} />
+<meta property="og:image" content={ogImageUrl} />
+<meta property="og:image:alt" content="EiSen — Screen Capture & Annotation for macOS" />
+<meta property="og:site_name" content="EiSen" />
+<meta property="og:locale" content={locale === 'vi' ? 'vi_VN' : 'en_US'} />
+<meta property="og:locale:alternate" content={locale === 'vi' ? 'en_US' : 'vi_VN'} />
+
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:url" content={currentUrl} />
+<meta name="twitter:title" content={t.meta.ogTitle} />
+<meta name="twitter:description" content={t.meta.ogDescription} />
+<meta name="twitter:image" content={ogImageUrl} />
+
+<!-- Structured Data (JSON-LD) -->
+<script type="application/ld+json" set:html={JSON.stringify(softwareSchema)} />
+<script type="application/ld+json" set:html={JSON.stringify(faqSchema)} />

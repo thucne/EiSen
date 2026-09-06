@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="654" height="220"
+     viewBox="0 0 654 220" role="img" aria-labelledby="title">
+  <title id="title">EiSen reversed wordmark</title>
+
+
+  <g transform="translate(0 0) scale(1)">
+  <path fill="#F8FAFB" d="M8 16H126V48H42V88H114V120H42V172H126V204H8Z"/>
+  <rect x="154" y="72" width="30" height="132" fill="#F8FAFB"/>
+  <rect x="154" y="16" width="30" height="30" rx="2" fill="#029EF0"/>
+  <path fill="#F8FAFB" d="M226 16H344V48H252L238 62V88L250 100H322L348 126V174L318 204H214V172H302L316 158V138L306 128H236L204 96V50Z"/>
+  <path fill="#F8FAFB" fill-rule="evenodd" d="M374 92L398 68H466L492 94V148H406V166L414 174H486V204H398L374 180ZM406 98V120H460V106L452 98Z"/>
+  <path fill="#F8FAFB" d="M518 68H548V84L566 68H620L646 94V204H614V108L604 98H570L550 118V204H518Z"/>
+</g>
+</svg>

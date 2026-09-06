@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    
+    <linearGradient id="silver-gradient" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#7B828A"/>
+      <stop offset=".28" stop-color="#80858B"/>
+      <stop offset=".50" stop-color="#898B90"/>
+      <stop offset=".62" stop-color="#888D92"/>
+      <stop offset=".78" stop-color="#7F858C"/>
+      <stop offset="1" stop-color="#757E86"/>
+    </linearGradient>
+    <linearGradient id="axe-silver-gradient" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#8A8F94"/>
+      <stop offset=".52" stop-color="#888D91"/>
+      <stop offset="1" stop-color="#858A90"/>
+    </linearGradient>
+    <linearGradient id="axe-silver-gradient-right" x1="1" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#8A8F94"/>
+      <stop offset=".52" stop-color="#888D91"/>
+      <stop offset="1" stop-color="#858A90"/>
+    </linearGradient>
+    <linearGradient id="cyan-bracket-gradient" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0DA0E3"/>
+      <stop offset="1" stop-color="#0494DC"/>
+    </linearGradient>
+    <linearGradient id="cyan-control-gradient" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#029EF0"/>
+      <stop offset="1" stop-color="#029EF0"/>
+    </linearGradient>
+    <linearGradient id="amber-gradient" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#E3A213"/>
+      <stop offset="1" stop-color="#D5900A"/>
+    </linearGradient>
+    <linearGradient id="control-amber-gradient" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#E7A314"/>
+      <stop offset="1" stop-color="#D9930B"/>
+    </linearGradient>
+    <linearGradient id="scan-gradient" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2C343C"/>
+      <stop offset=".60" stop-color="#2C343C"/>
+      <stop offset=".63" stop-color="#2B3C49"/>
+      <stop offset=".65" stop-color="#204053"/>
+      <stop offset=".70" stop-color="#155474"/>
+      <stop offset=".81" stop-color="#0486C7"/>
+      <stop offset=".90" stop-color="#0498E3"/>
+      <stop offset="1" stop-color="#0097DD"/>
+    </linearGradient>
+    <linearGradient id="bar-gradient" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#747B82"/>
+      <stop offset=".52" stop-color="#697077"/>
+      <stop offset="1" stop-color="#5F6670"/>
+    </linearGradient>
+
+  
+    <linearGradient id="macos-bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="100%" stop-color="#F1F4F9"/>
+    </linearGradient>
+    <linearGradient id="macos-border" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="rgba(255, 255, 255, 0.90)"/>
+      <stop offset="100%" stop-color="rgba(0, 0, 0, 0.12)"/>
+    </linearGradient>
+    <filter id="macos-drop-shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="16" stdDeviation="16" flood-color="#000000" flood-opacity="0.30"/>
+    </filter>
+  </defs>
+
+  <rect x="92" y="92" width="840" height="840" rx="186" fill="url(#macos-bg)" filter="url(#macos-drop-shadow)"/>
+  <rect x="92" y="92" width="840" height="840" rx="186" fill="none" stroke="url(#macos-border)" stroke-width="3"/>
+
+  <g transform="translate(102.39999999999998 102.39999999999998) scale(0.8)">
+    
+
+  <g id="frame">
+    <path d="M396 293H281L228 346V649L281 702H313"
+          fill="none" stroke="#2B323A" stroke-width="40"
+          stroke-linecap="square" stroke-linejoin="bevel"/>
+    <g transform="matrix(-1 0 0 1 1030 0)">
+      <path d="M396 293H281L228 346V649L281 702H313"
+            fill="none" stroke="#2B323A" stroke-width="40"
+            stroke-linecap="square" stroke-linejoin="bevel"/>
+    </g>
+  </g>
+
+  <g id="brackets">
+    <path d="M299 397V352H349"
+          fill="none" stroke="url(#cyan-bracket-gradient)" stroke-width="16"
+          stroke-linecap="square" stroke-linejoin="miter"/>
+    <path d="M299 586V633H349"
+          fill="none" stroke="url(#cyan-bracket-gradient)" stroke-width="16"
+          stroke-linecap="square" stroke-linejoin="miter"/>
+    <g transform="matrix(-1 0 0 1 1030 0)">
+      <path d="M299 397V352H349"
+            fill="none" stroke="url(#cyan-bracket-gradient)" stroke-width="16"
+            stroke-linecap="square" stroke-linejoin="miter"/>
+      <path d="M299 586V633H349"
+            fill="none" stroke="url(#cyan-bracket-gradient)" stroke-width="16"
+            stroke-linecap="square" stroke-linejoin="miter"/>
+    </g>
+  </g>
+
+  <g id="axe">
+    <path d="M480 135C411 147 349 185 301 251H438V303L480 277Z"
+          fill="url(#axe-silver-gradient)"/>
+    <g transform="matrix(-1 0 0 1 1030 0)">
+      <path d="M480 135C411 147 349 185 301 251H438V303L480 277Z"
+            fill="url(#axe-silver-gradient-right)"/>
+    </g>
+  </g>
+  <rect x="499" y="117" width="32" height="144" rx="2"
+        fill="url(#amber-gradient)"/>
+
+  <g id="helmet">
+    <path d="M414 348C370 377 344 428 344 486C344 548 370 594 414 624C414 608 414 592 414 578C390 552 378 522 378 485C378 448 390 418 414 392Z"
+          fill="url(#silver-gradient)"/>
+    <path d="M414 392C414 419 434 440 462 440C474 440 482 446 482 458V512C482 524 474 530 462 530C434 530 414 551 414 578C390 552 378 522 378 485C378 448 390 418 414 392Z"
+          fill="#2C343C"/>
+    <g transform="matrix(-1 0 0 1 1030 0)">
+      <path d="M414 348C370 377 344 428 344 486C344 548 370 594 414 624C414 608 414 592 414 578C390 552 378 522 378 485C378 448 390 418 414 392Z"
+            fill="url(#silver-gradient)"/>
+      <path d="M414 392C414 419 434 440 462 440C474 440 482 446 482 458V512C482 524 474 530 462 530C434 530 414 551 414 578C390 552 378 522 378 485C378 448 390 418 414 392Z"
+            fill="#2C343C"/>
+    </g>
+    <path d="M473 526H557V880H533V640H497V880H473Z"
+          fill="#2C343C"/>
+  </g>
+
+  <g id="controls">
+    <rect x="500" y="414" width="30" height="41" rx="2"
+          fill="url(#control-amber-gradient)"/>
+    <rect x="500" y="472" width="30" height="33" rx="2"
+          fill="url(#cyan-control-gradient)"/>
+  </g>
+
+  <g id="beard">
+    <rect x="355" y="673" width="28" height="171" fill="url(#bar-gradient)"/>
+    <rect x="414" y="624" width="27" height="255" fill="url(#bar-gradient)"/>
+    <rect x="470" y="526" width="28" height="389" fill="url(#scan-gradient)"/>
+    <g transform="matrix(-1 0 0 1 1030 0)">
+      <rect x="355" y="673" width="28" height="171" fill="url(#bar-gradient)"/>
+      <rect x="414" y="624" width="27" height="255" fill="url(#bar-gradient)"/>
+      <rect x="470" y="526" width="28" height="389" fill="url(#scan-gradient)"/>
+    </g>
+  </g>
+
+  </g>
+</svg>

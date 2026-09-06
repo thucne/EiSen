@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://eisen.a302.link/sitemap-index.xml
