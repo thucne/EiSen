@@ -142,6 +142,14 @@ export const en = {
         a: "To capture pixels outside of its own window, macOS security architecture requires explicit Screen Recording access. EiSen operates entirely on-device and never sends screenshots, OCR text, or analytics over the network.",
       },
       {
+        q: "How is EiSen different from traditional screenshot apps or cloud capture tools?",
+        a: "Unlike legacy tools that consume hundreds of megabytes of RAM or automatically upload your captures to public web URLs, EiSen is an ultra-lightweight (4.1 MB), native utility built in Rust. It captures instantly (<5ms), operates 100% offline, and keeps all screenshots, OCR text, and annotations strictly on your Mac.",
+      },
+      {
+        q: "Can I use EiSen as my everyday quick screenshot and annotation tool on Mac?",
+        a: "Absolutely. EiSen is designed specifically to be your lightning-fast everyday capture tool. Simply double-tap Option (⌥⌥) or use your preferred custom shortcut to instantly freeze your screen, crop pixel-accurately, redact sensitive data with privacy blur, extract text with Apple Vision, and copy directly to your clipboard in milliseconds.",
+      },
+      {
         q: "Is EiSen compatible with Apple Silicon and Intel Macs?",
         a: "Yes! The current release v0.1.0 is compiled specifically for Apple Silicon (M1, M2, M3, M4 and newer) on macOS 11.0+. Universal and Intel builds are supported by building from source or subsequent release updates.",
       },

@@ -142,6 +142,14 @@ export const vi = {
         a: "Để chụp các pixel bên ngoài cửa sổ của ứng dụng, cơ chế bảo mật của macOS bắt buộc người dùng cấp quyền Ghi màn hình. EiSen xử lý 100% cục bộ trên máy và không bao giờ gửi ảnh hay dữ liệu qua Internet.",
       },
       {
+        q: "EiSen khác gì so với các phần mềm chụp màn hình truyền thống hay công cụ lưu ảnh đám mây?",
+        a: "Khác với các ứng dụng cũ chiếm dụng hàng trăm MB bộ nhớ RAM hoặc tự động upload ảnh chụp lên các liên kết web công khai, EiSen là tiện ích siêu nhẹ (chỉ 4.1 MB) viết thuần bằng Rust. Ứng dụng chụp tức thì dưới 5ms, hoạt động hoàn toàn offline và lưu giữ 100% ảnh chụp, chữ OCR cũng như chú thích ngay trên máy Mac của bạn mà không gửi dữ liệu ra ngoài.",
+      },
+      {
+        q: "Tôi có thể dùng EiSen làm công cụ chụp và chú thích màn hình mặc định hàng ngày trên Mac không?",
+        a: "Hoàn toàn được. EiSen được thiết kế chuyên biệt để trở thành công cụ chụp ảnh màn hình siêu tốc mỗi ngày của bạn. Chỉ cần nhấn đúp phím Option (⌥⌥) hoặc cài đặt phím tắt ưa thích để đóng băng màn hình tức thì, cắt ảnh chuẩn xác, làm mờ thông tin nhạy cảm, sao chép chữ bằng Apple Vision OCR và lưu vào khay nhớ tạm trong tích tắc.",
+      },
+      {
         q: "EiSen có tương thích với chip Apple Silicon và Intel Mac không?",
         a: "Có! Bản đóng gói v0.1.0 hiện tại được biên dịch tối ưu hóa cho các dòng chip Apple Silicon (M1, M2, M3, M4 và mới hơn) chạy macOS 11.0+. Các bản build Intel và Universal có thể biên dịch từ mã nguồn hoặc tải trong các bản phát hành tiếp theo.",
       },
