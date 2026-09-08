@@ -203,4 +203,12 @@ describe("permission banner", () => {
     });
     expect(screen.queryByText(en.permission.title)).not.toBeInTheDocument();
   });
+
+  it("displays version badge in hub header", async () => {
+    render(HubPage);
+    await waitFor(() => {
+      expect(screen.getByText("v0.1.1")).toBeInTheDocument();
+    });
+  });
 });
+

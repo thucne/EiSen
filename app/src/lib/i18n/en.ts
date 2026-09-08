@@ -75,6 +75,7 @@ export const en = {
     resetTitle: "Reset Configuration",
     resetHelp: "Restore default preferences and hotkeys",
     loading: "Loading settings...",
+    version: "Version",
   },
   langNames: {
     en: "English",

@@ -77,6 +77,7 @@ export const vi: Dict = {
     resetTitle: "Đặt lại cấu hình",
     resetHelp: "Khôi phục tuỳ chọn và phím tắt mặc định",
     loading: "Đang tải cài đặt...",
+    version: "Phiên bản",
   },
   langNames: {
     en: "English",

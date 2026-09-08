@@ -589,6 +589,12 @@ fn cmd_open_screen_settings() -> Result<(), String> {
     platform::mac_adapter::open_screen_permission_settings()
 }
 
+/// Return the application semantic version (from Cargo.toml at compile time).
+#[tauri::command]
+fn cmd_get_app_version() -> &'static str {
+    env!("CARGO_PKG_VERSION")
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let builder = tauri::Builder::default()
@@ -699,7 +705,8 @@ builder
             cmd_remove_history,
             cmd_hotkey_error,
             cmd_screen_permission,
-            cmd_open_screen_settings
+            cmd_open_screen_settings,
+            cmd_get_app_version
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
@@ -794,5 +801,10 @@ mod tests {
         assert_eq!(h, 800.0);
         assert_eq!(x, 0.0);
         assert_eq!(y, 0.0);
+    }
+
+    #[test]
+    fn test_cmd_get_app_version_matches_cargo() {
+        assert_eq!(cmd_get_app_version(), env!("CARGO_PKG_VERSION"));
     }
 }

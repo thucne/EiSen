@@ -173,3 +173,11 @@ export function screenPermission(): Promise<boolean> {
 export function openScreenSettings(): Promise<void> {
   return invoke("cmd_open_screen_settings");
 }
+
+/**
+ * Return the compiled application version string (e.g. "0.1.1").
+ */
+export function getAppVersion(): Promise<string> {
+  return invoke("cmd_get_app_version");
+}
+

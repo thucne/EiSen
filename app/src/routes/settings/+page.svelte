@@ -24,6 +24,7 @@
   const t = $derived($i18n);
 
   let cfg = $state<api.AppConfig | null>(null);
+  let appVersion = $state<string>("0.1.1");
   let toast = $state<{
     message: string;
     kind: "ok" | "err";
@@ -48,6 +49,7 @@
 
   onMount(() => {
     void initLang();
+    api.getAppVersion().then((v) => { if (v) appVersion = v; }).catch(() => {});
     const un = listen<string[]>("history", (e) => {
       history.set(e.payload);
       void goto("/");
@@ -208,7 +210,7 @@
       </div>
 
       <!-- Reset defaults -->
-      <div class="setting-row no-border">
+      <div class="setting-row">
         <div class="row-label">
           <RotateCcw size={18} class="row-icon danger" />
           <div>
@@ -219,6 +221,18 @@
         <button class="btn-danger" onclick={onReset}>
           {t.settings.resetDefaults}
         </button>
+      </div>
+
+      <!-- Version & System Info -->
+      <div class="setting-row no-border">
+        <div class="row-label">
+          <Settings size={18} class="row-icon" />
+          <div>
+            <h3>{t.settings.version}</h3>
+            <p class="version-sub">EiSen v{appVersion} • macOS Apple Silicon (aarch64)</p>
+          </div>
+        </div>
+        <span class="version-tag">v{appVersion}</span>
       </div>
     </div>
   {:else}
@@ -437,5 +451,22 @@
 
   input:checked + .slider:before {
     transform: translateX(20px);
+  }
+
+  .version-tag {
+    font-size: 11px;
+    font-weight: 600;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    padding: 3px 8px;
+    border-radius: 6px;
+    background: rgba(99, 102, 241, 0.15);
+    color: #a5b4fc;
+    border: 1px solid rgba(99, 102, 241, 0.3);
+  }
+
+  .version-sub {
+    font-size: 12px;
+    color: #94a3b8;
+    margin: 2px 0 0;
   }
 </style>

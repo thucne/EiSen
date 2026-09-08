@@ -30,6 +30,7 @@
     sticky?: boolean;
   } | null>(null);
   let permissionOk = $state(true);
+  let appVersion = $state<string>("0.1.1");
 
   function probePermission() {
     api.screenPermission()
@@ -42,6 +43,7 @@
   onMount(() => {
     void initLang();
     api.getConfig().then((c) => (cfg = c)).catch(() => {});
+    api.getAppVersion().then((v) => { if (v) appVersion = v; }).catch(() => {});
     probePermission();
     const showHotkeyError = (detail: string) => {
       toast = {
@@ -144,7 +146,12 @@
     <div class="brand">
       <img src={logoMark} alt="EiSen Logo" class="hub-logo" />
       <div>
-        <h1 class="brand-title">EiSen</h1>
+        <div class="brand-title-row">
+          <h1 class="brand-title">EiSen</h1>
+          {#if appVersion}
+            <span class="version-badge">v{appVersion}</span>
+          {/if}
+        </div>
         <p class="brand-sub">{t.hub.tagline}</p>
       </div>
     </div>
@@ -312,11 +319,30 @@
     filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.5));
   }
 
+  .brand-title-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
   .brand-title {
     font-size: 22px;
     font-weight: 700;
     margin: 0;
     letter-spacing: -0.02em;
+  }
+
+  .version-badge {
+    font-size: 11px;
+    font-weight: 600;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    padding: 2px 7px;
+    border-radius: 6px;
+    background: rgba(99, 102, 241, 0.15);
+    color: #a5b4fc;
+    border: 1px solid rgba(99, 102, 241, 0.3);
+    line-height: 1.2;
+    letter-spacing: 0.02em;
   }
 
   .brand-sub {

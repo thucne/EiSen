@@ -25,7 +25,7 @@ pub fn setup(app: &AppHandle, lang: Lang) -> Result<(), String> {
     TrayIconBuilder::with_id(TRAY_ID)
         .icon(icon)
         .icon_as_template(true)
-        .tooltip("EiSen")
+        .tooltip(format!("EiSen v{}", env!("CARGO_PKG_VERSION")))
         .menu(&menu)
         .on_menu_event(|app, event| match event.id().as_ref() {
             "capture" => {
@@ -61,6 +61,9 @@ pub fn apply_lang(app: &AppHandle, lang: Lang) -> Result<(), String> {
 }
 
 fn build_menu<R: Runtime>(app: &AppHandle<R>, lang: Lang) -> Result<Menu<R>, String> {
+    let version_title = format!("EiSen v{}", env!("CARGO_PKG_VERSION"));
+    let version_item = MenuItem::with_id(app, "version_info", &version_title, false, None::<&str>)
+        .map_err(|e| e.to_string())?;
     let labels = lang.menu_labels();
     let capture = MenuItem::with_id(app, "capture", labels.capture, true, None::<&str>)
         .map_err(|e| e.to_string())?;
@@ -73,6 +76,8 @@ fn build_menu<R: Runtime>(app: &AppHandle<R>, lang: Lang) -> Result<Menu<R>, Str
     Menu::with_items(
         app,
         &[
+            &version_item,
+            &PredefinedMenuItem::separator(app).map_err(|e| e.to_string())?,
             &capture,
             &settings,
             &history,
