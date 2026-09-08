@@ -130,7 +130,7 @@ export const en = {
       { name: "Annotation Suite (Steps, Loupe, Blur)", eisen: "Yes (Full & Vector-based)", macos: "Basic markup only", paid: "Yes" },
       { name: "On-Device Apple Vision OCR", eisen: "Yes (on-device, offline)", macos: "Limited Live Text", paid: "Yes" },
       { name: "Account / License Key Required", eisen: "None (Zero onboarding)", macos: "None", paid: "Required / Account Sign-in" },
-      { name: "App Bundle Size", eisen: "~4.1 MB (Ultra-light)", macos: "System Dependent", paid: "40 MB - 100 MB" },
+      { name: "App Bundle Size", eisen: "~4.2 MB (Ultra-light)", macos: "System Dependent", paid: "40 MB - 100 MB" },
     ],
   },
   faq: {
@@ -143,7 +143,7 @@ export const en = {
       },
       {
         q: "How is EiSen different from traditional screenshot apps or cloud capture tools?",
-        a: "Unlike legacy tools that consume hundreds of megabytes of RAM or automatically upload your captures to public web URLs, EiSen is an ultra-lightweight (4.1 MB), native utility built in Rust. It captures instantly (<5ms), operates 100% offline, and keeps all screenshots, OCR text, and annotations strictly on your Mac.",
+        a: "Unlike legacy tools that consume hundreds of megabytes of RAM or automatically upload your captures to public web URLs, EiSen is an ultra-lightweight (4.2 MB), native utility built in Rust. It captures instantly (<5ms), operates 100% offline, and keeps all screenshots, OCR text, and annotations strictly on your Mac.",
       },
       {
         q: "Can I use EiSen as my everyday quick screenshot and annotation tool on Mac?",

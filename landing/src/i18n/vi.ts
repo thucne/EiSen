@@ -130,7 +130,7 @@ export const vi = {
       { name: "Bộ công cụ chú thích (Bước số, Kính lúp, Làm mờ)", eisen: "Có (Đầy đủ & chuyên nghiệp)", macos: "Chỉ có vẽ cơ bản", paid: "Có" },
       { name: "Nhận diện chữ OCR Apple Vision", eisen: "Có (trên máy, ngoại tuyến)", macos: "Live Text hạn chế", paid: "Có" },
       { name: "Yêu cầu tài khoản / Kích hoạt", eisen: "Không (Mở là dùng)", macos: "Không", paid: "Bắt buộc tài khoản / License" },
-      { name: "Dung lượng bộ cài app", eisen: "~4.1 MB (Siêu nhẹ)", macos: "Theo hệ điều hành", paid: "40 MB - 100 MB" },
+      { name: "Dung lượng bộ cài app", eisen: "~4.2 MB (Siêu nhẹ)", macos: "Theo hệ điều hành", paid: "40 MB - 100 MB" },
     ],
   },
   faq: {
@@ -143,7 +143,7 @@ export const vi = {
       },
       {
         q: "EiSen khác gì so với các phần mềm chụp màn hình truyền thống hay công cụ lưu ảnh đám mây?",
-        a: "Khác với các ứng dụng cũ chiếm dụng hàng trăm MB bộ nhớ RAM hoặc tự động upload ảnh chụp lên các liên kết web công khai, EiSen là tiện ích siêu nhẹ (chỉ 4.1 MB) viết thuần bằng Rust. Ứng dụng chụp tức thì dưới 5ms, hoạt động hoàn toàn offline và lưu giữ 100% ảnh chụp, chữ OCR cũng như chú thích ngay trên máy Mac của bạn mà không gửi dữ liệu ra ngoài.",
+        a: "Khác với các ứng dụng cũ chiếm dụng hàng trăm MB bộ nhớ RAM hoặc tự động upload ảnh chụp lên các liên kết web công khai, EiSen là tiện ích siêu nhẹ (chỉ 4.2 MB) viết thuần bằng Rust. Ứng dụng chụp tức thì dưới 5ms, hoạt động hoàn toàn offline và lưu giữ 100% ảnh chụp, chữ OCR cũng như chú thích ngay trên máy Mac của bạn mà không gửi dữ liệu ra ngoài.",
       },
       {
         q: "Tôi có thể dùng EiSen làm công cụ chụp và chú thích màn hình mặc định hàng ngày trên Mac không?",
