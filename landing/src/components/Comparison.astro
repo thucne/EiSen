@@ -11,9 +11,9 @@ const t = getDictionary(locale);
 const c = t.comparison;
 ---
 
-<section id="comparison" class="py-24 relative">
+<section id="comparison" class="py-14 sm:py-24 relative">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-    <div class="text-center max-w-3xl mx-auto mb-16 space-y-4">
+    <div class="text-center max-w-3xl mx-auto mb-10 sm:mb-16 space-y-3 sm:space-y-4">
       <div class="text-xs font-bold tracking-widest text-indigo-400 uppercase font-mono">
         {c.eyebrow}
       </div>
@@ -26,42 +26,42 @@ const c = t.comparison;
     </div>
 
     <!-- Table Container -->
-    <div class="overflow-x-auto">
+    <div class="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-none">
       <div class="inline-block min-w-full align-middle">
         <div class="overflow-hidden rounded-2xl border border-white/10 bg-[#161822]/90 shadow-2xl backdrop-blur-xl">
           <table class="min-w-full divide-y divide-white/10 text-left">
             <thead>
               <tr class="bg-white/[0.03]">
-                <th scope="col" class="py-5 px-6 text-sm font-semibold text-slate-300">
+                <th scope="col" class="py-4 px-4 sm:py-5 sm:px-6 text-xs sm:text-sm font-semibold text-slate-300 whitespace-nowrap">
                   {c.feature}
                 </th>
-                <th scope="col" class="py-5 px-6 text-base font-bold text-indigo-400 bg-indigo-500/10 border-x border-indigo-500/20">
+                <th scope="col" class="py-4 px-4 sm:py-5 sm:px-6 text-sm sm:text-base font-bold text-indigo-400 bg-indigo-500/10 border-x border-indigo-500/20 whitespace-nowrap">
                   <div class="flex items-center gap-2">
                     <span>{c.eisen}</span>
-                    <span class="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-indigo-500/30 text-indigo-200">Recommended</span>
+                    <span class="text-[9px] sm:text-[10px] uppercase font-mono px-1.5 sm:px-2 py-0.5 rounded bg-indigo-500/30 text-indigo-200">Recommended</span>
                   </div>
                 </th>
-                <th scope="col" class="py-5 px-6 text-sm font-medium text-slate-400">
+                <th scope="col" class="py-4 px-4 sm:py-5 sm:px-6 text-xs sm:text-sm font-medium text-slate-400 whitespace-nowrap">
                   {c.macosDefault}
                 </th>
-                <th scope="col" class="py-5 px-6 text-sm font-medium text-slate-400">
+                <th scope="col" class="py-4 px-4 sm:py-5 sm:px-6 text-xs sm:text-sm font-medium text-slate-400 whitespace-nowrap">
                   {c.paidTools}
                 </th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-white/5 text-sm font-normal">
+            <tbody class="divide-y divide-white/5 text-xs sm:text-sm font-normal">
               {c.rows.map((row, idx) => (
                 <tr class={idx % 2 === 0 ? 'bg-transparent' : 'bg-white/[0.01]'}>
-                  <td class="py-4 px-6 font-medium text-slate-200">
+                  <td class="py-3.5 px-4 sm:py-4 sm:px-6 font-medium text-slate-200 whitespace-nowrap sm:whitespace-normal">
                     {row.name}
                   </td>
-                  <td class="py-4 px-6 font-semibold text-emerald-400 bg-indigo-500/5 border-x border-indigo-500/20">
+                  <td class="py-3.5 px-4 sm:py-4 sm:px-6 font-semibold text-emerald-400 bg-indigo-500/5 border-x border-indigo-500/20 whitespace-nowrap">
                     {row.eisen}
                   </td>
-                  <td class="py-4 px-6 text-slate-400">
+                  <td class="py-3.5 px-4 sm:py-4 sm:px-6 text-slate-400 whitespace-nowrap">
                     {row.macos}
                   </td>
-                  <td class="py-4 px-6 text-slate-400">
+                  <td class="py-3.5 px-4 sm:py-4 sm:px-6 text-slate-400 whitespace-nowrap">
                     {row.paid}
                   </td>
                 </tr>
