@@ -47,6 +47,12 @@
   );
   const LANGS: api.Lang[] = ["En", "Vi"];
 
+  function onKeydown(e: KeyboardEvent) {
+    if (e.key === "Escape") {
+      void goto("/");
+    }
+  }
+
   onMount(() => {
     void initLang();
     api.getAppVersion().then((v) => { if (v) appVersion = v; }).catch(() => {});
@@ -133,6 +139,8 @@
     }
   }
 </script>
+
+<svelte:window onkeydown={onKeydown} />
 
 <main class="settings-container animate-fade">
   <header class="settings-header">

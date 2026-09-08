@@ -89,8 +89,31 @@ fn build_menu<R: Runtime>(app: &AppHandle<R>, lang: Lang) -> Result<Menu<R>, Str
 }
 
 /// Reveal and focus the main window (Settings / History surface).
+/// Re-creates the window dynamically if it was destroyed.
 fn show_main_window(app: &AppHandle) {
+    #[cfg(target_os = "macos")]
+    {
+        use objc2::MainThreadMarker;
+        use objc2_app_kit::NSApplication;
+        if let Some(mtm) = MainThreadMarker::new() {
+            #[allow(deprecated)]
+            NSApplication::sharedApplication(mtm).activateIgnoringOtherApps(true);
+        }
+    }
     if let Some(window) = app.get_webview_window("main") {
+        let _ = window.show();
+        let _ = window.unminimize();
+        let _ = window.set_focus();
+    } else if let Ok(window) = tauri::WebviewWindowBuilder::new(
+        app,
+        "main",
+        tauri::WebviewUrl::App("/".into()),
+    )
+    .title("EiSen")
+    .inner_size(800.0, 600.0)
+    .skip_taskbar(true)
+    .build()
+    {
         let _ = window.show();
         let _ = window.set_focus();
     }
@@ -109,9 +132,8 @@ fn show_history(app: &AppHandle) {
         .filter(|p| std::path::Path::new(p).is_file())
         .cloned()
         .collect();
+    show_main_window(app);
     if let Some(window) = app.get_webview_window("main") {
-        let _ = window.show();
-        let _ = window.set_focus();
         let _ = window.emit("history", &paths);
     }
 }

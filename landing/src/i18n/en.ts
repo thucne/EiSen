@@ -172,7 +172,7 @@ export const en = {
     subtitle: "Get EiSen today. Free, open source, and built with love for the Mac.",
     button: "Download EiSen for macOS (.dmg)",
     details: "Version 0.1.1 • Apple Silicon (aarch64) • 4.2 MB • macOS 11.0+",
-    checksum: "SHA256: 36c062c8ff47779617d54028ce69fb919fda3ae6a9c3e95f82acbcd0f6001876",
+    checksum: "SHA256: 4e68f218579240814d6ce510b68ddde98ee67005d2fdb3df7a41dbfd924db614",
     viewGithub: "View all releases on GitHub",
   },
   footer: {

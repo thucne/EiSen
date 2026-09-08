@@ -172,7 +172,7 @@ export const vi = {
     subtitle: "Tải ngay EiSen hôm nay. Hoàn toàn miễn phí, mã nguồn mở và được tạo nên vì người dùng Mac.",
     button: "Tải EiSen cho macOS (.dmg)",
     details: "Phiên bản 0.1.1 • Apple Silicon (aarch64) • 4.2 MB • macOS 11.0+",
-    checksum: "SHA256: 36c062c8ff47779617d54028ce69fb919fda3ae6a9c3e95f82acbcd0f6001876",
+    checksum: "SHA256: 4e68f218579240814d6ce510b68ddde98ee67005d2fdb3df7a41dbfd924db614",
     viewGithub: "Xem tất cả bản phát hành trên GitHub",
   },
   footer: {
