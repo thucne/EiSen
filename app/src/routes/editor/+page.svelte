@@ -149,6 +149,11 @@
   const selected = $derived($elements.find((e) => e.id === $selectedId) ?? null);
   const selectedBox = $derived(selected ? bbox(selected) : null);
   const sizeControl = $derived(sizeControlVisible($tool, selected?.kind));
+  const sizeTool = $derived(
+    selected?.kind === "text" || selected?.kind === "step"
+      ? selected.kind
+      : $tool
+  );
 
   $effect(() => {
     if (!sizeControl) showSizes = false;
@@ -1007,6 +1012,7 @@
     showColors={showColors}
     showSizes={showSizes}
     sizeControl={sizeControl}
+    sizeTool={sizeTool}
     onselect={useTool}
     onpickcolor={(c) => { pickColor(c); showColors = false; }}
     onpicksize={(n) => { pickSize(n); showSizes = false; }}

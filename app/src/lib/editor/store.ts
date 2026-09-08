@@ -76,7 +76,12 @@ export function setStrokeSize(n: number): void {
   const id = get(selectedId);
   if (id == null) return;
   const selected = getElements().find((e) => e.id === id);
-  if (selected?.kind === "step") return;
+  if (selected?.kind === "step") {
+    snapshot();
+    DRAW_SIZES.step = n;
+    elements.update((a) => a.map((e) => (e.kind === "step" ? { ...e, size: n } : e)));
+    return;
+  }
   snapshot();
   patch(id, (e) => ({ ...e, size: n }));
 }

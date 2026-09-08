@@ -29,6 +29,7 @@
     showColors,
     showSizes,
     sizeControl = true,
+    sizeTool,
     onselect,
     onpickcolor,
     onpicksize,
@@ -47,6 +48,7 @@
     showColors: boolean;
     showSizes: boolean;
     sizeControl?: boolean;
+    sizeTool?: Tool;
     onselect: (tool: Tool) => void;
     onpickcolor: (color: string) => void;
     onpicksize: (size: number) => void;
@@ -56,6 +58,8 @@
     ontogglesizes: () => void;
     ontogglecollapsed: (collapsed: boolean) => void;
   } = $props();
+
+  const activeSizeTool = $derived(sizeTool ?? tool);
 
   const COLORS = [
     "#ef4444", // Red
@@ -134,7 +138,7 @@
         role="presentation"
         onpointerdown={(e) => e.stopPropagation()}
       >
-        {#each sizeOptionsFor(tool) as n (n)}
+        {#each sizeOptionsFor(activeSizeTool) as n (n)}
           <button
             class="size-pill {strokeSize === n ? 'active' : ''}"
             {...tip(`${n}px`)}

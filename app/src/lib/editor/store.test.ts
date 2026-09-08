@@ -514,15 +514,21 @@ describe("numbered steps", () => {
     expect(stepNumbers()).toEqual([1]);
   });
 
-  it("setStrokeSize does not resize existing step badges", () => {
+  it("setStrokeSize without selection does not resize existing step badges", () => {
     placeSteps(2);
     select(null);
     setStrokeSize(32);
     expect(getElements().filter((e) => e.kind === "step").every((e) => e.size === 24)).toBe(true);
+  });
+
+  it("setStrokeSize with a step badge selected broadcasts the new size to the series", () => {
+    placeSteps(2);
     const [first] = getElements();
     setTool("select");
     select(first.id);
     setStrokeSize(14);
+    expect(getElements().filter((e) => e.kind === "step").every((e) => e.size === 14)).toBe(true);
+    undo();
     expect(getElements().filter((e) => e.kind === "step").every((e) => e.size === 24)).toBe(true);
   });
 

@@ -92,6 +92,16 @@ fn resolve_and_store() -> ActiveScreen {
     screen
 }
 
+/// 0-based index of the display selected by the cursor during the last capture.
+#[cfg(target_os = "macos")]
+pub fn active_display_index() -> Option<usize> {
+    LAST_ACTIVE
+        .lock()
+        .unwrap_or_else(|e| e.into_inner())
+        .as_ref()
+        .map(|s| (s.display as usize).saturating_sub(1))
+}
+
 impl ScreenProvider for MacAdapter {
     fn capture_display(&self, display: u32, out: &Path) -> Result<(), String> {
         let mut cmd = Command::new("screencapture");

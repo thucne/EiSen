@@ -20,12 +20,12 @@ export function shouldBeginResize(opts: {
   return true;
 }
 
-/** Size popover + [ ] apply to stroke/text, never to numbered-step badges. */
+/** Size popover + [ ] apply to all drawable tools and selections (stroke, text, step). */
 export function sizeControlVisible(
   tool: Tool,
-  selectedKind: ElementKind | null | undefined,
+  _selectedKind?: ElementKind | null,
 ): boolean {
-  return tool !== "step" && selectedKind !== "step";
+  return tool !== "eraser" && tool !== "eyedropper";
 }
 
 export function textBodyIntent(tool: Tool): "move-or-edit" | null {

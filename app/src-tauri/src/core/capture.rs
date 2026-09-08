@@ -326,7 +326,10 @@ impl Drop for TriggerClaimGuard<'_> {
 /// tray's "Capture now" item, so all three trigger the same path.
 pub fn begin_capture(app: &tauri::AppHandle) -> Result<String, String> {
     use tauri::{Emitter, Manager};
-    if app.get_webview_window("editor").is_some() {
+    if let Some(editor) = app.get_webview_window("editor") {
+        let _ = editor.unminimize();
+        let _ = editor.show();
+        let _ = editor.set_focus();
         return Err("editor is open; finish or close it before a new capture".to_string());
     }
     let orchestrator = app.state::<Arc<CaptureOrchestrator>>();

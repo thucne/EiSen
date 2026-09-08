@@ -78,13 +78,15 @@ describe("shouldBeginResize", () => {
 });
 
 describe("sizeControlVisible", () => {
-  it("hides the size picker for the step tool or a selected step", () => {
-    expect(sizeControlVisible("step", null)).toBe(false);
-    expect(sizeControlVisible("select", "step")).toBe(false);
-    expect(sizeControlVisible("pen", "step")).toBe(false);
+  it("hides the size picker for eraser and eyedropper", () => {
+    expect(sizeControlVisible("eraser", null)).toBe(false);
+    expect(sizeControlVisible("eyedropper", null)).toBe(false);
   });
 
-  it("shows the size picker for stroke and text tools", () => {
+  it("shows the size picker for stroke, text, and step tools", () => {
+    expect(sizeControlVisible("step", null)).toBe(true);
+    expect(sizeControlVisible("select", "step")).toBe(true);
+    expect(sizeControlVisible("pen", "step")).toBe(true);
     expect(sizeControlVisible("select", null)).toBe(true);
     expect(sizeControlVisible("pen", "rectangle")).toBe(true);
     expect(sizeControlVisible("text", "text")).toBe(true);

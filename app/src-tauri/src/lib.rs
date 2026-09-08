@@ -251,6 +251,22 @@ fn cmd_get_last_capture(
     Ok(CaptureSession { path, rect, scale })
 }
 
+/// Compute editor window geometry (width, height, x, y) centered within `monitor_frame`
+/// and clamped to minimum dimensions (680x480) and monitor dimensions.
+pub(crate) fn compute_editor_geometry(
+    capture_rect: (f64, f64),
+    monitor_frame: (f64, f64, f64, f64),
+) -> (f64, f64, f64, f64) {
+    const EXTRA_HEIGHT: f64 = 224.0;
+    const EXTRA_WIDTH: f64 = 96.0;
+    let (mon_x, mon_y, mon_w, mon_h) = monitor_frame;
+    let target_w = (capture_rect.0 + EXTRA_WIDTH).max(680.0).min(mon_w);
+    let target_h = (capture_rect.1 + EXTRA_HEIGHT).max(540.0).min(mon_h);
+    let target_x = mon_x + (mon_w - target_w) / 2.0;
+    let target_y = mon_y + (mon_h - target_h) / 2.0;
+    (target_w, target_h, target_x, target_y)
+}
+
 /// Create (once) and reveal the editor window, sized to the current capture
 /// region plus the toolbar, centered on the screen.
 fn show_editor(app: &tauri::AppHandle, orchestrator: &CaptureOrchestrator) -> tauri::Result<()> {
@@ -266,19 +282,42 @@ fn show_editor(app: &tauri::AppHandle, orchestrator: &CaptureOrchestrator) -> ta
     };
     let _ = window.set_title(app_config(app).lang.editor_title());
     if let Some((_, rect, _)) = orchestrator.last() {
-        const EXTRA_HEIGHT: f64 = 224.0;
-        const EXTRA_WIDTH: f64 = 96.0;
-        let mut target_w = (rect.width + EXTRA_WIDTH).max(680.0);
-        let mut target_h = (rect.height + EXTRA_HEIGHT).max(540.0);
-        if let Some(monitor) = app.primary_monitor().ok().flatten() {
-            let scale = monitor.scale_factor();
-            let size = monitor.size();
-            target_w = target_w.min(size.width as f64 / scale);
-            target_h = target_h.min(size.height as f64 / scale);
+        let monitors = app.available_monitors().ok().unwrap_or_default();
+        #[cfg(target_os = "macos")]
+        let active_idx = crate::platform::mac_adapter::active_display_index().unwrap_or(0);
+        #[cfg(not(target_os = "macos"))]
+        let active_idx = 0;
+
+        let monitor = monitors
+            .get(active_idx)
+            .cloned()
+            .or_else(|| app.primary_monitor().ok().flatten());
+
+        if let Some(mon) = monitor {
+            let scale = mon.scale_factor();
+            let size = mon.size();
+            let pos = mon.position();
+
+            let mon_w = size.width as f64 / scale;
+            let mon_h = size.height as f64 / scale;
+            let mon_x = pos.x as f64 / scale;
+            let mon_y = pos.y as f64 / scale;
+
+            let (target_w, target_h, target_x, target_y) =
+                compute_editor_geometry((rect.width, rect.height), (mon_x, mon_y, mon_w, mon_h));
+
+            let _ = window.set_min_size(Some(tauri::LogicalSize::new(680.0, 480.0)));
+            let _ = window.set_size(tauri::LogicalSize::new(target_w, target_h));
+            let _ = window.set_position(tauri::LogicalPosition::new(target_x, target_y));
+        } else {
+            const EXTRA_HEIGHT: f64 = 224.0;
+            const EXTRA_WIDTH: f64 = 96.0;
+            let target_w = (rect.width + EXTRA_WIDTH).max(680.0);
+            let target_h = (rect.height + EXTRA_HEIGHT).max(540.0);
+            let _ = window.set_min_size(Some(tauri::LogicalSize::new(680.0, 480.0)));
+            let _ = window.set_size(tauri::LogicalSize::new(target_w, target_h));
+            let _ = window.center();
         }
-        let _ = window.set_min_size(Some(tauri::LogicalSize::new(680.0, 480.0)));
-        let _ = window.set_size(tauri::LogicalSize::new(target_w, target_h));
-        let _ = window.center();
     }
     window.show()?;
     window.set_focus()?;
@@ -722,5 +761,38 @@ mod tests {
         );
 
         let _ = std::fs::remove_dir_all(&scratch);
+    }
+
+    #[test]
+    fn compute_editor_geometry_centers_on_primary() {
+        let capture = (400.0, 200.0);
+        let monitor = (0.0, 0.0, 1920.0, 1080.0);
+        let (w, h, x, y) = compute_editor_geometry(capture, monitor);
+        assert_eq!(w, 680.0); // min width
+        assert_eq!(h, 540.0); // min height
+        assert_eq!(x, (1920.0 - 680.0) / 2.0);
+        assert_eq!(y, (1080.0 - 540.0) / 2.0);
+    }
+
+    #[test]
+    fn compute_editor_geometry_centers_on_secondary_display() {
+        let capture = (800.0, 600.0);
+        let monitor = (1920.0, 0.0, 2560.0, 1440.0);
+        let (w, h, x, y) = compute_editor_geometry(capture, monitor);
+        assert_eq!(w, 896.0); // 800 + 96
+        assert_eq!(h, 824.0); // 600 + 224
+        assert_eq!(x, 1920.0 + (2560.0 - 896.0) / 2.0);
+        assert_eq!(y, (1440.0 - 824.0) / 2.0);
+    }
+
+    #[test]
+    fn compute_editor_geometry_clamps_to_small_monitor() {
+        let capture = (2000.0, 2000.0);
+        let monitor = (0.0, 0.0, 1280.0, 800.0);
+        let (w, h, x, y) = compute_editor_geometry(capture, monitor);
+        assert_eq!(w, 1280.0);
+        assert_eq!(h, 800.0);
+        assert_eq!(x, 0.0);
+        assert_eq!(y, 0.0);
     }
 }
