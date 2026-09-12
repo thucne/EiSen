@@ -11,6 +11,7 @@
     arrowHeadPoints,
     arrowShaftEnd,
     bbox,
+    clampTextPlacement,
     drawableStrokePoints,
     hitTest,
     isCompactInk,
@@ -18,6 +19,7 @@
     stepBadgeAppearance,
     sweepErasePoints,
     TEXT_FONT_FAMILY,
+    TEXT_MIN_WIDTH,
     textDisplayWidth,
     textBoxHeight,
     type DrawTool,
@@ -142,7 +144,8 @@
     | { kind: "draw"; id: number }
     | { kind: "move"; id: number; start: Point; editIfClick?: boolean }
     | { kind: "resize"; id: number; handle: ResizeHandle; start: Point }
-    | { kind: "erase"; last: Point };
+    | { kind: "erase"; last: Point }
+    | { kind: "placeText"; start: Point };
   let drag = $state<DragState | null>(null);
   let lastPointer = $state<Point | null>(null);
 
@@ -396,8 +399,9 @@
         };
         beginMove(hit.id, p);
       } else if ($tool === "text") {
-        beginDraw("text", p);
-        drag = null;
+        e.preventDefault();
+        (e.currentTarget as SVGSVGElement).setPointerCapture(e.pointerId);
+        drag = { kind: "placeText", start: p };
       } else {
         (e.currentTarget as SVGSVGElement).setPointerCapture(e.pointerId);
         const id = beginDraw("step", p);
@@ -424,6 +428,9 @@
     lastPointer = p;
     if (!drag) return;
     if (drag.kind === "draw") extendDraw(drag.id, p, e.shiftKey);
+    else if (drag.kind === "placeText") {
+      // Pointer position tracked via lastPointer
+    }
     else if (drag.kind === "move") {
       if (drag.editIfClick && !textDragArmed(drag.start, p)) return;
       if (drag.editIfClick) drag.editIfClick = false;
@@ -442,9 +449,17 @@
     else resizeTo(drag.id, p, canvasW, e.shiftKey);
   }
 
-  function onPointerUp() {
+  function onPointerUp(e?: PointerEvent) {
     if (!drag) return;
     if (drag.kind === "draw") endDraw(drag.id);
+    else if (drag.kind === "placeText") {
+      const p = e ? svgPoint(e) : (lastPointer ?? drag.start);
+      const minX = Math.min(drag.start.x, p.x);
+      const dragW = Math.abs(p.x - drag.start.x);
+      const effectiveW = Math.max(TEXT_MIN_WIDTH, dragW);
+      const bounds = clampTextPlacement({ x: minX, y: Math.min(drag.start.y, p.y) }, canvasW, effectiveW);
+      beginDraw("text", { x: bounds.x, y: bounds.y }, bounds.width);
+    }
     else if (drag.kind === "move") {
       if (drag.editIfClick) {
         const id = drag.id;
@@ -463,6 +478,8 @@
     if (!drag) return;
     if (drag.kind === "erase") {
       if (endErase()) undo();
+    } else if (drag.kind === "placeText") {
+      // Gesture cancelled before text creation
     } else if (drag.kind === "move" && drag.editIfClick) {
       cancelMove();
     } else {

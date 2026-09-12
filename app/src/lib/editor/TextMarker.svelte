@@ -53,7 +53,8 @@
     if (!editing) return;
     const el = root;
     let cancelled = false;
-    void tick().then(() => {
+
+    const focusCaret = () => {
       if (cancelled || !el) return;
       el.focus();
       const range = document.createRange();
@@ -62,6 +63,18 @@
       const sel = window.getSelection();
       sel?.removeAllRanges();
       sel?.addRange(range);
+    };
+
+    void tick().then(() => {
+      if (cancelled || !el) return;
+      focusCaret();
+      if (typeof requestAnimationFrame === "function") {
+        requestAnimationFrame(() => {
+          if (!cancelled && el && document.activeElement !== el) {
+            focusCaret();
+          }
+        });
+      }
     });
     return () => {
       cancelled = true;

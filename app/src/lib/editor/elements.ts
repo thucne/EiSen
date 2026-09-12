@@ -210,6 +210,22 @@ export function textDisplayWidth(
   return Math.max(1, Math.min(hug, remaining));
 }
 
+export const TEXT_MIN_WIDTH = 140;
+
+/**
+ * Calculates initial bounds for a text marker so it receives at least minWidth,
+ * while ensuring its right edge does not exceed canvasW (shifting x left if needed).
+ */
+export function clampTextPlacement(
+  p: Point,
+  canvasW: number,
+  minWidth = TEXT_MIN_WIDTH,
+): { x: number; y: number; width: number } {
+  const width = Math.max(1, Math.min(minWidth, canvasW));
+  const x = Math.max(0, Math.min(p.x, canvasW - width));
+  return { x, y: Math.max(0, p.y), width };
+}
+
 export function wrapTextLines(text: string, fontSize: number, maxWidth?: number): string[] {
   const rawLines = text.split("\n");
   if (!maxWidth || maxWidth <= 0) return rawLines;
@@ -324,11 +340,12 @@ export function createElement(
   color: string,
   size: number,
   stepNumber = 1,
+  width?: number,
 ): Element {
   const id = newId();
   switch (kind) {
     case "text":
-      return { id, kind: "text", x: start.x, y: start.y, text: "", color, size };
+      return { id, kind: "text", x: start.x, y: start.y, text: "", color, size, width };
     case "step":
       return {
         id,

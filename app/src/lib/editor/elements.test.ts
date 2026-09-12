@@ -3,6 +3,7 @@ import {
   arrowHeadPoints,
   arrowShaftEnd,
   bbox,
+  clampTextPlacement,
   compactStepNumbers,
   createElement,
   drawableStrokePoints,
@@ -21,6 +22,7 @@ import {
   sweepErasePoints,
   textContentMaxWidth,
   textDisplayWidth,
+  TEXT_MIN_WIDTH,
   textLineAdvance,
   wrapTextLines,
   type Element,
@@ -691,6 +693,39 @@ describe("sweepErasePoints", () => {
   it("returns the point twice when stationary (second hit-test is a no-op)", () => {
     const pts = sweepErasePoints({ x: 4, y: 4 }, { x: 4, y: 4 });
     expect(pts).toEqual([{ x: 4, y: 4 }, { x: 4, y: 4 }]);
+  });
+});
+
+describe("clampTextPlacement", () => {
+  it("places marker at click coordinate when safely inside canvas", () => {
+    const bounds = clampTextPlacement({ x: 100, y: 50 }, 1000);
+    expect(bounds).toEqual({ x: 100, y: 50, width: TEXT_MIN_WIDTH });
+  });
+
+  it("shifts x left so right edge does not exceed canvasW", () => {
+    const bounds = clampTextPlacement({ x: 950, y: 50 }, 1000);
+    expect(bounds.x + bounds.width).toBe(1000);
+    expect(bounds.x).toBe(1000 - TEXT_MIN_WIDTH);
+    expect(bounds.width).toBe(TEXT_MIN_WIDTH);
+  });
+
+  it("clamps width and x when canvas is narrower than TEXT_MIN_WIDTH", () => {
+    const bounds = clampTextPlacement({ x: 50, y: 20 }, 80);
+    expect(bounds).toEqual({ x: 0, y: 20, width: 80 });
+  });
+
+  it("supports custom minWidth and keeps bounds valid", () => {
+    const bounds = clampTextPlacement({ x: 400, y: 30 }, 500, 200);
+    expect(bounds).toEqual({ x: 300, y: 30, width: 200 });
+    expect(bounds.x + bounds.width).toBe(500);
+  });
+
+  it("creates text element with initial width", () => {
+    const el = createElement("text", { x: 10, y: 10 }, "#fff", 18, 1, 150);
+    expect(el.kind).toBe("text");
+    if (el.kind === "text") {
+      expect(el.width).toBe(150);
+    }
   });
 });
 

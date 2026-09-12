@@ -114,7 +114,7 @@ function resequenceSteps(): void {
   elements.update((arr) => compactStepNumbers(arr));
 }
 
-export function beginDraw(kind: DrawTool, p: Point): number {
+export function beginDraw(kind: DrawTool, p: Point, width?: number): number {
   snapshot();
   const e = createElement(
     kind,
@@ -122,6 +122,7 @@ export function beginDraw(kind: DrawTool, p: Point): number {
     get(color),
     get(strokeSize),
     kind === "step" ? nextStepNumber(getElements()) : 1,
+    width,
   );
   anchor = p;
   elements.update((arr) => [...arr, e]);
