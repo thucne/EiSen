@@ -14,7 +14,7 @@ export const en = {
     faq: "FAQ",
     github: "GitHub",
     download: "Download DMG",
-    downloadDirect: "Download v0.1.1 (4.2 MB)",
+    downloadDirect: "Download v0.1.2 (4.2 MB)",
   },
   hero: {
     badge: "Exclusively for macOS 11+ • Apple Silicon",
@@ -23,7 +23,7 @@ export const en = {
     titleEnd: "Screen Capture for Mac.",
     description: "The lightweight menu bar utility built with Tauri v2 and Rust. Crop with sub-pixel precision, annotate with professional tools, and extract text instantly with on-device Apple Vision OCR.",
     downloadCta: "Download for macOS",
-    downloadSub: "v0.1.1 • Apple Silicon (M1/M2/M3/M4) • 4.2 MB",
+    downloadSub: "v0.1.2 • Apple Silicon (M1/M2/M3/M4) • 4.2 MB",
     githubCta: "Star on GitHub",
     requirements: "Requires macOS 11.0 (Big Sur) or newer • 100% Free & Open Source • Zero Telemetry",
     demoCaption: "Press ⌥⌥ anywhere to capture, crop, annotate, and copy in milliseconds.",
@@ -151,7 +151,7 @@ export const en = {
       },
       {
         q: "Is EiSen compatible with Apple Silicon and Intel Macs?",
-        a: "Yes! The current release v0.1.1 is compiled specifically for Apple Silicon (M1, M2, M3, M4 and newer) on macOS 11.0+. Universal and Intel builds are supported by building from source or subsequent release updates.",
+        a: "Yes! The current release v0.1.2 is compiled specifically for Apple Silicon (M1, M2, M3, M4 and newer) on macOS 11.0+. Universal and Intel builds are supported by building from source or subsequent release updates.",
       },
       {
         q: "How does the OCR feature work without an internet connection?",
@@ -171,8 +171,8 @@ export const en = {
     title: "Ready for a faster, cleaner screenshot workflow?",
     subtitle: "Get EiSen today. Free, open source, and built with love for the Mac.",
     button: "Download EiSen for macOS (.dmg)",
-    details: "Version 0.1.1 • Apple Silicon (aarch64) • 4.2 MB • macOS 11.0+",
-    checksum: "SHA256: 4e68f218579240814d6ce510b68ddde98ee67005d2fdb3df7a41dbfd924db614",
+    details: "Version 0.1.2 • Apple Silicon (aarch64) • 4.2 MB • macOS 11.0+",
+    checksum: "SHA256: 45c21b32210b0265d31d0be1612b402e73700ba83d8fd915fac7174221429df3",
     viewGithub: "View all releases on GitHub",
   },
   footer: {

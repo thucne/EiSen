@@ -762,7 +762,7 @@ checksum = "d0881ea181b1df73ff77ffaaf9c7544ecc11e82fba9b5f27b262a3c73a332555"
 
 [[package]]
 name = "eisen"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "block2",
  "dispatch2",

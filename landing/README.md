@@ -13,14 +13,14 @@ Built with **Astro 5** and **Tailwind CSS**. Fully static, zero JS by default.
   - Vietnamese at `/vi/` (`vi`)
   - Bidirectional `hreflang` alternate links & automated multilingual `sitemap.xml`
 - **Rich Structured Data (SEO):**
-  - Schema.org `SoftwareApplication` (macOS 11.0+, 100% Free, direct v0.1.1 DMG link)
+  - Schema.org `SoftwareApplication` (macOS 11.0+, 100% Free, direct v0.1.2 DMG link)
   - Schema.org `FAQPage` for Google Rich Snippets
   - OpenGraph & Twitter Card previews
 - **Branding & Tokens:**
   - Dark Glassmorphism matching the EiSen native desktop app
   - Local variable fonts (`Plus Jakarta Sans` & `JetBrains Mono`)
 - **Direct Downloads & Fast Redirects:**
-  - `/download` and `/dmg` 302 to the GitHub Release `EiSen_0.1.1_aarch64.dmg` (~4.2 MB)
+  - `/download` and `/dmg` 302 to the GitHub Release `EiSen_0.1.2_aarch64.dmg` (~4.2 MB)
   - Also: `/releases`, `/github`
 
 ---

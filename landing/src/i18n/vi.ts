@@ -14,7 +14,7 @@ export const vi = {
     faq: "Hỏi đáp",
     github: "GitHub",
     download: "Tải bản DMG",
-    downloadDirect: "Tải v0.1.1 (4.2 MB)",
+    downloadDirect: "Tải v0.1.2 (4.2 MB)",
   },
   hero: {
     badge: "Thiết kế riêng cho macOS 11+ • Apple Silicon",
@@ -23,7 +23,7 @@ export const vi = {
     titleEnd: "Dành Riêng Cho Mac.",
     description: "Tiện ích chụp ảnh màn hình gọn gàng trên thanh Menu Bar, xây dựng bằng Tauri v2 và Rust. Cắt chọn vi chỉnh từng pixel, chú thích trực quan và trích xuất chữ tức thì với Apple Vision OCR ngoại tuyến.",
     downloadCta: "Tải EiSen cho macOS",
-    downloadSub: "v0.1.1 • Apple Silicon (M1/M2/M3/M4) • 4.2 MB",
+    downloadSub: "v0.1.2 • Apple Silicon (M1/M2/M3/M4) • 4.2 MB",
     githubCta: "Mã nguồn trên GitHub",
     requirements: "Yêu cầu macOS 11.0 (Big Sur) trở lên • 100% Miễn phí & Mã nguồn mở • Không telemetry",
     demoCaption: "Nhấn ⌥⌥ (Option 2 lần) ở bất kỳ đâu để chụp, cắt, chú thích và sao chép trong tích tắc.",
@@ -151,7 +151,7 @@ export const vi = {
       },
       {
         q: "EiSen có tương thích với chip Apple Silicon và Intel Mac không?",
-        a: "Có! Bản đóng gói v0.1.1 hiện tại được biên dịch tối ưu hóa cho các dòng chip Apple Silicon (M1, M2, M3, M4 và mới hơn) chạy macOS 11.0+. Các bản build Intel và Universal có thể biên dịch từ mã nguồn hoặc tải trong các bản phát hành tiếp theo.",
+        a: "Có! Bản đóng gói v0.1.2 hiện tại được biên dịch tối ưu hóa cho các dòng chip Apple Silicon (M1, M2, M3, M4 và mới hơn) chạy macOS 11.0+. Các bản build Intel và Universal có thể biên dịch từ mã nguồn hoặc tải trong các bản phát hành tiếp theo.",
       },
       {
         q: "Tính năng OCR nhận diện chữ hoạt động như thế nào khi không có mạng?",
@@ -171,8 +171,8 @@ export const vi = {
     title: "Sẵn sàng nâng tầm trải nghiệm chụp ảnh màn hình?",
     subtitle: "Tải ngay EiSen hôm nay. Hoàn toàn miễn phí, mã nguồn mở và được tạo nên vì người dùng Mac.",
     button: "Tải EiSen cho macOS (.dmg)",
-    details: "Phiên bản 0.1.1 • Apple Silicon (aarch64) • 4.2 MB • macOS 11.0+",
-    checksum: "SHA256: 4e68f218579240814d6ce510b68ddde98ee67005d2fdb3df7a41dbfd924db614",
+    details: "Phiên bản 0.1.2 • Apple Silicon (aarch64) • 4.2 MB • macOS 11.0+",
+    checksum: "SHA256: 45c21b32210b0265d31d0be1612b402e73700ba83d8fd915fac7174221429df3",
     viewGithub: "Xem tất cả bản phát hành trên GitHub",
   },
   footer: {

@@ -25,7 +25,7 @@
   const t = $derived($i18n);
 
   let cfg = $state<api.AppConfig | null>(null);
-  let appVersion = $state<string>("0.1.1");
+  let appVersion = $state<string>("0.1.2");
   let toast = $state<{
     message: string;
     kind: "ok" | "err";

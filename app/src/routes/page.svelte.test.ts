@@ -207,7 +207,7 @@ describe("permission banner", () => {
   it("displays version badge in hub header", async () => {
     render(HubPage);
     await waitFor(() => {
-      expect(screen.getByText("v0.1.1")).toBeInTheDocument();
+      expect(screen.getByText("v0.1.2")).toBeInTheDocument();
     });
   });
 });
