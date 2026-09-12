@@ -69,5 +69,5 @@ The output will be generated into `landing/dist/`.
 ### Method 2: Direct Wrangler CLI Deployment
 ```bash
 npm --prefix landing run build
-npx wrangler pages deploy landing/dist --project-name eisen-landing
+npx wrangler pages deploy landing/dist --project-name eisen
 ```
