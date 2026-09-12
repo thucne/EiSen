@@ -130,6 +130,7 @@
         const text = await invoke<string>("cmd_extract_text");
         if (text) {
           await navigator.clipboard.writeText(text);
+          void invoke("cmd_play_sound", { effect: "copy" });
           showToast(t.ocr.copied, "ok");
         } else {
           showToast(t.ocr.noText, "err");

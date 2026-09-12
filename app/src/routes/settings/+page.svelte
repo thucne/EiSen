@@ -19,6 +19,7 @@
     Power,
     RotateCcw,
     Settings,
+    Volume2,
   } from "@lucide/svelte";
 
   const t = $derived($i18n);
@@ -128,6 +129,12 @@
     }
   }
 
+  async function onPlaySoundsToggle(e: Event) {
+    if (!cfg) return;
+    const on = (e.target as HTMLInputElement).checked;
+    await save({ ...cfg, play_sounds: on });
+  }
+
   async function onReset() {
     try {
       await disable();
@@ -212,7 +219,22 @@
           </div>
         </div>
         <label class="toggle-switch">
-          <input type="checkbox" checked={cfg.launch_at_login} onchange={onLaunchToggle} />
+          <input type="checkbox" aria-label={t.settings.launchAtLogin} checked={cfg.launch_at_login} onchange={onLaunchToggle} />
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <!-- Sound effects -->
+      <div class="setting-row">
+        <div class="row-label">
+          <Volume2 size={18} class="row-icon" />
+          <div>
+            <h3>{t.settings.playSounds}</h3>
+            <p>{t.settings.playSoundsHelp}</p>
+          </div>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" aria-label={t.settings.playSounds} checked={cfg.play_sounds} onchange={onPlaySoundsToggle} />
           <span class="slider"></span>
         </label>
       </div>

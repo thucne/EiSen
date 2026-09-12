@@ -5,6 +5,7 @@ pub mod platform;
 use crate::core::capture::{self, CaptureOrchestrator, CaptureSession};
 use crate::core::history::CaptureHistory;
 use crate::core::output::{self, SaveResult};
+use crate::core::sound::{self, SoundEffect};
 use crate::core::{hotkey, tray};
 use crate::domain::config::{self, AppConfig, Lang};
 use crate::domain::naming;
@@ -47,6 +48,7 @@ async fn cmd_commit_region(
     match finished.and_then(|r| r.map_err(|e| e.to_string())) {
         Ok(session) => {
             if open_editor.unwrap_or(false) {
+                sound::play(SoundEffect::Shutter, app_config(&app).play_sounds);
                 show_editor(&app, &orch_for_ui).map_err(|e| e.to_string())?;
             } else {
                 resign_overlay_activation(&app);
@@ -394,12 +396,15 @@ async fn cmd_copy(
     // Decode + clipboard write run together in spawn_blocking. Splitting the
     // clipboard onto the main thread would require exporting decode_image from
     // output.rs (out of scope); the plugin is invoked from the blocking pool.
+    let app_for_copy = app.clone();
     tauri::async_runtime::spawn_blocking(move || {
         let bytes = std::fs::read(&path).map_err(|e| format!("failed to read capture image: {e}"))?;
-        output::copy_image(&app, &bytes).map_err(|e| e.to_string())
+        output::copy_image(&app_for_copy, &bytes).map_err(|e| e.to_string())
     })
     .await
-    .map_err(|e| format!("copy task failed: {e}"))?
+    .map_err(|e| format!("copy task failed: {e}"))??;
+    sound::play(SoundEffect::Copy, app_config(&app).play_sounds);
+    Ok(())
 }
 
 /// Copy the PNG at `path` to the clipboard. Unlike `cmd_copy` this reads the
@@ -413,7 +418,9 @@ fn cmd_copy_path(app: tauri::AppHandle, path: String) -> Result<(), String> {
         &build_validator_roots(&app),
     )?;
     let bytes = std::fs::read(&path).map_err(|e| format!("failed to read image: {e}"))?;
-    output::copy_image(&app, &bytes).map_err(|e| e.to_string())
+    output::copy_image(&app, &bytes).map_err(|e| e.to_string())?;
+    sound::play(SoundEffect::Copy, app_config(&app).play_sounds);
+    Ok(())
 }
 
 /// Save the captured region PNG to the configured save directory and record
@@ -435,6 +442,7 @@ async fn cmd_save(
     .await
     .map_err(|e| format!("save task failed: {e}"))??;
     push_history(&app, saved.to_string_lossy());
+    sound::play(SoundEffect::Save, app_config(&app).play_sounds);
     Ok(SaveResult { path: saved })
 }
 
@@ -459,17 +467,21 @@ async fn cmd_copy_and_save(
     .await
     .map_err(|e| format!("copy-and-save task failed: {e}"))??;
     push_history(&app, saved.to_string_lossy());
+    sound::play(SoundEffect::Save, app_config(&app).play_sounds);
     Ok(SaveResult { path: saved })
 }
 
 /// Copy custom rasterized image bytes (base image + annotations) to clipboard.
 #[tauri::command]
 async fn cmd_copy_bytes(app: tauri::AppHandle, bytes: Vec<u8>) -> Result<(), String> {
+    let app_for_copy = app.clone();
     tauri::async_runtime::spawn_blocking(move || {
-        output::copy_image(&app, &bytes).map_err(|e| e.to_string())
+        output::copy_image(&app_for_copy, &bytes).map_err(|e| e.to_string())
     })
     .await
-    .map_err(|e| format!("copy-bytes task failed: {e}"))?
+    .map_err(|e| format!("copy-bytes task failed: {e}"))??;
+    sound::play(SoundEffect::Copy, app_config(&app).play_sounds);
+    Ok(())
 }
 
 /// Save custom rasterized image bytes (base image + annotations) to disk.
@@ -482,6 +494,7 @@ async fn cmd_save_bytes(app: tauri::AppHandle, bytes: Vec<u8>) -> Result<SaveRes
     .await
     .map_err(|e| format!("save-bytes task failed: {e}"))??;
     push_history(&app, saved.to_string_lossy());
+    sound::play(SoundEffect::Save, app_config(&app).play_sounds);
     Ok(SaveResult { path: saved })
 }
 
@@ -500,7 +513,21 @@ async fn cmd_copy_and_save_bytes(
     .await
     .map_err(|e| format!("copy-and-save-bytes task failed: {e}"))??;
     push_history(&app, saved.to_string_lossy());
+    sound::play(SoundEffect::Save, app_config(&app).play_sounds);
     Ok(SaveResult { path: saved })
+}
+
+/// Play a named sound effect if sounds are enabled in app configuration.
+#[tauri::command]
+fn cmd_play_sound(app: tauri::AppHandle, effect: String) -> Result<(), String> {
+    let sound = match effect.as_str() {
+        "shutter" => SoundEffect::Shutter,
+        "copy" => SoundEffect::Copy,
+        "save" => SoundEffect::Save,
+        _ => return Err(format!("unknown sound effect: {effect}")),
+    };
+    sound::play(sound, app_config(&app).play_sounds);
+    Ok(())
 }
 
 /// Extract text from the last capture image using native OCR.
@@ -714,7 +741,8 @@ builder
             cmd_hotkey_error,
             cmd_screen_permission,
             cmd_open_screen_settings,
-            cmd_get_app_version
+            cmd_get_app_version,
+            cmd_play_sound
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

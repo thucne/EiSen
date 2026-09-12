@@ -15,6 +15,7 @@ export interface AppConfig {
   save_dir: string;
   launch_at_login: boolean;
   hotkey: HotkeyPreset;
+  play_sounds: boolean;
 }
 
 export interface LogicalRect {
@@ -179,5 +180,12 @@ export function openScreenSettings(): Promise<void> {
  */
 export function getAppVersion(): Promise<string> {
   return invoke("cmd_get_app_version");
+}
+
+/**
+ * Play a sound effect if sounds are enabled in config.
+ */
+export function playSound(effect: "shutter" | "copy" | "save"): Promise<void> {
+  return invoke("cmd_play_sound", { effect });
 }
 

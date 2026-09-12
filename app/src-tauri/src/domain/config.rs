@@ -70,6 +70,7 @@ pub struct AppConfig {
     pub save_dir: PathBuf,
     pub launch_at_login: bool,
     pub hotkey: HotkeyPreset,
+    pub play_sounds: bool,
 }
 
 impl Default for AppConfig {
@@ -85,6 +86,7 @@ impl Default for AppConfig {
                 save_dir,
                 launch_at_login: false,
                 hotkey: HotkeyPreset::default(),
+                play_sounds: true,
             },
             &|k| std::env::var(k).ok(),
         )
@@ -168,6 +170,7 @@ mod tests {
             save_dir: dir.path().join("shots"),
             launch_at_login: true,
             hotkey: HotkeyPreset::PrtScMac, // roundtrip test uses PrtScMac
+            play_sounds: true,
         };
         save(&p, &want).unwrap();
         assert_eq!(load(&p), want);
@@ -202,6 +205,7 @@ mod tests {
         assert_eq!(cfg.save_dir, PathBuf::from("/tmp/eisen shots"));
         assert_eq!(cfg.lang, Lang::Vi);
         assert_eq!(cfg.hotkey, HotkeyPreset::CtrlShift4Mac);
+        assert!(cfg.play_sounds);
     }
 
     #[test]
@@ -211,6 +215,7 @@ mod tests {
             save_dir: PathBuf::from("/keep"),
             launch_at_login: false,
             hotkey: HotkeyPreset::PrtScMac,
+            play_sounds: true,
         };
         let getenv = |k: &str| match k {
             "EISEN_DEFAULT_LANG" => Some("Fr".to_string()),
@@ -221,6 +226,7 @@ mod tests {
         assert_eq!(cfg.lang, Lang::En);
         assert_eq!(cfg.hotkey, HotkeyPreset::PrtScMac);
         assert_eq!(cfg.save_dir, PathBuf::from("/keep"));
+        assert!(cfg.play_sounds);
     }
 
     #[test]
@@ -230,6 +236,7 @@ mod tests {
             save_dir: PathBuf::from("/keep"),
             launch_at_login: false,
             hotkey: HotkeyPreset::DoubleOption,
+            play_sounds: true,
         };
         let getenv = |k: &str| match k {
             "EISEN_SAVE_DIR" => Some("   ".to_string()),
@@ -263,6 +270,7 @@ mod tests {
             save_dir: PathBuf::from("/unchanged"),
             launch_at_login: true,
             hotkey: HotkeyPreset::DoubleShift,
+            play_sounds: false,
         };
         let cfg = apply_env_overrides(base.clone(), &|_| None);
         assert_eq!(cfg, base);

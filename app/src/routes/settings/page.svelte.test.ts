@@ -32,6 +32,7 @@ const CFG = {
   save_dir: "/tmp/captures",
   launch_at_login: false,
   hotkey: "DoubleOption",
+  play_sounds: true,
 };
 
 beforeEach(() => {
@@ -48,7 +49,7 @@ beforeEach(() => {
 describe("settings autostart toggle contract", () => {
   it("enables autostart then persists launch_at_login=true", async () => {
     render(SettingsPage);
-    const toggle = (await screen.findByRole("checkbox")) as HTMLInputElement; // appears once cfg loads
+    const toggle = (await screen.findByRole("checkbox", { name: "Launch at login" })) as HTMLInputElement;
     toggle.checked = true;
     fireEvent.change(toggle);
     await waitFor(() => expect(h.enable).toHaveBeenCalledTimes(1));
@@ -62,7 +63,7 @@ describe("settings autostart toggle contract", () => {
 
   it("disables autostart then persists launch_at_login=false", async () => {
     render(SettingsPage);
-    const toggle = (await screen.findByRole("checkbox")) as HTMLInputElement;
+    const toggle = (await screen.findByRole("checkbox", { name: "Launch at login" })) as HTMLInputElement;
     toggle.checked = false;
     fireEvent.change(toggle);
     await waitFor(() => expect(h.disable).toHaveBeenCalledTimes(1));
@@ -72,6 +73,19 @@ describe("settings autostart toggle contract", () => {
       });
     });
     expect(h.enable).not.toHaveBeenCalled();
+  });
+
+  it("toggles sound effects and persists play_sounds=false", async () => {
+    render(SettingsPage);
+    const toggle = (await screen.findByRole("checkbox", { name: "Sound effects" })) as HTMLInputElement;
+    expect(toggle.checked).toBe(true);
+    toggle.checked = false;
+    fireEvent.change(toggle);
+    await waitFor(() => {
+      expect(h.invoke).toHaveBeenCalledWith("cmd_set_config", {
+        cfg: { ...CFG, play_sounds: false },
+      });
+    });
   });
 });
 
