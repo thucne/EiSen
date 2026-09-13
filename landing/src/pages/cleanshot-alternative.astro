@@ -1,0 +1,209 @@
+---
+import Layout from '../layouts/Layout.astro';
+import AppleIcon from '../components/AppleIcon.astro';
+import GithubIcon from '../components/GithubIcon.astro';
+import { dmgDownloadPath } from '../i18n/utils';
+
+const dmgUrl = dmgDownloadPath;
+const githubUrl = 'https://github.com/thucne/EiSen';
+
+const title = 'Best Free CleanShot X Alternative for Mac (2026) | EiSen';
+const description = 'Looking for a 100% free, open-source CleanShot X alternative? EiSen gives you fast screenshot captures, step markers, privacy blur, and offline Apple Vision OCR with zero subscriptions.';
+const canonicalUrl = 'https://eisen.a302.link/cleanshot-alternative';
+
+const comparisonRows = [
+  { feature: 'Price & Licensing', eisen: '100% Free Forever (MIT Open Source)', cleanshot: '$29 + $19/yr renewals (or Setapp $120/yr)' },
+  { feature: 'Privacy & Telemetry', eisen: '100% Offline (Zero Telemetry, Zero Cloud)', cleanshot: 'Cloud sync & analytical tracking' },
+  { feature: 'Text OCR Engine', eisen: 'Apple Vision Neural Engine (Offline & Free)', cleanshot: 'Cloud/Proprietary (Limited on basic tier)' },
+  { feature: 'Menu Bar Resident', eisen: 'Yes (Clean, lightweight menu bar tool)', cleanshot: 'Yes' },
+  { feature: 'App Size on Disk', eisen: '~4.2 MB (Ultra-fast Rust core)', cleanshot: '~60 MB+' },
+  { feature: 'Account / Login Required', eisen: 'No (Install and use immediately)', cleanshot: 'Yes (License key or CleanShot Cloud login)' },
+  { feature: 'Annotation Suite', eisen: 'Numbered Steps, Loupe, Blur, Arrow, Text', eisenGood: true, cleanshot: 'Comprehensive pro editor' },
+  { feature: 'Platform Support', eisen: 'macOS 11.0+ (Optimized for Apple Silicon)', cleanshot: 'macOS 10.14+' },
+];
+
+const faqs = [
+  {
+    q: 'Why do Mac users look for a CleanShot X alternative?',
+    a: 'CleanShot X is a fantastic tool, but its pricing model ($29 for one-time with only 1 year of updates, or ongoing subscriptions via Setapp) pushes many students, developers, and independent professionals to look for a reliable, free alternative. Additionally, users dealing with sensitive proprietary code or customer privacy prefer EiSen because it never connects to cloud servers.'
+  },
+  {
+    q: 'Can EiSen extract text from images like CleanShot X OCR?',
+    a: 'Yes! EiSen includes native Apple Vision OCR built directly on top of macOS frameworks and the Apple Neural Engine. You can select any region on your screen and copy the recognized text to your clipboard in under 200 milliseconds — completely offline and unlimited.'
+  },
+  {
+    q: 'Is EiSen truly free and open-source?',
+    a: 'Yes, 100%. EiSen is licensed under the MIT license with complete public source code available on GitHub. There are no paywalls, no "Pro" tier limitations, and no nagging upgrade reminders.'
+  },
+  {
+    q: 'How does EiSen compare to Shottr?',
+    a: 'Shottr was originally free, but recently introduced nag screens and a paid license tier. EiSen is committed to remaining 100% open-source and free forever, built with modern Rust and Tauri v2 for native macOS performance.'
+  },
+];
+---
+
+<Layout
+  locale="en"
+  title={title}
+  description={description}
+  canonicalUrl={canonicalUrl}
+>
+  <div class="relative pt-12 pb-20 sm:pt-16 sm:pb-28 overflow-hidden">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+      <!-- Breadcrumb & Tag -->
+      <div class="text-center space-y-4">
+        <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 text-xs sm:text-sm font-medium">
+          <span class="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span>100% Free & Open Source Alternative</span>
+        </div>
+
+        <h1 class="text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-white leading-tight">
+          The Free, Privacy-First <br class="hidden sm:inline" />
+          <span class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-400 to-cyan-400">
+            CleanShot X Alternative
+          </span> for Mac
+        </h1>
+
+        <p class="text-base sm:text-xl text-slate-300 max-w-3xl mx-auto font-normal leading-relaxed">
+          Why pay $29 or buy monthly subscriptions? EiSen gives you lightning-fast screen captures, numbered step markers, redaction blur, pixel loupe, and on-device Apple Vision OCR — 100% free and open-source.
+        </p>
+
+        <!-- CTA Buttons -->
+        <div class="pt-4 flex flex-col sm:flex-row items-center justify-center gap-3.5">
+          <a
+            href={dmgUrl}
+            class="w-full sm:w-auto inline-flex items-center justify-center gap-3 px-6 sm:px-8 py-3.5 rounded-2xl bg-gradient-to-r from-indigo-500 via-indigo-600 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-semibold text-sm sm:text-base shadow-xl shadow-indigo-500/25 transition-all duration-200 group"
+          >
+            <AppleIcon class="w-5 h-5 shrink-0" size={20} />
+            <span>Download EiSen Free for Mac</span>
+            <span class="text-xs px-2 py-0.5 rounded-full bg-white/20 font-mono font-medium">DMG (4.2 MB)</span>
+          </a>
+
+          <a
+            href={githubUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/15 text-slate-200 hover:text-white font-medium text-sm sm:text-base backdrop-blur-md transition-all duration-200"
+          >
+            <GithubIcon class="w-5 h-5" size={20} />
+            <span>View Source on GitHub</span>
+          </a>
+        </div>
+
+        <p class="text-xs text-slate-400 pt-1">
+          macOS 11.0+ (Big Sur, Monterey, Ventura, Sonoma, Sequoia) • Apple Silicon native • Zero telemetry
+        </p>
+      </div>
+
+      <!-- Feature Comparison Table -->
+      <div class="mt-16 sm:mt-20">
+        <div class="text-center mb-8">
+          <h2 class="text-2xl sm:text-4xl font-extrabold text-white">EiSen vs. CleanShot X</h2>
+          <p class="text-sm sm:text-base text-slate-300 mt-2">Side-by-side feature and architectural comparison.</p>
+        </div>
+
+        <div class="overflow-hidden rounded-2xl border border-white/10 bg-[#161822]/90 shadow-2xl backdrop-blur-xl">
+          <table class="min-w-full divide-y divide-white/10 text-left">
+            <thead>
+              <tr class="bg-white/[0.03]">
+                <th scope="col" class="py-4 px-4 sm:px-6 text-xs sm:text-sm font-semibold text-slate-300">Feature</th>
+                <th scope="col" class="py-4 px-4 sm:px-6 text-sm sm:text-base font-bold text-indigo-400 bg-indigo-500/10 border-x border-indigo-500/20">
+                  <div class="flex items-center gap-2">
+                    <span>EiSen</span>
+                    <span class="text-[9px] uppercase font-mono px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300">Free / Open Source</span>
+                  </div>
+                </th>
+                <th scope="col" class="py-4 px-4 sm:px-6 text-xs sm:text-sm font-medium text-slate-400">CleanShot X</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-white/5 text-xs sm:text-sm">
+              {comparisonRows.map((row, idx) => (
+                <tr class={idx % 2 === 0 ? 'bg-transparent' : 'bg-white/[0.01]'}>
+                  <td class="py-3.5 px-4 sm:px-6 font-medium text-slate-200">{row.feature}</td>
+                  <td class="py-3.5 px-4 sm:px-6 font-semibold text-emerald-400 bg-indigo-500/5 border-x border-indigo-500/20">
+                    {row.eisen}
+                  </td>
+                  <td class="py-3.5 px-4 sm:px-6 text-slate-400">{row.cleanshot}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Why Choose EiSen Grid -->
+      <div class="mt-20 space-y-8">
+        <h2 class="text-2xl sm:text-3xl font-extrabold text-white text-center">
+          Why Mac Users are Switching to EiSen
+        </h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div class="p-6 rounded-2xl bg-white/[0.03] border border-white/10 space-y-3">
+            <div class="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 font-bold">
+              $0
+            </div>
+            <h3 class="text-lg font-bold text-white">100% Free Forever</h3>
+            <p class="text-sm text-slate-300 leading-relaxed">
+              No subscriptions, no renewal fees after 1 year, and no locked features. Everything in EiSen is free for personal and commercial use under the MIT license.
+            </p>
+          </div>
+
+          <div class="p-6 rounded-2xl bg-white/[0.03] border border-white/10 space-y-3">
+            <div class="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 font-bold">
+              🔒
+            </div>
+            <h3 class="text-lg font-bold text-white">Absolute Privacy</h3>
+            <p class="text-sm text-slate-300 leading-relaxed">
+              Zero outbound network traffic. OCR happens entirely on your Mac's Apple Neural Engine. Your captures, sensitive code, and client confidential data never touch external cloud servers.
+            </p>
+          </div>
+
+          <div class="p-6 rounded-2xl bg-white/[0.03] border border-white/10 space-y-3">
+            <div class="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 font-bold">
+              ⚡
+            </div>
+            <h3 class="text-lg font-bold text-white">4.2 MB Native App</h3>
+            <p class="text-sm text-slate-300 leading-relaxed">
+              Engineered with Rust and Tauri v2. Cold launch is under 5ms, sits cleanly in your menu bar without hogging gigabytes of RAM or draining MacBook battery.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- FAQ Section -->
+      <div class="mt-20">
+        <h2 class="text-2xl sm:text-3xl font-extrabold text-white text-center mb-8">
+          Frequently Asked Questions
+        </h2>
+
+        <div class="space-y-4 max-w-3xl mx-auto">
+          {faqs.map((faq) => (
+            <div class="p-5 sm:p-6 rounded-2xl bg-white/[0.03] border border-white/10 space-y-2">
+              <h3 class="text-base sm:text-lg font-semibold text-white">{faq.q}</h3>
+              <p class="text-sm text-slate-300 leading-relaxed">{faq.a}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <!-- Bottom Download Callout -->
+      <div class="mt-20 text-center p-8 sm:p-12 rounded-3xl bg-gradient-to-b from-indigo-950/40 to-[#12141d] border border-indigo-500/20 space-y-5">
+        <h2 class="text-2xl sm:text-4xl font-extrabold text-white">
+          Ready to try the free CleanShot alternative?
+        </h2>
+        <p class="text-base text-slate-300 max-w-xl mx-auto">
+          Download EiSen today and enjoy lightning-fast, privacy-first screen capture on your Mac.
+        </p>
+        <div class="pt-2">
+          <a
+            href={dmgUrl}
+            class="inline-flex items-center justify-center gap-3 px-8 py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-base shadow-xl shadow-indigo-600/30 transition-all duration-200"
+          >
+            <AppleIcon class="w-5 h-5" size={20} />
+            <span>Download EiSen Free (.dmg)</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</Layout>

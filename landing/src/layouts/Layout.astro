@@ -7,9 +7,12 @@ import '../styles/global.css';
 
 interface Props {
   locale: Locale;
+  title?: string;
+  description?: string;
+  canonicalUrl?: string;
 }
 
-const { locale } = Astro.props;
+const { locale, title, description, canonicalUrl } = Astro.props;
 ---
 
 <!doctype html>
@@ -20,7 +23,7 @@ const { locale } = Astro.props;
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="alternate icon" type="image/png" href="/favicon.png" />
     <meta name="theme-color" content="#0f1015" />
-    <SeoHead locale={locale} />
+    <SeoHead locale={locale} title={title} description={description} canonicalUrl={canonicalUrl} />
   </head>
   <body class="min-h-screen bg-[#0f1015] text-slate-100 selection:bg-indigo-500 selection:text-white relative">
     <!-- Ambient Background Lighting -->

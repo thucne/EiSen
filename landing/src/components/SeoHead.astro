@@ -4,13 +4,18 @@ import { getDictionary } from '../i18n/utils';
 
 interface Props {
   locale: Locale;
+  title?: string;
+  description?: string;
+  canonicalUrl?: string;
 }
 
-const { locale } = Astro.props;
+const { locale, title, description, canonicalUrl } = Astro.props;
 const t = getDictionary(locale);
 
 const siteUrl = 'https://eisen.a302.link';
-const currentUrl = locale === 'vi' ? `${siteUrl}/vi/` : `${siteUrl}/`;
+const pageTitle = title ?? t.meta.title;
+const pageDescription = description ?? t.meta.description;
+const currentUrl = canonicalUrl ?? (locale === 'vi' ? `${siteUrl}/vi/` : `${siteUrl}/`);
 const enUrl = `${siteUrl}/`;
 const viUrl = `${siteUrl}/vi/`;
 const ogImageUrl = `${siteUrl}/brand/eisen-mark-reversed-1024.png`;
@@ -20,19 +25,22 @@ const softwareSchema = {
   '@context': 'https://schema.org',
   '@type': 'SoftwareApplication',
   name: 'EiSen',
+  alternateName: ['EiSen Mac Screenshot', 'EiSen Screen Capture', 'EiSen Free Screenshot App'],
   operatingSystem: 'macOS 11.0+',
   applicationCategory: 'UtilitiesApplication',
   applicationSubCategory: 'Screen Capture & Annotation',
   inLanguage: locale === 'vi' ? 'vi' : 'en',
+  isAccessibleForFree: true,
   offers: {
     '@type': 'Offer',
     price: '0',
     priceCurrency: 'USD',
     availability: 'https://schema.org/InStock',
+    description: '100% Free and Open-Source macOS screenshot & annotation utility',
   },
   description: t.meta.description,
   softwareVersion: '0.1.2',
-  fileSize: '4.3MB',
+  fileSize: '4.2MB',
   url: siteUrl,
   downloadUrl: dmgUrl,
   sameAs: ['https://github.com/thucne/EiSen'],
@@ -43,6 +51,8 @@ const softwareSchema = {
   },
   screenshot: `${siteUrl}/brand/eisen-mark-1024.png`,
   featureList: [
+    '100% Free Mac Screenshot Tool',
+    'Free Alternative to CleanShot X & Shottr',
     'Native Rust capture overlay',
     'On-device Apple Vision OCR',
     'Zero telemetry — capture, save, and OCR stay on this Mac',
@@ -68,8 +78,8 @@ const faqSchema = {
 ---
 
 <!-- Basic Meta Tags -->
-<title>{t.meta.title}</title>
-<meta name="description" content={t.meta.description} />
+<title>{pageTitle}</title>
+<meta name="description" content={pageDescription} />
 <meta name="keywords" content={t.meta.keywords} />
 <meta name="author" content="Tran Trong Thuc" />
 <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
@@ -83,8 +93,8 @@ const faqSchema = {
 <!-- Open Graph / Facebook -->
 <meta property="og:type" content="website" />
 <meta property="og:url" content={currentUrl} />
-<meta property="og:title" content={t.meta.ogTitle} />
-<meta property="og:description" content={t.meta.ogDescription} />
+<meta property="og:title" content={pageTitle} />
+<meta property="og:description" content={pageDescription} />
 <meta property="og:image" content={ogImageUrl} />
 <meta property="og:image:alt" content="EiSen — Screen Capture & Annotation for macOS" />
 <meta property="og:site_name" content="EiSen" />
@@ -94,8 +104,8 @@ const faqSchema = {
 <!-- Twitter Card -->
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:url" content={currentUrl} />
-<meta name="twitter:title" content={t.meta.ogTitle} />
-<meta name="twitter:description" content={t.meta.ogDescription} />
+<meta name="twitter:title" content={pageTitle} />
+<meta name="twitter:description" content={pageDescription} />
 <meta name="twitter:image" content={ogImageUrl} />
 
 <!-- Structured Data (JSON-LD) -->
