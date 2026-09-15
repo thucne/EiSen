@@ -44,6 +44,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Check package/Cargo/Tauri versions agree
+        run: bash scripts/check-version.sh
+
       - name: Set up Rust stable
         run: |
           rustup toolchain install stable --profile minimal
@@ -82,4 +85,3 @@ jobs:
         run: |
           npm ci --prefix landing
           npm --prefix landing run build
-
