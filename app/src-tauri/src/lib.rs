@@ -284,18 +284,26 @@ fn show_editor(app: &tauri::AppHandle, orchestrator: &CaptureOrchestrator) -> ta
     };
     let _ = window.set_title(app_config(app).lang.editor_title());
     if let Some((_, rect, _)) = orchestrator.last() {
-        let monitors = app.available_monitors().ok().unwrap_or_default();
-        #[cfg(target_os = "macos")]
-        let active_idx = crate::platform::mac_adapter::active_display_index().unwrap_or(0);
-        #[cfg(target_os = "windows")]
-        let active_idx = crate::platform::windows_adapter::active_display_index().unwrap_or(0);
-        #[cfg(not(any(target_os = "macos", target_os = "windows")))]
-        let active_idx = 0;
+        let monitor = {
+            let monitors = app.available_monitors()?;
+            #[cfg(target_os = "macos")]
+            let active_idx = crate::platform::mac_adapter::active_display_index().unwrap_or(0);
+            #[cfg(target_os = "windows")]
+            let active_idx = {
+                let target = crate::platform::windows_adapter::active_display_geometry()
+                    .ok_or_else(|| std::io::Error::other("captured Windows monitor geometry is unavailable"))?;
+                let geometries = monitors
+                    .iter()
+                    .map(crate::core::capture::display_geometry_from_tauri)
+                    .collect::<Vec<_>>();
+                crate::core::capture::matching_monitor_index(target, &geometries)
+                    .ok_or_else(|| std::io::Error::other("captured Windows monitor could not be matched to a Tauri monitor"))?
+            };
+            #[cfg(not(any(target_os = "macos", target_os = "windows")))]
+            let active_idx = 0;
 
-        let monitor = monitors
-            .get(active_idx)
-            .cloned()
-            .or_else(|| app.primary_monitor().ok().flatten());
+            monitors.get(active_idx).cloned()
+        };
 
         if let Some(mon) = monitor {
             let scale = mon.scale_factor();

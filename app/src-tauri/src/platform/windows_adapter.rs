@@ -1,4 +1,6 @@
 use crate::core::capture::ScreenProvider;
+#[cfg(any(target_os = "windows", test))]
+use crate::core::capture::DisplayGeometry;
 use std::path::Path;
 
 pub struct WindowsAdapter;
@@ -6,8 +8,8 @@ pub struct WindowsAdapter;
 #[cfg(target_os = "windows")]
 #[derive(Clone, Copy)]
 struct ActiveScreen {
-    display: u32,
-    scale: f64,
+    capture_index: u32,
+    geometry: DisplayGeometry,
 }
 
 #[cfg(target_os = "windows")]
@@ -27,59 +29,72 @@ fn get_cursor_pos() -> Option<(i32, i32)> {
     }
 }
 
-#[cfg(target_os = "windows")]
-fn resolve_active_screen() -> ActiveScreen {
-    let monitors = xcap::Monitor::all().unwrap_or_default();
-    if monitors.is_empty() {
-        return ActiveScreen {
-            display: 0,
-            scale: 1.0,
-        };
-    }
-
-    let mut selected_idx = 0;
-    if let Some((cx, cy)) = get_cursor_pos() {
-        for (i, m) in monitors.iter().enumerate() {
-            let mx = m.x().unwrap_or(0);
-            let my = m.y().unwrap_or(0);
-            let mw = m.width().unwrap_or(0) as i32;
-            let mh = m.height().unwrap_or(0) as i32;
-            if cx >= mx && cx < mx + mw && cy >= my && cy < my + mh {
-                selected_idx = i;
-                break;
-            }
-        }
-    }
-
-    let scale = monitors
-        .get(selected_idx)
-        .and_then(|m| m.scale_factor().ok())
-        .map(|s| s as f64)
-        .unwrap_or(1.0);
-
-    ActiveScreen {
-        display: selected_idx as u32,
-        scale,
-    }
+#[cfg(any(target_os = "windows", test))]
+pub(crate) fn monitor_index_containing(
+    point: (i32, i32),
+    monitors: &[DisplayGeometry],
+) -> Option<usize> {
+    monitors.iter().position(|monitor| {
+        point.0 >= monitor.x
+            && point.0 < monitor.x.saturating_add(monitor.width as i32)
+            && point.1 >= monitor.y
+            && point.1 < monitor.y.saturating_add(monitor.height as i32)
+    })
 }
 
 #[cfg(target_os = "windows")]
-fn resolve_and_store() -> ActiveScreen {
-    let screen = resolve_active_screen();
+fn resolve_active_screen() -> Result<ActiveScreen, String> {
+    let monitors = xcap::Monitor::all().map_err(|e| format!("failed to query monitors: {e}"))?;
+    let geometries = monitors
+        .iter()
+        .map(|monitor| {
+            Ok(DisplayGeometry {
+                x: monitor.x().map_err(|e| format!("failed to read monitor x: {e}"))?,
+                y: monitor.y().map_err(|e| format!("failed to read monitor y: {e}"))?,
+                width: monitor
+                    .width()
+                    .map_err(|e| format!("failed to read monitor width: {e}"))?,
+                height: monitor
+                    .height()
+                    .map_err(|e| format!("failed to read monitor height: {e}"))?,
+                scale: monitor
+                    .scale_factor()
+                    .map_err(|e| format!("failed to read monitor scale: {e}"))?
+                    as f64,
+            })
+        })
+        .collect::<Result<Vec<_>, String>>()?;
+    if geometries.is_empty() {
+        return Err("no monitors found".to_string());
+    }
+
+    let cursor = get_cursor_pos().ok_or_else(|| "failed to read cursor position".to_string())?;
+    let capture_index = monitor_index_containing(cursor, &geometries)
+        .ok_or_else(|| "cursor is outside the enumerated monitor bounds".to_string())?;
+    let geometry = geometries[capture_index];
+
+    Ok(ActiveScreen {
+        capture_index: capture_index as u32,
+        geometry,
+    })
+}
+
+#[cfg(target_os = "windows")]
+fn resolve_and_store() -> Result<ActiveScreen, String> {
+    let screen = resolve_active_screen()?;
     *LAST_ACTIVE
         .lock()
         .unwrap_or_else(|e| e.into_inner()) = Some(screen);
-    screen
+    Ok(screen)
 }
 
-/// 0-based index of the display selected by the cursor during the last capture.
 #[cfg(target_os = "windows")]
-pub fn active_display_index() -> Option<usize> {
+pub fn active_display_geometry() -> Option<DisplayGeometry> {
     LAST_ACTIVE
         .lock()
         .unwrap_or_else(|e| e.into_inner())
         .as_ref()
-        .map(|s| s.display as usize)
+        .map(|s| s.geometry)
 }
 
 #[cfg(target_os = "windows")]
@@ -88,8 +103,7 @@ impl ScreenProvider for WindowsAdapter {
         let monitors = xcap::Monitor::all().map_err(|e| format!("failed to query monitors: {e}"))?;
         let monitor = monitors
             .get(display as usize)
-            .or_else(|| monitors.first())
-            .ok_or_else(|| "no monitors found".to_string())?;
+            .ok_or_else(|| format!("capture monitor index {display} is no longer available"))?;
 
         let img = monitor
             .capture_image()
@@ -102,8 +116,8 @@ impl ScreenProvider for WindowsAdapter {
         Ok(())
     }
 
-    fn active_display(&self) -> u32 {
-        resolve_and_store().display
+    fn active_display(&self) -> Result<u32, String> {
+        resolve_and_store().map(|screen| screen.capture_index)
     }
 
     fn active_scale(&self) -> f64 {
@@ -111,8 +125,9 @@ impl ScreenProvider for WindowsAdapter {
             .lock()
             .unwrap_or_else(|e| e.into_inner())
             .as_ref()
-            .map(|s| s.scale)
-            .unwrap_or_else(|| resolve_and_store().scale)
+            .map(|s| s.geometry.scale)
+            .or_else(|| resolve_and_store().ok().map(|screen| screen.geometry.scale))
+            .unwrap_or(1.0)
     }
 }
 
@@ -122,8 +137,8 @@ impl ScreenProvider for WindowsAdapter {
         Err("WindowsAdapter is only supported on Windows".to_string())
     }
 
-    fn active_display(&self) -> u32 {
-        0
+    fn active_display(&self) -> Result<u32, String> {
+        Ok(0)
     }
 }
 
@@ -203,9 +218,36 @@ mod tests {
     use super::*;
 
     #[test]
-    fn windows_adapter_active_display_is_zero_by_default() {
-        let adapter = WindowsAdapter;
-        assert_eq!(adapter.active_display(), 0);
+    fn cursor_selects_the_monitor_containing_it() {
+        let monitors = vec![
+            DisplayGeometry {
+                x: 0,
+                y: 0,
+                width: 1920,
+                height: 1080,
+                scale: 1.0,
+            },
+            DisplayGeometry {
+                x: 1920,
+                y: 0,
+                width: 2560,
+                height: 1440,
+                scale: 1.25,
+            },
+        ];
+        assert_eq!(monitor_index_containing((2400, 700), &monitors), Some(1));
+    }
+
+    #[test]
+    fn cursor_outside_all_monitors_does_not_fallback_silently() {
+        let monitors = vec![DisplayGeometry {
+            x: 0,
+            y: 0,
+            width: 1920,
+            height: 1080,
+            scale: 1.0,
+        }];
+        assert_eq!(monitor_index_containing((3000, 700), &monitors), None);
     }
 
     #[test]
@@ -232,5 +274,3 @@ mod tests {
         }
     }
 }
-
-

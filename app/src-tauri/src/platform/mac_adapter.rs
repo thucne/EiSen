@@ -118,14 +118,14 @@ impl ScreenProvider for MacAdapter {
         run(cmd, out)
     }
 
-    fn active_display(&self) -> u32 {
+    fn active_display(&self) -> Result<u32, String> {
         #[cfg(target_os = "macos")]
         {
-            resolve_and_store().display
+            Ok(resolve_and_store().display)
         }
         #[cfg(not(target_os = "macos"))]
         {
-            0
+            Ok(0)
         }
     }
 
@@ -618,7 +618,6 @@ mod tests {
         assert_eq!(screen_index_containing((150.0, 50.0), &frames), 0);
     }
 }
-
 
 
 

@@ -5,9 +5,44 @@ use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::Instant;
 
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct DisplayGeometry {
+    pub x: i32,
+    pub y: i32,
+    pub width: u32,
+    pub height: u32,
+    pub scale: f64,
+}
+
+#[cfg(any(target_os = "windows", test))]
+pub(crate) fn matching_monitor_index(
+    target: DisplayGeometry,
+    monitors: &[DisplayGeometry],
+) -> Option<usize> {
+    monitors.iter().position(|monitor| {
+        monitor.x == target.x
+            && monitor.y == target.y
+            && monitor.width == target.width
+            && monitor.height == target.height
+    })
+}
+
+#[cfg(target_os = "windows")]
+pub(crate) fn display_geometry_from_tauri(monitor: &tauri::Monitor) -> DisplayGeometry {
+    let position = monitor.position();
+    let size = monitor.size();
+    DisplayGeometry {
+        x: position.x,
+        y: position.y,
+        width: size.width,
+        height: size.height,
+        scale: monitor.scale_factor(),
+    }
+}
+
 pub trait ScreenProvider: Send + Sync {
     fn capture_display(&self, display: u32, out: &Path) -> Result<(), String>;
-    fn active_display(&self) -> u32;
+    fn active_display(&self) -> Result<u32, String>;
     /// Backing scale of the display `active_display` selected. Default 1.0
     /// keeps stub tests pixel-sized unless they call `set_scale`.
     fn active_scale(&self) -> f64 {
@@ -137,7 +172,13 @@ impl CaptureOrchestrator {
             let _ = std::fs::remove_file(&path);
         }
         let path = temp_capture_path("full");
-        let display = self.provider.active_display();
+        let display = match self.provider.active_display() {
+            Ok(display) => display,
+            Err(e) => {
+                self.busy.store(false, Ordering::SeqCst);
+                return Err(CaptureError::Io(e));
+            }
+        };
         match self.provider.capture_display(display, &path) {
             Ok(()) => {
                 let png_header_started = Instant::now();
@@ -393,23 +434,37 @@ pub fn begin_capture(app: &tauri::AppHandle) -> Result<String, String> {
         }
         #[cfg(target_os = "windows")]
         {
-            let monitors = app.available_monitors().ok().unwrap_or_default();
-            let active_idx = crate::platform::windows_adapter::active_display_index().unwrap_or(0);
-            let monitor = monitors
-                .get(active_idx)
-                .cloned()
-                .or_else(|| app.primary_monitor().ok().flatten());
-            if let Some(mon) = monitor {
-                let scale = mon.scale_factor();
-                let size = mon.size();
-                let pos = mon.position();
-                let _ = overlay.set_position(
-                    tauri::LogicalPosition::new(pos.x as f64 / scale, pos.y as f64 / scale),
-                );
-                let _ = overlay.set_size(
-                    tauri::LogicalSize::new(size.width as f64 / scale, size.height as f64 / scale),
-                );
-            }
+            let target = crate::platform::windows_adapter::active_display_geometry().ok_or_else(|| {
+                orchestrator.cancel();
+                "captured Windows monitor geometry is unavailable".to_string()
+            })?;
+            let monitors = app.available_monitors().map_err(|e| {
+                orchestrator.cancel();
+                format!("failed to query Tauri monitors: {e}")
+            })?;
+            let geometries = monitors
+                .iter()
+                .map(display_geometry_from_tauri)
+                .collect::<Vec<_>>();
+            let active_idx = matching_monitor_index(target, &geometries).ok_or_else(|| {
+                orchestrator.cancel();
+                "captured Windows monitor could not be matched to a Tauri monitor".to_string()
+            })?;
+            let monitor = monitors.get(active_idx).ok_or_else(|| {
+                orchestrator.cancel();
+                "matched Windows monitor is no longer available".to_string()
+            })?;
+            let scale = monitor.scale_factor();
+            let size = monitor.size();
+            let pos = monitor.position();
+            let _ = overlay.set_position(tauri::LogicalPosition::new(
+                pos.x as f64 / scale,
+                pos.y as f64 / scale,
+            ));
+            let _ = overlay.set_size(tauri::LogicalSize::new(
+                size.width as f64 / scale,
+                size.height as f64 / scale,
+            ));
         }
         let _ = overlay.show();
         let _ = overlay.set_focus();
@@ -516,9 +571,50 @@ mod tests {
             Self::write_png(out)
         }
 
-        fn active_display(&self) -> u32 {
-            0
+        fn active_display(&self) -> Result<u32, String> {
+            Ok(0)
         }
+    }
+
+    #[test]
+    fn matching_monitor_uses_physical_geometry_not_list_position() {
+        let target = DisplayGeometry {
+            x: 1920,
+            y: 0,
+            width: 2560,
+            height: 1440,
+            scale: 1.25,
+        };
+        let monitors = vec![
+            DisplayGeometry {
+                x: 0,
+                y: 0,
+                width: 1920,
+                height: 1080,
+                scale: 1.0,
+            },
+            target,
+        ];
+        assert_eq!(matching_monitor_index(target, &monitors), Some(1));
+    }
+
+    #[test]
+    fn matching_monitor_returns_none_when_physical_geometry_is_missing() {
+        let target = DisplayGeometry {
+            x: -1920,
+            y: 0,
+            width: 1920,
+            height: 1080,
+            scale: 1.0,
+        };
+        let monitors = vec![DisplayGeometry {
+            x: 0,
+            y: 0,
+            width: 1920,
+            height: 1080,
+            scale: 1.0,
+        }];
+        assert_eq!(matching_monitor_index(target, &monitors), None);
     }
 
     #[test]
