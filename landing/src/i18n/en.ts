@@ -66,8 +66,8 @@ export const en = {
     crop: {
       tag: "Capture Engine",
       title: "Smart Crop & Instant Multi-Monitor Selection",
-      description: "Trigger with double-tap Option (⌥⌥) on Mac, or PrintScreen (PrtScn) / Win+Shift+S on Windows. EiSen targets the display under your cursor, lets you nudge the crop with arrow keys, and exports crisp PNGs.",
-      bullet1: "Global hotkeys: ⌥⌥ / ⇧⇧ / ⌘⇧4 (macOS), PrtScn / Alt+PrtScn / Win+Shift+S (Windows)",
+      description: "Trigger with double-tap Option (⌥⌥) on Mac, or PrintScreen (PrtScn) on Windows. EiSen targets the display under your cursor, lets you nudge the crop with arrow keys, and exports crisp PNGs.",
+      bullet1: "Global hotkeys: ⌥⌥ / ⇧⇧ / ⌘⇧4 (macOS), PrtScn (Windows)",
       bullet2: "Fine-tune crop dimensions with keyboard arrows",
       bullet3: "Multi-display aware with zero coordinate offset bugs",
     },
@@ -164,7 +164,7 @@ export const en = {
       },
       {
         q: "Can I customize hotkeys on Windows?",
-        a: "Yes! EiSen on Windows supports the classic PrintScreen (PrtScn) key, Alt+PrintScreen, Win+Shift+S, and custom modifier combinations like Double-Shift (⇧⇧). You can configure your favorite preset right in Settings.",
+        a: "Yes! EiSen on Windows uses the PrintScreen (PrtScn) key. Shortcut choices are platform-specific, so Windows Settings exposes the supported PrintScreen binding.",
       },
       {
         q: "How is EiSen different from traditional screenshot apps or cloud capture tools?",
@@ -221,8 +221,8 @@ export const en = {
       },
       {
         icon: "⌨️",
-        title: "PrintScreen & Custom Hotkeys",
-        desc: "Replace or augment Windows Snipping Tool. Use standard PrtScn, Alt+PrtScn, or Double-Shift to freeze the screen and annotate in seconds.",
+        title: "PrintScreen Capture",
+        desc: "Replace or augment Windows Snipping Tool with the supported PrtScn binding to freeze the screen and annotate in seconds.",
       },
       {
         icon: "🎯",

@@ -8,6 +8,7 @@
   import logoMark from "$lib/assets/eisen-mark-reversed.svg";
   import Toast from "$lib/components/Toast.svelte";
   import { history } from "$lib/history";
+  import { isWindowsUserAgent, normalizeHotkey, supportedHotkeys } from "$lib/hotkeyOptions";
   import { i18n, initLang, setLang, uiLangFromConfig } from "$lib/i18n";
   import {
     ArrowLeft,
@@ -26,6 +27,7 @@
 
   let cfg = $state<api.AppConfig | null>(null);
   let appVersion = $state<string>("0.2.0");
+  let isWindows = $state(false);
   let toast = $state<{
     message: string;
     kind: "ok" | "err";
@@ -36,16 +38,7 @@
     toast = { message, kind, sticky };
   }
 
-  const MAC_HOTKEYS: api.HotkeyPreset[] = [
-    "DoubleOption",
-    "DoubleShift",
-    "CmdShift4Mac",
-    "CtrlShift4Mac",
-    "PrtScMac",
-  ];
-  const hotkeyOptions = $derived(
-    cfg?.hotkey === "PrtScnWin" ? [...MAC_HOTKEYS, "PrtScnWin" as const] : MAC_HOTKEYS,
-  );
+  const hotkeyOptions = $derived(supportedHotkeys(isWindows, cfg?.hotkey));
   const LANGS: api.Lang[] = ["En", "Vi"];
 
   function onKeydown(e: KeyboardEvent) {
@@ -55,6 +48,7 @@
   }
 
   onMount(() => {
+    isWindows = isWindowsUserAgent(navigator.userAgent);
     void initLang();
     api.getAppVersion().then((v) => { if (v) appVersion = v; }).catch(() => {});
     const un = listen<string[]>("history", (e) => {
@@ -69,8 +63,17 @@
 
   async function load() {
     try {
-      cfg = await api.getConfig();
+      const loaded = await api.getConfig();
+      const hotkey = normalizeHotkey(isWindows, loaded.hotkey);
+      cfg = hotkey === loaded.hotkey ? loaded : { ...loaded, hotkey };
       setLang(uiLangFromConfig(cfg.lang));
+      if (hotkey !== loaded.hotkey) {
+        try {
+          await api.setConfig(cfg);
+        } catch (err) {
+          showToast(String(err), "err", true);
+        }
+      }
     } catch (err) {
       showToast(String(err), "err", true);
     }

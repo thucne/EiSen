@@ -66,8 +66,8 @@ export const vi = {
     crop: {
       tag: "Trình Chụp Vùng",
       title: "Crop Thông Minh & Nhận Diện Đa Màn Hình",
-      description: "Kích hoạt bằng đúp Option (⌥⌥) trên Mac hoặc PrintScreen (PrtScn) / Win+Shift+S trên Windows. EiSen chọn màn hình dưới con trỏ, dịch vùng chọn bằng phím mũi tên và xuất PNG sắc nét.",
-      bullet1: "Phím tắt toàn cục: ⌥⌥ / ⇧⇧ / ⌘⇧4 (macOS), PrtScn / Alt+PrtScn / Win+Shift+S (Windows)",
+      description: "Kích hoạt bằng đúp Option (⌥⌥) trên Mac hoặc PrintScreen (PrtScn) trên Windows. EiSen chọn màn hình dưới con trỏ, dịch vùng chọn bằng phím mũi tên và xuất PNG sắc nét.",
+      bullet1: "Phím tắt toàn cục: ⌥⌥ / ⇧⇧ / ⌘⇧4 (macOS), PrtScn (Windows)",
       bullet2: "Vi chỉnh kích thước crop cực dễ bằng các phím mũi tên",
       bullet3: "Hỗ trợ nhiều màn hình không lo lệch tọa độ",
     },
@@ -164,7 +164,7 @@ export const vi = {
       },
       {
         q: "Tôi có thể đổi phím tắt chụp trên Windows không?",
-        a: "Có! Trên Windows, EiSen hỗ trợ phím PrintScreen (PrtScn) tiện lợi, phím Alt+PrtScn, Win+Shift+S và cả nhấn đúp Shift (⇧⇧). Bạn có thể chọn cấu hình phím tắt ưa thích trong phần Cài đặt của ứng dụng.",
+        a: "Có! Trên Windows, EiSen sử dụng phím PrintScreen (PrtScn). Các lựa chọn phím tắt được tách theo nền tảng, vì vậy phần Cài đặt Windows chỉ hiển thị phím PrintScreen được hỗ trợ.",
       },
       {
         q: "EiSen khác gì so với các phần mềm chụp màn hình truyền thống hay công cụ lưu ảnh đám mây?",
@@ -221,8 +221,8 @@ export const vi = {
       },
       {
         icon: "⌨️",
-        title: "Phím PrintScreen & Tùy Biến Linh Hoạt",
-        desc: "Thay thế hoàn hảo cho Snipping Tool. Dùng phím PrtScn quen thuộc, Alt+PrtScn hoặc nhấn đúp Shift để chụp và chú thích chỉ trong vài giây.",
+        title: "Chụp bằng PrintScreen",
+        desc: "Thay thế hoàn hảo cho Snipping Tool bằng phím PrtScn được hỗ trợ để chụp và chú thích chỉ trong vài giây.",
       },
       {
         icon: "🎯",

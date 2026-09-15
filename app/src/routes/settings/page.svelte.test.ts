@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/svelte";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const h = vi.hoisted(() => ({
   invoke: vi.fn(),
@@ -43,6 +43,15 @@ beforeEach(() => {
   h.invoke.mockImplementation((cmd: string) => {
     if (cmd === "cmd_get_config") return Promise.resolve(CFG);
     return Promise.resolve(undefined); // cmd_set_config and initLang's call
+  });
+});
+
+const originalUserAgent = navigator.userAgent;
+
+afterEach(() => {
+  Object.defineProperty(navigator, "userAgent", {
+    configurable: true,
+    value: originalUserAgent,
   });
 });
 
@@ -164,6 +173,25 @@ describe("hotkey presets on macOS", () => {
   });
 });
 
+describe("hotkey presets on Windows", () => {
+  it("normalizes a legacy macOS preset and exposes only PrintScreen", async () => {
+    Object.defineProperty(navigator, "userAgent", {
+      configurable: true,
+      value: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+    });
+    render(SettingsPage);
+
+    const select = await waitFor(() => screen.getAllByRole("combobox")[1] as HTMLSelectElement);
+    await waitFor(() => expect(select.value).toBe("PrtScnWin"));
+    expect([...select.options].map((option) => option.value)).toEqual(["PrtScnWin"]);
+    await waitFor(() => {
+      expect(h.invoke).toHaveBeenCalledWith("cmd_set_config", {
+        cfg: { ...CFG, hotkey: "PrtScnWin" },
+      });
+    });
+  });
+});
+
 describe("language", () => {
   function langSelect(): HTMLSelectElement {
     const selects = screen.getAllByRole("combobox");
@@ -237,4 +265,3 @@ describe("language", () => {
     });
   });
 });
-
