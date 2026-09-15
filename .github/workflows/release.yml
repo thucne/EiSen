@@ -14,7 +14,7 @@ permissions:
   contents: write
 
 jobs:
-  release:
+  release-macos:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
@@ -49,7 +49,7 @@ jobs:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-        run: npm run tauri -- build
+        run: npm run tauri -- build --bundles dmg,app
 
       - name: Publish the DMG
         uses: softprops/action-gh-release@v2
@@ -57,3 +57,41 @@ jobs:
           tag_name: ${{ inputs.tag }}
           files: app/src-tauri/target/release/bundle/dmg/*.dmg
           fail_on_unmatched_files: true
+
+  release-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag }}
+
+      - name: Set up Rust stable
+        run: |
+          rustup toolchain install stable --profile minimal
+          rustup default stable
+
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: app/src-tauri
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - name: Install frontend dependencies
+        run: npm ci --prefix app
+
+      - name: Build the Windows NSIS bundle
+        working-directory: app
+        run: npm run tauri -- build --bundles nsis
+
+      - name: Publish the Windows Installer
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.tag }}
+          files: app/src-tauri/target/release/bundle/nsis/*.exe
+          fail_on_unmatched_files: true
+

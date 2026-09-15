@@ -39,6 +39,36 @@ jobs:
       - name: Rust tests
         run: cargo test --manifest-path app/src-tauri/Cargo.toml
 
+  ci-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Rust stable
+        run: |
+          rustup toolchain install stable --profile minimal
+          rustup default stable
+
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: app/src-tauri
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - name: Install frontend dependencies
+        run: npm ci --prefix app
+
+      - name: Check, test, clippy
+        run: npm --prefix app run check:all
+
+      - name: Rust tests
+        run: cargo test --manifest-path app/src-tauri/Cargo.toml
+
   landing:
     runs-on: ubuntu-latest
     steps:
@@ -52,3 +82,4 @@ jobs:
         run: |
           npm ci --prefix landing
           npm --prefix landing run build
+

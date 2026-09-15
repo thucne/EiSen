@@ -75,7 +75,8 @@ pub struct AppConfig {
 
 impl Default for AppConfig {
     fn default() -> Self {
-        let save_dir = std::env::var_os("HOME")
+        let save_dir = std::env::var_os("USERPROFILE")
+            .or_else(|| std::env::var_os("HOME"))
             .map(PathBuf::from)
             .map(|h| h.join("Desktop"))
             .filter(|p| p.is_dir())

@@ -5,6 +5,7 @@ use std::process::Command;
 /// Which screen frame contains `point`, both in the **same** coordinate
 /// space (Cocoa bottom-left for `NSEvent::mouseLocation` + `NSScreen::frame`).
 /// If the point is in no frame, index `0` (first screen / main).
+#[cfg(any(target_os = "macos", test))]
 pub(crate) fn screen_index_containing(point: (f64, f64), frames: &[(f64, f64, f64, f64)]) -> usize {
     for (i, &(x, y, w, h)) in frames.iter().enumerate() {
         if point.0 >= x && point.0 < x + w && point.1 >= y && point.1 < y + h {

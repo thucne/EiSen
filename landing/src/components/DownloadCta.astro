@@ -1,7 +1,8 @@
 ---
 import type { Locale } from '../i18n/utils';
-import { getDictionary, dmgDownloadPath } from '../i18n/utils';
+import { getDictionary, dmgDownloadPath, exeDownloadPath, releasesUrl } from '../i18n/utils';
 import AppleIcon from './AppleIcon.astro';
+import WindowsIcon from './WindowsIcon.astro';
 
 interface Props {
   locale: Locale;
@@ -12,7 +13,7 @@ const t = getDictionary(locale);
 const d = t.downloadSection;
 
 const dmgUrl = dmgDownloadPath;
-const releasesUrl = 'https://github.com/thucne/EiSen/releases';
+const exeUrl = exeDownloadPath;
 ---
 
 <section id="download" class="py-24 relative overflow-hidden">
@@ -40,35 +41,72 @@ const releasesUrl = 'https://github.com/thucne/EiSen/releases';
         {d.subtitle}
       </p>
 
-      <!-- Main Action Button -->
-      <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+      <!-- Action Buttons for macOS and Windows -->
+      <div class="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
+        <!-- macOS Download Button -->
         <a
+          id="cta-mac-btn"
           href={dmgUrl}
-          class="w-full sm:w-auto inline-flex items-center justify-center gap-3 px-8 py-4 rounded-2xl bg-gradient-to-r from-indigo-500 via-indigo-600 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-bold text-base sm:text-lg shadow-xl shadow-indigo-500/30 hover:shadow-indigo-500/50 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200"
+          class="w-full sm:w-auto inline-flex items-center justify-center gap-3 px-6 sm:px-8 py-3.5 sm:py-4 rounded-2xl bg-gradient-to-r from-indigo-500 via-indigo-600 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-bold text-base shadow-xl shadow-indigo-500/30 hover:shadow-indigo-500/50 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200"
         >
-          <AppleIcon class="w-6 h-6" size={24} />
-          <span>{d.button}</span>
+          <AppleIcon class="w-5 h-5 shrink-0" size={20} />
+          <span>{d.buttonMac}</span>
         </a>
 
+        <!-- Windows Download Button -->
+        <a
+          id="cta-win-btn"
+          href={exeUrl}
+          class="w-full sm:w-auto inline-flex items-center justify-center gap-3 px-6 sm:px-8 py-3.5 sm:py-4 rounded-2xl bg-gradient-to-r from-cyan-600 via-blue-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white font-bold text-base shadow-xl shadow-cyan-500/25 hover:shadow-cyan-500/40 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200"
+        >
+          <WindowsIcon class="w-5 h-5 shrink-0" size={20} />
+          <span>{d.buttonWin}</span>
+        </a>
+
+        <!-- GitHub Releases Button -->
         <a
           href={releasesUrl}
           target="_blank"
           rel="noopener noreferrer"
-          class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-4 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/15 text-slate-200 hover:text-white font-medium text-base transition-all duration-200"
+          class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 sm:py-4 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/15 text-slate-200 hover:text-white font-medium text-base transition-all duration-200"
         >
           <span>{d.viewGithub}</span>
           <span>→</span>
         </a>
       </div>
 
-      <div class="mt-6 space-y-2">
-        <p class="text-xs text-slate-400 font-mono font-medium">
-          {d.details}
-        </p>
-        <p class="text-[10px] sm:text-[11px] text-slate-400 font-mono select-all bg-black/40 py-1.5 px-3 rounded-lg inline-block border border-white/5 break-all max-w-full">
-          {d.checksum}
-        </p>
+      <div class="mt-8 pt-6 border-t border-white/10 grid grid-cols-1 sm:grid-cols-2 gap-3 text-left max-w-xl mx-auto text-xs text-slate-400 font-mono">
+        <div class="p-3 rounded-xl bg-white/5 border border-white/5">
+          <p class="font-semibold text-slate-300 flex items-center gap-1.5 mb-1">
+            <AppleIcon class="w-3.5 h-3.5" size={14} />
+            <span>macOS</span>
+          </p>
+          <p>{d.detailsMac}</p>
+        </div>
+        <div class="p-3 rounded-xl bg-white/5 border border-white/5">
+          <p class="font-semibold text-slate-300 flex items-center gap-1.5 mb-1">
+            <WindowsIcon class="w-3.5 h-3.5 text-cyan-400" size={14} />
+            <span>Windows</span>
+          </p>
+          <p>{d.detailsWin}</p>
+        </div>
       </div>
     </div>
   </div>
 </section>
+
+<script is:inline>
+  (() => {
+    try {
+      const isWin = navigator.userAgent.toLowerCase().includes('windows');
+      if (isWin) {
+        // Swap visual prominence if on Windows
+        const macBtn = document.getElementById('cta-mac-btn');
+        const winBtn = document.getElementById('cta-win-btn');
+        if (macBtn && winBtn && winBtn.parentNode) {
+          winBtn.parentNode.insertBefore(winBtn, macBtn);
+        }
+      }
+    } catch {}
+  })();
+</script>

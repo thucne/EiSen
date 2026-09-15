@@ -1,0 +1,22 @@
+---
+interface Props {
+  class?: string;
+  size?: number;
+}
+
+const { class: className = 'w-4 h-4', size = 16 } = Astro.props;
+---
+
+<!-- Modern Windows icon vector (Windows 11 4-square grid) -->
+<svg
+  class={`${className} fill-current flex-shrink-0`}
+  width={size}
+  height={size}
+  viewBox="0 0 24 24"
+  aria-hidden="true"
+>
+  <path
+    fill="currentColor"
+    d="M0 0h11.377v11.372H0zm12.623 0H24v11.372H12.623zM0 12.623h11.377V24H0zm12.623 0H24V24H12.623z"
+  />
+</svg>

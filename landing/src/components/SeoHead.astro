@@ -19,14 +19,14 @@ const currentUrl = canonicalUrl ?? (locale === 'vi' ? `${siteUrl}/vi/` : `${site
 const enUrl = `${siteUrl}/`;
 const viUrl = `${siteUrl}/vi/`;
 const ogImageUrl = `${siteUrl}/brand/eisen-mark-reversed-1024.png`;
-const dmgUrl = 'https://github.com/thucne/EiSen/releases/download/v0.1.2/EiSen_0.1.2_aarch64.dmg';
+const downloadUrl = `${siteUrl}/download`;
 
 const softwareSchema = {
   '@context': 'https://schema.org',
   '@type': 'SoftwareApplication',
   name: 'EiSen',
-  alternateName: ['EiSen Mac Screenshot', 'EiSen Screen Capture', 'EiSen Free Screenshot App'],
-  operatingSystem: 'macOS 11.0+',
+  alternateName: ['EiSen Mac Screenshot', 'EiSen Windows Screenshot', 'EiSen Screen Capture', 'EiSen Free Screenshot App'],
+  operatingSystem: 'macOS 11.0+, Windows 10/11',
   applicationCategory: 'UtilitiesApplication',
   applicationSubCategory: 'Screen Capture & Annotation',
   inLanguage: locale === 'vi' ? 'vi' : 'en',
@@ -36,13 +36,13 @@ const softwareSchema = {
     price: '0',
     priceCurrency: 'USD',
     availability: 'https://schema.org/InStock',
-    description: '100% Free and Open-Source macOS screenshot & annotation utility',
+    description: '100% Free and Open-Source macOS & Windows screenshot & annotation utility',
   },
   description: t.meta.description,
-  softwareVersion: '0.1.2',
-  fileSize: '4.2MB',
+  softwareVersion: '0.2.0',
+  fileSize: '4.5MB',
   url: siteUrl,
-  downloadUrl: dmgUrl,
+  downloadUrl: downloadUrl,
   sameAs: ['https://github.com/thucne/EiSen'],
   author: {
     '@type': 'Person',
@@ -51,12 +51,12 @@ const softwareSchema = {
   },
   screenshot: `${siteUrl}/brand/eisen-mark-1024.png`,
   featureList: [
-    '100% Free Mac Screenshot Tool',
-    'Free Alternative to CleanShot X & Shottr',
+    '100% Free Screen Capture Tool for Mac & Windows',
+    'Free Alternative to CleanShot X, Shottr, Snipping Tool & ShareX',
     'Native Rust capture overlay',
-    'On-device Apple Vision OCR',
-    'Zero telemetry — capture, save, and OCR stay on this Mac',
-    'Menu bar accessory (no Dock icon)',
+    'On-device Apple Vision OCR (macOS) & Windows Media OCR (Windows)',
+    'Zero telemetry — capture, save, and OCR stay on your local device',
+    'Menu bar & System Tray resident',
     'Numbered-step annotation',
     'Privacy blur baked into exported PNGs',
     'Eyedropper pixel loupe',

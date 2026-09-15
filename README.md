@@ -1,16 +1,16 @@
 # EiSen
 
-macOS screen capture and annotation. Built with **Tauri v2**, **Rust**, and **SvelteKit**. Fully local — no telemetry, no network calls for capture or OCR.
+Fast screen capture and annotation for **macOS** and **Windows**. Built with **Tauri v2**, **Rust**, and **SvelteKit**. Fully local — no telemetry, no network calls for capture or OCR.
 
 ---
 
 ## Install & use
 
-1. **macOS 11+ only.** The Windows adapter is not implemented and is not shipped.
-2. Install the signed DMG from [GitHub Releases](https://github.com/thucne/EiSen/releases) or [eisen.a302.link/download](https://eisen.a302.link/download). There is **no auto-updater**; each version is a new download (see `docs/RELEASE.md` §6).
-3. After you open EiSen there is **no Dock icon**. Look for the EiSen tray in the **menu bar**: Capture now, Settings, History, Quit.
-4. The first capture needs **Screen Recording**. EiSen does **not** show a macOS permission prompt. Use the hub banner to open System Settings → Privacy & Security → Screen Recording, grant access, then **quit and reopen EiSen**.
-5. Default hotkey: double-tap Option (⌥⌥). Change it in Settings (Command-Shift-4, Control-Shift-4, and others).
+1. **Platforms:** macOS 11+ and Windows 10/11.
+2. Install the signed DMG (macOS) or setup installer `.exe` (Windows) from [GitHub Releases](https://github.com/thucne/EiSen/releases) or [eisen.a302.link/download](https://eisen.a302.link/download). There is **no auto-updater**; each version is a new download (see `docs/RELEASE.md` §6).
+3. After you open EiSen there is **no Dock / Taskbar icon** by default. Look for the EiSen icon in the **menu bar / system tray**: Capture now, Settings, History, Quit.
+4. On macOS, the first capture needs **Screen Recording** permission (use the hub banner to open System Settings). On Windows, capture works immediately without extra setup.
+5. Default hotkey: double-tap Option (⌥⌥) on macOS, PrintScreen (`PrtScn`) on Windows. Change it in Settings.
 6. Capture and the overlay use the **display under the cursor**.
 7. Session History lives in memory (last 50 captures). Removing an item from the gallery does **not** delete files on disk. The gallery is empty after a relaunch; that is expected, not data loss.
 
@@ -20,10 +20,10 @@ macOS screen capture and annotation. Built with **Tauri v2**, **Rust**, and **Sv
 
 - **Capture overlay** with an adjustable crop, then Copy, Save, Edit, or OCR.
 - **Annotation tools:** Select, Text, Arrow, Ellipse, Rectangle, Pen, Pen Arrow, Highlight, Blur, Numbered Step, Eraser, Eyedropper.
-- **Overlay OCR** via on-device macOS Vision (no cloud).
+- **Overlay OCR** via on-device native OCR (Apple Vision on macOS, Windows Media OCR on Windows — 100% offline, no cloud).
 - Undo/Redo, Retina-correct export, and session History from the tray.
 
-Privacy: everything stays on this Mac. See [PRIVACY.md](PRIVACY.md) for what is stored on disk.
+Privacy: everything stays on your device. See [PRIVACY.md](PRIVACY.md) for what is stored on disk.
 
 ---
 
@@ -73,7 +73,7 @@ EiSen/
 │   ├── src-tauri/            # Rust backend (Tauri v2 application core)
 │   │   ├── src/core/         # Capture orchestrator, output, history
 │   │   ├── src/domain/       # Configuration, region geometry, naming
-│   │   └── src/platform/     # macOS adapter (Windows scaffolded, not implemented)
+│   │   └── src/platform/     # macOS adapter (Vision / screencapture) & Windows adapter (xcap / WinRT OCR)
 │   └── package.json
 ├── landing/              # Astro site for eisen.a302.link
 ├── docs/                 # Release runbook

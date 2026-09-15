@@ -6,8 +6,13 @@ export type Locale = 'en' | 'vi';
 export const locales: Locale[] = ['en', 'vi'];
 export const defaultLocale: Locale = 'en';
 
-/** Cloudflare Pages `_redirects` maps this to the GitHub Release asset. */
-export const dmgDownloadPath = '/download';
+export const appVersion = '0.2.0';
+
+/** Cloudflare Pages `_redirects` maps these to GitHub Release assets. */
+export const dmgDownloadPath = '/download/mac';
+export const exeDownloadPath = '/download/windows';
+export const releasesUrl = 'https://github.com/thucne/EiSen/releases';
+export const githubUrl = 'https://github.com/thucne/EiSen';
 
 export function getDictionary(locale?: string) {
   if (locale === 'vi') return vi;

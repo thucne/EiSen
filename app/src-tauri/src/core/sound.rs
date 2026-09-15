@@ -1,3 +1,4 @@
+#[cfg(target_os = "macos")]
 use std::path::Path;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -44,7 +45,20 @@ pub fn play(effect: SoundEffect, enabled: bool) {
             });
         }
     }
-    #[cfg(not(target_os = "macos"))]
+    #[cfg(target_os = "windows")]
+    {
+        extern "system" {
+            fn MessageBeep(u_type: u32) -> i32;
+        }
+        let u_type = match effect {
+            SoundEffect::Shutter | SoundEffect::Copy => 0,
+            SoundEffect::Save => 0x40,
+        };
+        unsafe {
+            let _ = MessageBeep(u_type);
+        }
+    }
+    #[cfg(not(any(target_os = "macos", target_os = "windows")))]
     {
         let _ = effect;
     }

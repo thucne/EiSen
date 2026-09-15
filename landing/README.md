@@ -1,27 +1,30 @@
 # EiSen Landing Page (eisen.a302.link)
 
-Official bilingual (EN / VI) marketing and documentation landing page for **EiSen** — the native, privacy-first screen capture & annotation tool for macOS.
+Official bilingual (EN / VI) marketing and documentation landing page for **EiSen** — the native, privacy-first screen capture & annotation tool for macOS and Windows.
 
-Built with **Astro 5** and **Tailwind CSS**. Fully static, zero JS by default.
+Built with **Astro 5** and **Tailwind CSS**. Fully static, lightweight client scripts for Smart OS Detection.
 
 ---
 
 ## Features
 
-- **Multilingual Architecture:**
+- **Cross-Platform & Multilingual:**
   - Default English at `/` (`x-default`, `en`)
   - Vietnamese at `/vi/` (`vi`)
+  - Dedicated Windows landing routes at `/windows` and `/vi/windows`
+  - Smart OS Detection with auto-switching between macOS DMG and Windows EXE downloads
   - Bidirectional `hreflang` alternate links & automated multilingual `sitemap.xml`
 - **Rich Structured Data (SEO):**
-  - Schema.org `SoftwareApplication` (macOS 11.0+, 100% Free, direct v0.1.2 DMG link)
+  - Schema.org `SoftwareApplication` (macOS 11.0+ & Windows 10/11, 100% Free, v0.2.0 direct links)
   - Schema.org `FAQPage` for Google Rich Snippets
   - OpenGraph & Twitter Card previews
 - **Branding & Tokens:**
   - Dark Glassmorphism matching the EiSen native desktop app
   - Local variable fonts (`Plus Jakarta Sans` & `JetBrains Mono`)
 - **Direct Downloads & Fast Redirects:**
-  - `/download` and `/dmg` 302 to the GitHub Release `EiSen_0.1.2_aarch64.dmg` (~4.2 MB)
-  - Also: `/releases`, `/github`
+  - `/download/windows` and `/exe` 302 to GitHub Release `EiSen_0.2.0_x64-setup.exe` (~4.5 MB)
+  - `/download/mac` and `/dmg` 302 to GitHub Release `EiSen_0.2.0_aarch64.dmg` (~4.2 MB)
+  - Also: `/download`, `/releases`, `/github`
 
 ---
 

@@ -287,7 +287,9 @@ fn show_editor(app: &tauri::AppHandle, orchestrator: &CaptureOrchestrator) -> ta
         let monitors = app.available_monitors().ok().unwrap_or_default();
         #[cfg(target_os = "macos")]
         let active_idx = crate::platform::mac_adapter::active_display_index().unwrap_or(0);
-        #[cfg(not(target_os = "macos"))]
+        #[cfg(target_os = "windows")]
+        let active_idx = crate::platform::windows_adapter::active_display_index().unwrap_or(0);
+        #[cfg(not(any(target_os = "macos", target_os = "windows")))]
         let active_idx = 0;
 
         let monitor = monitors
@@ -547,10 +549,14 @@ async fn cmd_extract_text(
         .await
         .map_err(|e| format!("OCR task failed: {e}"))?
     }
-    #[cfg(not(target_os = "macos"))]
+    #[cfg(target_os = "windows")]
+    {
+        platform::windows_adapter::extract_text_from_image_path(&path).await
+    }
+    #[cfg(not(any(target_os = "macos", target_os = "windows")))]
     {
         let _ = path;
-        Err("OCR is currently supported on macOS only".to_string())
+        Err("OCR is currently supported on macOS and Windows only".to_string())
     }
 }
 
@@ -624,12 +630,19 @@ fn cmd_get_app_version() -> &'static str {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    #[cfg(target_os = "macos")]
+    let orchestrator = Arc::new(CaptureOrchestrator::new(platform::MacAdapter));
+    #[cfg(target_os = "windows")]
+    let orchestrator = Arc::new(CaptureOrchestrator::new(platform::WindowsAdapter));
+    #[cfg(not(any(target_os = "macos", target_os = "windows")))]
+    let orchestrator = Arc::new(CaptureOrchestrator::new(platform::MacAdapter));
+
     let builder = tauri::Builder::default()
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_autostart::init(MacosLauncher::LaunchAgent, None))
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
-        .manage(Arc::new(CaptureOrchestrator::new(platform::MacAdapter)))
+        .manage(orchestrator)
         .manage(Arc::new(Mutex::new(CaptureHistory::new(50))))
         .manage(Arc::new(Mutex::new(None::<String>)));
 

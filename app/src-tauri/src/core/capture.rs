@@ -391,6 +391,26 @@ pub fn begin_capture(app: &tauri::AppHandle) -> Result<String, String> {
                 crate::platform::mac_adapter::elevate_overlay_window(&ov);
             });
         }
+        #[cfg(target_os = "windows")]
+        {
+            let monitors = app.available_monitors().ok().unwrap_or_default();
+            let active_idx = crate::platform::windows_adapter::active_display_index().unwrap_or(0);
+            let monitor = monitors
+                .get(active_idx)
+                .cloned()
+                .or_else(|| app.primary_monitor().ok().flatten());
+            if let Some(mon) = monitor {
+                let scale = mon.scale_factor();
+                let size = mon.size();
+                let pos = mon.position();
+                let _ = overlay.set_position(
+                    tauri::LogicalPosition::new(pos.x as f64 / scale, pos.y as f64 / scale),
+                );
+                let _ = overlay.set_size(
+                    tauri::LogicalSize::new(size.width as f64 / scale, size.height as f64 / scale),
+                );
+            }
+        }
         let _ = overlay.show();
         let _ = overlay.set_focus();
         let emit_started = Instant::now();

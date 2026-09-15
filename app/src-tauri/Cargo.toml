@@ -1,6 +1,6 @@
 [package]
 name = "eisen"
-version = "0.1.2"
+version = "0.2.0"
 description = "High-performance screen capture and annotation utility"
 authors = ["Tran Trong Thuc"]
 edition = "2021"
@@ -36,5 +36,14 @@ objc2-app-kit = { version = "0.3", features = ["NSWindow", "NSScreen", "NSEvent"
 block2 = "0.6"
 dispatch2 = "0.3"
 
-
-
+[target.'cfg(target_os = "windows")'.dependencies]
+xcap = "0.9"
+windows-future = { version = "0.3", features = ["std"] }
+windows = { version = "0.62", features = [
+    "Win32_UI_WindowsAndMessaging",
+    "Win32_Foundation",
+    "Media_Ocr",
+    "Graphics_Imaging",
+    "Storage_Streams",
+    "Globalization",
+] }
