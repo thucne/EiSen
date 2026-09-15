@@ -27,6 +27,7 @@ jobs:
           ref: ${{ inputs.tag }}
 
       - name: Check package/Cargo/Tauri versions agree with tag
+        shell: bash
         run: bash scripts/check-version.sh "${{ inputs.tag }}"
 
       - name: Set up Rust stable
@@ -111,6 +112,7 @@ jobs:
           ref: ${{ inputs.tag }}
 
       - name: Check package/Cargo/Tauri versions agree with tag
+        shell: bash
         run: bash scripts/check-version.sh "${{ inputs.tag }}"
 
       - name: Set up Rust stable

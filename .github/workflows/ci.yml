@@ -12,6 +12,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Check package/Cargo/tauri versions agree
+        shell: bash
         run: bash scripts/check-version.sh
 
       - name: Set up Rust stable
@@ -48,6 +49,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Check package/Cargo/Tauri versions agree
+        shell: bash
         run: bash scripts/check-version.sh
 
       - name: Set up Rust stable

@@ -12,7 +12,16 @@ else
   unset EISEN_CHECK_VERSION_TAG
 fi
 
-python3 <<'PY'
+if command -v python3 >/dev/null 2>&1; then
+  python_cmd=python3
+elif command -v python >/dev/null 2>&1; then
+  python_cmd=python
+else
+  echo "check-version.sh requires Python 3 (python3 or python)" >&2
+  exit 1
+fi
+
+"$python_cmd" <<'PY'
 import json, os, re, sys
 from pathlib import Path
 
