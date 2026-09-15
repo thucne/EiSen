@@ -1,26 +1,25 @@
-# macOS release runbook
+# Cross-platform release runbook
 
-Default path: **build, sign, and notarize on your Mac**, then attach the DMG
-to a GitHub Release. That uses Apple's notarization service and your CPU —
-not GitHub Actions minutes.
+EiSen releases are cut from one tagged commit. The GitHub Actions `Release`
+workflow is the cross-platform publish path: it builds signed macOS and
+Windows artifacts, verifies their checksums, and publishes them through one
+final job. The local macOS script remains available for a Mac-only build or
+for validating a notarized bundle before publishing.
 
-Signing credentials never enter this repository. Local builds read
-`~/.eisen-release.env`. GitHub Actions (manual fallback only) reads Actions
-secrets.
+Signing credentials never enter this repository. Local macOS builds read
+`~/.eisen-release.env`; GitHub Actions reads repository secrets. Do not paste a
+certificate, password, Apple app-specific password, or Team ID into a chat,
+commit, or this file.
 
-Do not paste a certificate, password, or Team ID into a chat, a commit,
-or this file.
-
-## 1. One-time local setup
+## 1. One-time macOS setup
 
 You need:
 
 - An **Apple Developer Program** membership.
-- A **Developer ID Application** certificate in your **login Keychain**
-  (import the `.p12` Apple issued; do not store that file in this repo).
-- An **app-specific password** for notarization
-  ([appleid.apple.com](https://appleid.apple.com) → Sign-In and Security →
-  App-Specific Passwords — not your Apple ID login password).
+- A **Developer ID Application** certificate in your **login Keychain**.
+- An **app-specific password** for notarization ([Apple account
+  settings](https://appleid.apple.com) → Sign-In and Security → App-Specific
+  Passwords — not your Apple ID login password).
 
 ```bash
 cp docs/eisen-release.env.example ~/.eisen-release.env
@@ -29,10 +28,26 @@ chmod 600 ~/.eisen-release.env
 security find-identity -p codesigning -v   # must list Developer ID Application
 ```
 
-`APPLE_CERTIFICATE` / `APPLE_CERTIFICATE_PASSWORD` are **CI-only**. Locally
-the cert lives in Keychain.
+`APPLE_CERTIFICATE` and `APPLE_CERTIFICATE_PASSWORD` are CI-only. Locally the
+certificate must remain in the login Keychain.
 
-## 2. Cut a release (local)
+## 2. One-time Windows Actions setup
+
+The Windows job requires a code-signing certificate stored as a PFX. Add
+these repository Actions secrets without printing or committing their values:
+
+| Secret | Value |
+|---|---|
+| `WINDOWS_CERTIFICATE_BASE64` | Base64-encoded Windows code-signing `.pfx` |
+| `WINDOWS_CERTIFICATE_PASSWORD` | Password that unlocks the PFX |
+| `WINDOWS_CERTIFICATE_THUMBPRINT` | Thumbprint of the certificate in the PFX |
+
+The job imports the PFX into the ephemeral Windows runner, builds the NSIS
+installer with SHA-256 signing and a timestamp, then fails unless every
+produced executable has a valid Authenticode signature. Missing or mismatched
+secrets fail the job before an artifact can be published.
+
+## 3. Prepare a release commit
 
 Versions must agree in:
 
@@ -40,50 +55,75 @@ Versions must agree in:
 - `app/src-tauri/Cargo.toml`
 - `app/src-tauri/tauri.conf.json`
 
-`scripts/check-version.sh` (also run from CI and from
-`scripts/release-macos.sh`) fails the build if they do not. Pass the
-release tag to require the triad to match it:
-`bash scripts/check-version.sh v0.1.0`.
-
-Commit, tag the **release commit**, then
-`./scripts/release-macos.sh --upload vX.Y.Z`.
-
-Then:
+Run the check before committing and pass the tag again in CI:
 
 ```bash
-git commit -am "chore: bump version to X.Y.Z"
-git tag vX.Y.Z
-git push origin main
-git push origin vX.Y.Z          # does NOT start a macOS Actions build
-./scripts/release-macos.sh --upload vX.Y.Z
+bash scripts/check-version.sh v0.2.1
 ```
 
-Omit `--upload` to only produce
-`app/src-tauri/target/release/bundle/dmg/*.dmg`.
+Commit and tag the release commit, then push both refs:
 
-Pushing a `v*` tag no longer runs `.github/workflows/release.yml`.
+```bash
+git commit -am "chore: prepare v0.2.1 release"
+git tag -a v0.2.1 -m "EiSen v0.2.1"
+git push origin main
+git push origin v0.2.1
+```
 
-## 3. Optional: GitHub Actions fallback
+Pushing a `v*` tag does not start the release workflow automatically.
 
-If you cannot build on this Mac, run **Actions → Release → Run workflow**
-and pass the existing tag (e.g. `v0.1.1`). That job still needs the six
-`APPLE_*` repository secrets.
+## 4. Publish both platforms with GitHub Actions
 
-| Secret | What it is |
-|---|---|
-| `APPLE_SIGNING_IDENTITY` | `Developer ID Application: Your Name (TEAMID)` |
-| `APPLE_CERTIFICATE` | Base64-encoded Developer ID Application `.p12` |
-| `APPLE_CERTIFICATE_PASSWORD` | Password that unlocks the `.p12` |
-| `APPLE_ID` | Apple ID email used for notarization |
-| `APPLE_PASSWORD` | App-specific password for that Apple ID |
-| `APPLE_TEAM_ID` | 10-character Team ID |
+Use one workflow run per tag. Confirm the GitHub CLI is authenticated, then
+dispatch the workflow against the existing tag:
 
-If those secrets are missing, the workflow still builds; the DMG is unsigned.
+```bash
+gh workflow run Release --repo thucne/EiSen --ref v0.2.1 -f tag=v0.2.1
+gh run list --repo thucne/EiSen --workflow Release --limit 1
+gh run watch RUN_ID --repo thucne/EiSen --exit-status
+gh release view v0.2.1 --repo thucne/EiSen
+```
 
-## 4. Verifying the artifact
+The workflow checks the version triad in both platform jobs. It publishes only
+after the macOS and Windows jobs complete, the DMG/EXE checksums verify, and
+the signing checks pass. Do not run the local upload script concurrently for
+the same tag.
 
-On a clean Mac that has never seen EiSen, install `EiSen.app` to
-`/Applications`, then:
+## 5. Optional local macOS build
+
+The local path builds, signs, notarizes, and verifies the `.app`, creates a
+SHA-256 sidecar for every DMG, and can upload those macOS artifacts to an
+existing GitHub Release:
+
+```bash
+./scripts/release-macos.sh              # build and verify only
+./scripts/release-macos.sh --upload v0.2.1
+```
+
+The script requires a matching version tag when `--upload` is used. Omit
+`--upload` to keep the artifacts under
+`app/src-tauri/target/release/bundle/` without changing GitHub state.
+
+## 6. Verify downloaded artifacts
+
+Download the complete release payload and verify every sidecar on a Unix-like
+machine:
+
+```bash
+mkdir -p /tmp/eisen-release-v0.2.1
+gh release download v0.2.1 --repo thucne/EiSen --dir /tmp/eisen-release-v0.2.1
+(cd /tmp/eisen-release-v0.2.1 && sha256sum -c -- *.dmg.sha256 *.exe.sha256)
+```
+
+On macOS, use `shasum -a 256 --check` if `sha256sum` is unavailable. On
+Windows, verify the installer with PowerShell:
+
+```powershell
+Get-FileHash .\EiSen_0.2.1_x64-setup.exe -Algorithm SHA256
+Get-AuthenticodeSignature .\EiSen_0.2.1_x64-setup.exe
+```
+
+For a clean macOS install, copy `EiSen.app` to `/Applications` and verify:
 
 ```bash
 codesign --verify --deep --strict --verbose=2 /Applications/EiSen.app
@@ -91,24 +131,22 @@ spctl --assess --type execute --verbose /Applications/EiSen.app
 xcrun stapler validate /Applications/EiSen.app
 ```
 
-`spctl --assess` must report `accepted`. `stapler validate` must report
-that the ticket is present. Record the resulting `.app` size here after
-the first signed build.
+`spctl --assess` must report `accepted`, and `stapler validate` must report a
+present ticket. Record the resulting `.app` size after the first signed build.
 
-## 5. First-launch expectations
+## 7. First-launch expectations
 
-EiSen is a menu-bar-only app. `ActivationPolicy::Accessory` in
-`app/src-tauri/src/lib.rs` means **no Dock icon appears**. Look for the
-tray icon in the menu bar.
+EiSen is a menu-bar/system-tray app. `ActivationPolicy::Accessory` in
+`app/src-tauri/src/lib.rs` means no Dock or Taskbar icon appears by default.
+Look for the EiSen icon in the menu bar or system tray.
 
-Screen Recording is **preflight-only** (`CGPreflightScreenCaptureAccess`):
-macOS will **not** show a system prompt. Grant access via System Settings →
-Privacy & Security → Screen Recording (hub banner deep-links there). A
-grant made while EiSen is running may need a relaunch. These first-launch
-notes are also in the README.
+Screen Recording is preflight-only (`CGPreflightScreenCaptureAccess`): macOS
+will not show a system prompt. Grant access via System Settings → Privacy &
+Security → Screen Recording. A grant made while EiSen is running may need a
+relaunch. These notes are also in the README.
 
-## 6. Known gap: no auto-updater
+## 8. Known product gap: no auto-updater
 
 There is no auto-updater (`app/src-tauri/Cargo.toml` has no
-`tauri-plugin-updater`). Users must download new versions from GitHub
-Releases manually.
+`tauri-plugin-updater`). Users must download each new version manually from
+GitHub Releases.

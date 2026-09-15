@@ -86,8 +86,18 @@ npm --prefix app run tauri -- build
 # Honor CARGO_TARGET_DIR (Cursor/CI sandboxes redirect cargo output).
 bundle_root="${CARGO_TARGET_DIR:-$ROOT/app/src-tauri/target}"
 shopt -s nullglob
+apps=("$bundle_root"/release/bundle/macos/*.app)
 dmgs=("$bundle_root"/release/bundle/dmg/*.dmg)
 shopt -u nullglob
+if [[ ${#apps[@]} -eq 0 ]]; then
+  echo "No app bundle under $bundle_root/release/bundle/macos/" >&2
+  exit 1
+fi
+for app_bundle in "${apps[@]}"; do
+  codesign --verify --deep --strict --verbose=2 "$app_bundle"
+  spctl --assess --type execute --verbose=2 "$app_bundle"
+  xcrun stapler validate "$app_bundle"
+done
 if [[ ${#dmgs[@]} -eq 0 ]]; then
   echo "No DMG under $bundle_root/release/bundle/dmg/" >&2
   exit 1
@@ -96,6 +106,20 @@ fi
 echo "Built:"
 printf '  %s\n' "${dmgs[@]}"
 
+checksums=()
+for dmg in "${dmgs[@]}"; do
+  checksum="${dmg}.sha256"
+  (
+    cd "$(dirname "$dmg")"
+    shasum -a 256 "$(basename "$dmg")" > "$(basename "$checksum")"
+    shasum -a 256 --check "$(basename "$checksum")"
+  )
+  checksums+=("$checksum")
+done
+
+echo "Checksums:"
+printf '  %s\n' "${checksums[@]}"
+
 if [[ -n "$UPLOAD_TAG" ]]; then
   REPO="$(github_repo)"
   if [[ -z "$REPO" ]]; then
@@ -103,9 +127,9 @@ if [[ -n "$UPLOAD_TAG" ]]; then
     exit 1
   fi
   if gh release view "$UPLOAD_TAG" --repo "$REPO" >/dev/null 2>&1; then
-    gh release upload "$UPLOAD_TAG" "${dmgs[@]}" --repo "$REPO" --clobber
+    gh release upload "$UPLOAD_TAG" "${dmgs[@]}" "${checksums[@]}" --repo "$REPO" --clobber
   else
-    gh release create "$UPLOAD_TAG" "${dmgs[@]}" --repo "$REPO" \
+    gh release create "$UPLOAD_TAG" "${dmgs[@]}" "${checksums[@]}" --repo "$REPO" \
       --title "EiSen ${UPLOAD_TAG#v}" --notes "EiSen ${UPLOAD_TAG#v}"
   fi
   echo "Uploaded to GitHub Release $UPLOAD_TAG"

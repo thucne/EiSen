@@ -33,6 +33,9 @@ jobs:
       - name: Install frontend dependencies
         run: npm ci --prefix app
 
+      - name: Validate release workflow contract
+        run: node scripts/release-workflow.contract.test.mjs
+
       - name: Check, test, clippy
         run: npm --prefix app run check:all
 
