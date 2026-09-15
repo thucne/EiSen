@@ -1,8 +1,9 @@
 name: Release
 
-# This workflow is a manual fallback for the existing local macOS release
-# path. It builds both platform artifacts from one existing release tag and
-# publishes them through one job so uploads cannot race each other.
+# This workflow is the manual cross-platform publish path. It builds both
+# platform artifacts from one existing release tag and publishes them through
+# one job so uploads cannot race each other. The local macOS script remains
+# available for a Mac-only build or local notarization validation.
 on:
   workflow_dispatch:
     inputs:
