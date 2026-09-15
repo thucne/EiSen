@@ -9,6 +9,12 @@ use tauri_plugin_global_shortcut::{GlobalShortcutExt, ShortcutState};
 ///   • `ctrl+shift+3`   → full-screen capture + auto-save (macOS)
 ///   • preset shortcut  → crop / selection overlay (Double-Tap or Combo)
 pub fn register(app: &AppHandle, preset: &HotkeyPreset) -> Result<(), String> {
+    // Windows currently exposes only PrintScreen. Normalize persisted or
+    // renderer-supplied legacy presets at this runtime boundary as well, so
+    // startup cannot register a macOS-only combination before Settings has a
+    // chance to migrate the config on disk.
+    let preset = effective_preset(*preset);
+
     // ── Ctrl+Shift+3: full-screen capture (macOS only) ───────────────────────
     #[cfg(target_os = "macos")]
     {
@@ -37,7 +43,7 @@ pub fn register(app: &AppHandle, preset: &HotkeyPreset) -> Result<(), String> {
     // Double-tap presets register only their plugin shortcuts here; the NSEvent
     // gesture-monitor lifecycle is owned by mac_adapter::apply_monitor_action
     // driven from lib.rs (setup + save_config).
-    match preset {
+    match &preset {
         #[cfg(target_os = "macos")]
         HotkeyPreset::DoubleOption => {
             eprintln!("[eisen] Double Option (⌥⌥) modifier monitor active");
@@ -108,6 +114,18 @@ pub fn register(app: &AppHandle, preset: &HotkeyPreset) -> Result<(), String> {
     }
 }
 
+fn effective_preset(preset: HotkeyPreset) -> HotkeyPreset {
+    #[cfg(target_os = "windows")]
+    {
+        let _ = preset;
+        HotkeyPreset::PrtScnWin
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        preset
+    }
+}
+
 /// What should happen to the NSEvent gesture monitors when the preset changes.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MonitorAction {
@@ -165,6 +183,22 @@ pub fn desired_monitors(old: &HotkeyPreset, new: &HotkeyPreset) -> MonitorAction
 mod tests {
     use super::*;
     use crate::core::double_tap::ModifierKind;
+
+    #[test]
+    #[cfg(target_os = "windows")]
+    fn windows_runtime_normalizes_every_persisted_preset_to_printscreen() {
+        let presets = [
+            HotkeyPreset::DoubleOption,
+            HotkeyPreset::DoubleShift,
+            HotkeyPreset::CmdShift4Mac,
+            HotkeyPreset::CtrlShift4Mac,
+            HotkeyPreset::PrtScMac,
+            HotkeyPreset::PrtScnWin,
+        ];
+        for preset in presets {
+            assert_eq!(effective_preset(preset), HotkeyPreset::PrtScnWin);
+        }
+    }
 
     #[test]
     fn double_option_to_double_shift_replaces() {

@@ -576,6 +576,30 @@ mod tests {
         }
     }
 
+    #[derive(Debug)]
+    struct FailingDisplayProvider;
+
+    impl ScreenProvider for FailingDisplayProvider {
+        fn capture_display(&self, _display: u32, _out: &Path) -> Result<(), String> {
+            Err("capture should not start after display selection fails".to_string())
+        }
+
+        fn active_display(&self) -> Result<u32, String> {
+            Err("monitor enumeration failed".to_string())
+        }
+    }
+
+    #[test]
+    fn active_display_failure_releases_busy_for_retry() {
+        let o = CaptureOrchestrator::new(FailingDisplayProvider);
+        let err = match o.start() {
+            Ok(_) => panic!("display selection should fail"),
+            Err(err) => err,
+        };
+        assert_eq!(err, CaptureError::Io("monitor enumeration failed".to_string()));
+        assert!(!o.is_busy(), "a failed display lookup must not strand busy");
+    }
+
     #[test]
     fn matching_monitor_uses_physical_geometry_not_list_position() {
         let target = DisplayGeometry {
