@@ -26,7 +26,7 @@
   const t = $derived($i18n);
 
   let cfg = $state<api.AppConfig | null>(null);
-  let appVersion = $state<string>("0.2.0");
+  let appVersion = $state<string>("0.2.1");
   let isWindows = $state(false);
   let toast = $state<{
     message: string;
@@ -262,7 +262,7 @@
           <Settings size={18} class="row-icon" />
           <div>
             <h3>{t.settings.version}</h3>
-            <p class="version-sub">EiSen v{appVersion} • macOS Apple Silicon (aarch64)</p>
+            <p class="version-sub">EiSen v{appVersion} • macOS &amp; Windows</p>
           </div>
         </div>
         <span class="version-tag">v{appVersion}</span>

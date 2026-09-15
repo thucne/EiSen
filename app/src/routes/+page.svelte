@@ -30,7 +30,7 @@
     sticky?: boolean;
   } | null>(null);
   let permissionOk = $state(true);
-  let appVersion = $state<string>("0.2.0");
+  let appVersion = $state<string>("0.2.1");
 
   function probePermission() {
     api.screenPermission()
