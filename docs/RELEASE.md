@@ -125,7 +125,8 @@ The script requires a matching version tag when `--upload` is used. Omit
 ## 6. Verify downloaded artifacts
 
 Download the complete release payload and verify every sidecar on a Unix-like
-machine:
+machine. The workflow writes checksum sidecars without a platform-specific
+line ending, so the same command works on macOS and Linux:
 
 ```bash
 mkdir -p /tmp/eisen-release-v0.2.1

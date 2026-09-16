@@ -243,7 +243,7 @@ jobs:
           }
           foreach ($installer in $installers) {
             $hash = (Get-FileHash -Algorithm SHA256 -LiteralPath $installer.FullName).Hash.ToLowerInvariant()
-            "$hash  $($installer.Name)" | Set-Content -LiteralPath "$($installer.FullName).sha256" -Encoding ascii
+            "$hash  $($installer.Name)" | Set-Content -LiteralPath "$($installer.FullName).sha256" -Encoding ascii -NoNewline
             $check = (Get-FileHash -Algorithm SHA256 -LiteralPath $installer.FullName).Hash.ToLowerInvariant()
             if ($hash -ne $check) {
               throw "Checksum changed while preparing $($installer.Name)"

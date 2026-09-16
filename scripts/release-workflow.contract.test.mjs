@@ -19,6 +19,7 @@ assert.match(workflow, /shasum -a 256/);
 assert.match(workflow, /Get-FileHash -Algorithm SHA256/);
 assert.match(workflow, /Get-AuthenticodeSignature/);
 assert.match(workflow, /WINDOWS_CERTIFICATE_BASE64/);
+assert.match(workflow, /Set-Content -LiteralPath .* -Encoding ascii -NoNewline/);
 assert.match(workflow, /--no-sign/);
 assert.match(workflow, /NotSigned/);
 assert.match(workflow, /unsigned Windows/i);
