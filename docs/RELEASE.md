@@ -254,9 +254,13 @@ present ticket. Record the resulting `.app` size after the first signed build.
 
 ## 8. First-launch expectations
 
-EiSen is a menu-bar/system-tray app. `ActivationPolicy::Accessory` in
-`app/src-tauri/src/lib.rs` means no Dock or Taskbar icon appears by default.
-Look for the EiSen icon in the menu bar or system tray.
+EiSen is a menu-bar/system-tray app. The macOS bundle merges
+`app/src-tauri/Info.plist`, which sets `LSUIElement=true`, and the runtime also
+sets `ActivationPolicy::Accessory` in `app/src-tauri/src/lib.rs`. Both layers
+keep the app out of the Dock when launched from Finder or Spotlight. Look for
+the EiSen icon in the menu bar or system tray. The macOS release verification
+step checks the generated bundle's `Info.plist` before validating its
+signature and notarization.
 
 Screen Recording is preflight-only (`CGPreflightScreenCaptureAccess`): macOS
 will not show a system prompt. Grant access via System Settings → Privacy &

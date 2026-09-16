@@ -117,6 +117,6 @@ test('Windows public CTAs disclose pending Store certification and expose the di
   assert.match(english, /buttonWinDirect: "Use direct \.exe until Store is live"/);
   assert.match(vietnamese, /buttonWin: "Microsoft Store \(sắp có\)"/);
   assert.match(vietnamese, /buttonWinDirect: "Dùng bản \.exe đến khi Store live"/);
-  assert.match(english, /Store listing for v0\.2\.1 is currently undergoing certification/);
-  assert.match(vietnamese, /Microsoft Store cho v0\.2\.1 đang chờ certification/);
+  assert.match(english, /Store listing is currently undergoing certification/);
+  assert.match(vietnamese, /Microsoft Store hiện đang chờ certification/);
 });

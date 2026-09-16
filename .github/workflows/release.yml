@@ -77,6 +77,10 @@ jobs:
             exit 1
           fi
           for app_bundle in "${apps[@]}"; do
+            if [[ "$(plutil -extract LSUIElement raw -o - "$app_bundle/Contents/Info.plist")" != "true" ]]; then
+              echo "macOS bundle is missing LSUIElement=true: $app_bundle" >&2
+              exit 1
+            fi
             codesign --verify --deep --strict --verbose=2 "$app_bundle"
             spctl --assess --type execute --verbose=2 "$app_bundle"
             xcrun stapler validate "$app_bundle"

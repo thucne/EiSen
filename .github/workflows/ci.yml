@@ -37,6 +37,7 @@ jobs:
       - name: Validate release workflow contract
         run: |
           node scripts/release-workflow.contract.test.mjs
+          node scripts/macos-packaging.contract.test.mjs
           node scripts/msix-manifest.contract.test.mjs
           node scripts/public-cross-platform.contract.test.mjs
 

@@ -15,17 +15,17 @@ Built with **Astro 5** and **Tailwind CSS**. Fully static, lightweight client sc
   - Smart OS Detection with auto-switching between macOS DMG and Windows EXE downloads
   - Bidirectional `hreflang` alternate links & automated multilingual `sitemap.xml`
 - **Rich Structured Data (SEO):**
-  - Schema.org `SoftwareApplication` (macOS 11.0+ & Windows 10/11, 100% Free, v0.2.1 direct links)
+  - Schema.org `SoftwareApplication` (macOS 11.0+ & Windows 10/11, 100% Free, v0.2.2 direct links)
   - Schema.org `FAQPage` for Google Rich Snippets
   - OpenGraph & Twitter Card previews
 - **Branding & Tokens:**
   - Dark Glassmorphism matching the EiSen native desktop app
   - Local variable fonts (`Plus Jakarta Sans` & `JetBrains Mono`)
 - **Direct Downloads & Fast Redirects:**
-  - `/download/windows` and `/exe` 302 to GitHub Release `EiSen_0.2.1_x64-setup.exe` (~2.6 MB)
-  - `/download/mac` and `/dmg` 302 to GitHub Release `EiSen_0.2.1_aarch64.dmg` (~4.2 MB)
+  - `/download/windows` and `/exe` 302 to GitHub Release `EiSen_0.2.2_x64-setup.exe` (~2.6 MB)
+  - `/download/mac` and `/dmg` 302 to GitHub Release `EiSen_0.2.2_aarch64.dmg` (~4.2 MB)
   - Also: `/download`, `/releases`, `/github`
-- **Windows v0.2.1 disclosure:** The direct NSIS installer is an unsigned compatibility release. The site and GitHub release notes warn that SmartScreen or managed-device policy may block it; users should verify the published SHA-256 sidecar before running.
+- **Windows disclosure:** The direct NSIS installer is an unsigned compatibility release. The site and GitHub release notes warn that SmartScreen or managed-device policy may block it; users should verify the published SHA-256 sidecar before running.
 
 ---
 
