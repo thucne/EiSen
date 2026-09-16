@@ -29,6 +29,6 @@ test('hero shows the warning for Windows and hides it when switching back to mac
 });
 
 test('hero warning copy is localized and tells Windows users what to expect', () => {
-  assert.match(enSource, /windowsWarning: "Microsoft Store is the recommended Windows path\. The direct \.exe fallback is unsigned; SmartScreen may show Unknown publisher or block it\. Verify SHA-256 before running\."/);
-  assert.match(viSource, /windowsWarning: "Microsoft Store là đường cài đặt Windows được khuyến nghị\. Bản \.exe trực tiếp là fallback chưa ký số; SmartScreen có thể báo Unknown publisher hoặc chặn bộ cài\. Hãy kiểm tra SHA-256 trước khi chạy\."/);
+  assert.match(enSource, /windowsWarning: "The Microsoft Store listing for v0\.2\.1 is currently undergoing certification\. Until it is live, use the direct \.exe fallback; it is unsigned, so SmartScreen may show Unknown publisher or block it\. Verify SHA-256 before running\."/);
+  assert.match(viSource, /windowsWarning: "Danh sách Microsoft Store cho v0\.2\.1 đang chờ certification\. Cho đến khi live, hãy dùng bản \.exe trực tiếp; bản này chưa ký số nên SmartScreen có thể báo Unknown publisher hoặc chặn bộ cài\. Hãy kiểm tra SHA-256 trước khi chạy\."/);
 });

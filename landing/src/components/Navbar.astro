@@ -102,7 +102,7 @@ const windowsPath = locale === 'vi' ? '/vi/windows' : '/windows';
         if (appleIcon) appleIcon.classList.add('hidden');
         if (winIcon) winIcon.classList.remove('hidden');
         const text = document.getElementById('navbar-download-text');
-        if (text) text.textContent = btn?.dataset.winLabel || 'Windows (Store)';
+        if (text) text.textContent = btn?.dataset.winLabel || 'Windows (Store pending)';
       }
     } catch {}
   })();

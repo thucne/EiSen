@@ -340,8 +340,8 @@ const winStoreUrl = microsoftStoreUrl;
           }
           if (macIcon) macIcon.classList.add('hidden');
           if (winIcon) winIcon.classList.remove('hidden');
-          if (text) text.textContent = btn?.dataset.winLabel || 'Get it from Microsoft Store';
-          if (badge) badge.textContent = btn?.dataset.winBadge || 'MSIX (Store)';
+          if (text) text.textContent = btn?.dataset.winLabel || 'Microsoft Store (coming soon)';
+          if (badge) badge.textContent = btn?.dataset.winBadge || 'Store pending';
           if (switchLink && btn) switchLink.href = btn.dataset.macUrl || '#';
           if (switchText) switchText.textContent = btn?.dataset.switchToMac || 'Looking for macOS version? Download .dmg';
           if (windowsWarning) {
@@ -363,8 +363,8 @@ const winStoreUrl = microsoftStoreUrl;
           if (winIcon) winIcon.classList.add('hidden');
           if (text) text.textContent = btn?.dataset.macLabel || 'Download for macOS';
           if (badge) badge.textContent = btn?.dataset.macBadge || 'DMG (4.2MB)';
-          if (switchLink && btn) switchLink.href = btn.dataset.winUrl || '#';
-          if (switchText) switchText.textContent = btn?.dataset.switchToWin || 'Looking for Windows version? Get it from Microsoft Store';
+          if (switchLink && btn) switchLink.href = btn.dataset.winDirectUrl || btn.dataset.winUrl || '#';
+          if (switchText) switchText.textContent = btn?.dataset.switchToWin || 'Need Windows now? Use the direct .exe fallback';
           if (windowsWarning) {
             windowsWarning.classList.add('hidden');
             windowsWarning.setAttribute('aria-hidden', 'true');

@@ -7,8 +7,8 @@ Fast screen capture and annotation for **macOS** and **Windows**. Built with **T
 ## Install & use
 
 1. **Platforms:** macOS 11+ and Windows 10/11.
-2. Install the signed DMG (macOS) or get the Windows MSIX from the [Microsoft Store](https://apps.microsoft.com/detail/9NRLQNXFVBF8) (recommended). If the Store is unavailable, use the Windows NSIS setup installer `.exe` from [GitHub Releases](https://github.com/thucne/EiSen/releases) or [eisen.a302.link/download](https://eisen.a302.link/download).
-3. **Windows direct-download note:** the GitHub/website NSIS fallback is unsigned. SmartScreen may show **Unknown publisher** or **Windows protected your PC**, and managed devices may block it. Verify the published `.sha256` sidecar and only continue when you trust the download source. The Store version receives Store-managed updates; direct downloads do not include an auto-updater.
+2. The Windows MSIX listing for v0.2.1 is currently undergoing [Microsoft Store certification](https://apps.microsoft.com/detail/9NRLQNXFVBF8). Until it is live, use the Windows NSIS setup installer `.exe` from [GitHub Releases](https://github.com/thucne/EiSen/releases) or [eisen.a302.link/download](https://eisen.a302.link/download); the Store listing will become the recommended path after approval.
+3. **Windows direct-download note:** the GitHub/website NSIS fallback is unsigned. SmartScreen may show **Unknown publisher** or **Windows protected your PC**, and managed devices may block it. Verify the published `.sha256` sidecar and only continue when you trust the download source. The Store version will receive Store-managed updates after publication; direct downloads do not include an auto-updater.
 4. After you open EiSen there is **no Dock / Taskbar icon** by default. Look for the EiSen icon in the **menu bar / system tray**: Capture now, Settings, History, Quit.
 5. On macOS, the first capture needs **Screen Recording** permission (use the hub banner to open System Settings). On Windows, capture works immediately without extra setup.
 6. Default hotkey: double-tap Option (⌥⌥) on macOS, PrintScreen (`PrtScn`) on Windows. Change it in Settings.
