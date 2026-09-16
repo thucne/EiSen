@@ -54,6 +54,8 @@ assert.match(msixBuildScript, /winapp pack/);
 assert.match(msixBuildScript, /--generate-cert/);
 assert.match(msixBuildScript, /--install-cert/);
 assert.match(msixBuildScript, /Get-FileHash/);
+assert.match(msixBuildScript, /2>&1/);
+assert.match(msixBuildScript, /Write-Host/);
 assert.match(msixBuildScript, /finally/);
 
 console.log("release workflow contract: ok");

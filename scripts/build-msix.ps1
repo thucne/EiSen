@@ -113,7 +113,8 @@ function Invoke-WinApp {
     [string[]]$Arguments
   )
 
-  & $script:WinAppCommand @Arguments
+  $commandOutput = & $script:WinAppCommand @Arguments 2>&1
+  $commandOutput | ForEach-Object { Write-Host $_ }
   if ($LASTEXITCODE -ne 0) {
     throw "winapp failed with exit code $LASTEXITCODE"
   }
