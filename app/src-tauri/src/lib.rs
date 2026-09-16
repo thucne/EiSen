@@ -676,6 +676,7 @@ builder
             {
                 use tauri::ActivationPolicy;
                 app.set_activation_policy(ActivationPolicy::Accessory);
+                let _ = app.handle().set_dock_visibility(false);
             }
             core::capture::cleanup_stale_temp_files();
 

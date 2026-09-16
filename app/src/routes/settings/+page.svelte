@@ -26,7 +26,7 @@
   const t = $derived($i18n);
 
   let cfg = $state<api.AppConfig | null>(null);
-  let appVersion = $state<string>("0.2.2");
+  let appVersion = $state<string>("0.2.3");
   let isWindows = $state(false);
   let toast = $state<{
     message: string;
