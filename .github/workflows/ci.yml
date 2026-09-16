@@ -35,7 +35,10 @@ jobs:
         run: npm ci --prefix app
 
       - name: Validate release workflow contract
-        run: node scripts/release-workflow.contract.test.mjs
+        run: |
+          node scripts/release-workflow.contract.test.mjs
+          node scripts/msix-manifest.contract.test.mjs
+          node scripts/public-cross-platform.contract.test.mjs
 
       - name: Check, test, clippy
         run: npm --prefix app run check:all
@@ -90,4 +93,5 @@ jobs:
         run: |
           npm ci --prefix landing
           npm --prefix landing run test
+          node scripts/public-cross-platform.contract.test.mjs
           npm --prefix landing run build

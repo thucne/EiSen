@@ -1,0 +1,201 @@
+name: Store MSIX
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Git ref to package
+        required: true
+        default: main
+        type: string
+      version:
+        description: Four-part MSIX version for the Store package
+        required: true
+        default: 0.2.1.0
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: store-msix-${{ inputs.ref }}-${{ inputs.version }}
+  cancel-in-progress: false
+
+jobs:
+  build-store-msix:
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - name: Check out requested ref
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+
+      - name: Set up Rust stable
+        shell: pwsh
+        run: |
+          rustup toolchain install stable --profile minimal
+          rustup default stable
+
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: app/src-tauri
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - name: Set up Windows App Developer CLI
+        uses: microsoft/setup-WinAppCli@v0.1
+
+      - name: Install frontend dependencies
+        run: npm ci --prefix app
+
+      - name: Validate MSIX version and packaging contracts
+        shell: bash
+        env:
+          MSIX_VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          if [[ ! "$MSIX_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "MSIX version must contain four numeric components: $MSIX_VERSION" >&2
+            exit 1
+          fi
+          if [[ "$MSIX_VERSION" != "0.2.1.0" ]]; then
+            echo "The initial EiSen Store submission is pinned to MSIX version 0.2.1.0" >&2
+            exit 1
+          fi
+          bash scripts/check-version.sh "v${MSIX_VERSION%.*}"
+          node scripts/msix-manifest.contract.test.mjs
+          node scripts/release-workflow.contract.test.mjs
+
+      - name: Run application checks
+        run: npm --prefix app run check:all
+
+      - name: Run Rust tests
+        run: cargo test --manifest-path app/src-tauri/Cargo.toml
+
+      - name: Build signed diagnostic MSIX
+        shell: pwsh
+        env:
+          MSIX_VERSION: ${{ inputs.version }}
+        run: pwsh -NoProfile -File .\scripts\build-msix.ps1 -Mode test -Version $env:MSIX_VERSION
+
+      - name: Install and activate diagnostic MSIX
+        shell: pwsh
+        env:
+          MSIX_VERSION: ${{ inputs.version }}
+        run: |
+          $manifestPath = Join-Path $env:GITHUB_WORKSPACE 'app/msix/Package.appxmanifest'
+          [xml]$manifest = Get-Content -LiteralPath $manifestPath -Raw
+          $identity = $manifest.Package.Identity
+          $application = $manifest.Package.Applications.Application
+          if ($null -eq $identity -or [string]::IsNullOrWhiteSpace($identity.Name)) {
+            throw 'Could not read the package identity from Package.appxmanifest'
+          }
+          if ($null -eq $application -or $application.Id -ne 'EiSen') {
+            throw 'Package.appxmanifest must expose application ID EiSen'
+          }
+
+          $packageName = $identity.Name
+          $testPackage = Join-Path $env:GITHUB_WORKSPACE "artifacts/msix/EiSen_${env:MSIX_VERSION}_x64-test.msix"
+          if (-not (Test-Path -LiteralPath $testPackage)) {
+            throw "Diagnostic package is missing: $testPackage"
+          }
+
+          $existing = @(Get-AppxPackage -Name $packageName -ErrorAction SilentlyContinue)
+          if ($existing.Count -gt 0) {
+            throw "Unexpected pre-existing package with identity $packageName"
+          }
+
+          Add-AppxPackage -Path $testPackage
+          try {
+            $installed = Get-AppxPackage -Name $packageName | Sort-Object Version -Descending | Select-Object -First 1
+            if ($null -eq $installed) {
+              throw "Package was not installed: $packageName"
+            }
+
+            $aumid = "$($installed.PackageFamilyName)!$($application.Id)"
+            $startAppsDeadline = (Get-Date).AddSeconds(10)
+            $startApp = $null
+            do {
+              $startApp = @(Get-StartApps | Where-Object { $_.AppID -eq $aumid }) | Select-Object -First 1
+              if ($null -eq $startApp) {
+                Start-Sleep -Seconds 1
+              }
+            } while ($null -eq $startApp -and (Get-Date) -lt $startAppsDeadline)
+
+            if ($null -eq $startApp) {
+              throw "Installed package is not registered in Get-StartApps: $aumid"
+            }
+
+            Start-Process -FilePath "shell:AppsFolder\$aumid"
+            $launchDeadline = (Get-Date).AddSeconds(10)
+            $process = $null
+            do {
+              $process = Get-Process -Name eisen -ErrorAction SilentlyContinue | Select-Object -First 1
+              if ($null -eq $process) {
+                Start-Sleep -Seconds 1
+              }
+            } while ($null -eq $process -and (Get-Date) -lt $launchDeadline)
+
+            if ($null -eq $process) {
+              throw "Packaged EiSen did not start within 10 seconds"
+            }
+          }
+          finally {
+            Get-Process -Name eisen -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+            $installedPackages = @(Get-AppxPackage -Name $packageName -ErrorAction SilentlyContinue)
+            foreach ($installedPackage in $installedPackages) {
+              Remove-AppxPackage -Package $installedPackage.PackageFullName
+            }
+          }
+
+      - name: Build unsigned Store MSIX
+        shell: pwsh
+        env:
+          MSIX_VERSION: ${{ inputs.version }}
+        run: pwsh -NoProfile -File .\scripts\build-msix.ps1 -Mode store -Version $env:MSIX_VERSION
+
+      - name: Verify Store package and checksum
+        shell: pwsh
+        env:
+          MSIX_VERSION: ${{ inputs.version }}
+        run: |
+          $packagePath = Join-Path $env:GITHUB_WORKSPACE "artifacts/msix/EiSen_${env:MSIX_VERSION}_x64.msix"
+          $sidecarPath = "$packagePath.sha256"
+          $metadataPath = Join-Path $env:GITHUB_WORKSPACE "artifacts/msix/EiSen_${env:MSIX_VERSION}_x64.metadata.json"
+          foreach ($path in @($packagePath, $sidecarPath, $metadataPath)) {
+            if (-not (Test-Path -LiteralPath $path)) {
+              throw "Store artifact is missing: $path"
+            }
+          }
+
+          $package = Get-Item -LiteralPath $packagePath
+          if ($package.Length -eq 0) {
+            throw "Store package is empty: $packagePath"
+          }
+          $actualHash = (Get-FileHash -LiteralPath $packagePath -Algorithm SHA256).Hash.ToLowerInvariant()
+          $expectedHash = ([IO.File]::ReadAllText($sidecarPath)).Trim().Split([char[]]" `t", [StringSplitOptions]::RemoveEmptyEntries)[0]
+          if ($actualHash -ne $expectedHash) {
+            throw "Store package checksum does not match its sidecar"
+          }
+          $testPackagePath = Join-Path $env:GITHUB_WORKSPACE "artifacts/msix/EiSen_${env:MSIX_VERSION}_x64-test.msix"
+          if ($packagePath -eq $testPackagePath) {
+            throw 'Store and diagnostic package names must remain distinct'
+          }
+
+      - name: Upload Store MSIX artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: eisen-store-msix-${{ inputs.version }}
+          path: |
+            artifacts/msix/EiSen_${{ inputs.version }}_x64.msix
+            artifacts/msix/EiSen_${{ inputs.version }}_x64.msix.sha256
+            artifacts/msix/EiSen_${{ inputs.version }}_x64.metadata.json
+            app/msix/Package.appxmanifest
+          if-no-files-found: error

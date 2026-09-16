@@ -56,7 +56,94 @@ unsigned, and publishes a release-note warning. This path is not a substitute
 for signing: Windows SmartScreen or managed-device policy may warn or block
 the installer.
 
-## 3. Prepare a release commit
+## 3. Microsoft Store MSIX path (Windows)
+
+EiSen has two Windows distribution paths:
+
+- **Microsoft Store (recommended):** a Store-hosted MSIX. Microsoft signs the
+  package for Store distribution and delivers Store-managed updates.
+- **GitHub direct download (fallback):** the existing NSIS compatibility
+  installer. The current Windows installer is unsigned, so SmartScreen or a
+  managed-device policy may warn or block it.
+
+The Store path is a separate MSIX/PWA product in Partner Center; it does not
+replace the existing GitHub Release workflow or its NSIS artifact.
+
+### One-time Partner Center setup
+
+1. In Partner Center, select **New product → MSIX or PWA app** and reserve
+   `EiSen`.
+2. Copy the exact case-sensitive **Name**, **Publisher**, and **Publisher
+   display name** from the product identity details into
+   `app/msix/Package.appxmanifest`. Never substitute the public display name
+   for the package identity.
+3. Keep the product configured for Windows desktop x64 for the first package.
+
+The reserved EiSen product is currently `9NRLQNXFVBF8`. After publication,
+the public Store page will be
+[`apps.microsoft.com/detail/9NRLQNXFVBF8`](https://apps.microsoft.com/detail/9NRLQNXFVBF8).
+The exact identity values currently reserved for this product are:
+
+| Field | Value |
+|---|---|
+| Package identity name | `ThucTran.EiSen` |
+| Package publisher | `CN=D9E44B91-4179-4FB5-8A66-00544DF11C86` |
+| Publisher display name | `Thuc Tran` |
+| Package family name | `ThucTran.EiSen_swfap1hqma1f8` |
+
+The manifest identity is tied to the reserved Store product. A package with a
+different identity cannot be uploaded to that product.
+
+### Build and validate the package on Windows
+
+Install Microsoft's Windows App Developer CLI once:
+
+```powershell
+winget install Microsoft.WinApp --source winget
+```
+
+From the repository root, run the signed diagnostic package first, then the
+unsigned package intended for Store upload:
+
+```powershell
+pwsh .\scripts\build-msix.ps1 -Mode test -Version 0.2.1.0
+pwsh .\scripts\build-msix.ps1 -Mode store -Version 0.2.1.0
+```
+
+`test` creates a locally signed package with a development certificate for
+install/activation smoke testing. It must never be uploaded to Partner
+Center. `store` creates `EiSen_0.2.1.0_x64.msix`, its SHA-256 sidecar, and
+metadata under `artifacts/msix/`; this is the package to upload to the
+MSIX/PWA product. The script stages the executable and assets in a temporary
+directory and does not edit the repository manifest.
+
+The reproducible CI path is the manual **Store MSIX** workflow:
+
+```bash
+gh workflow run "Store MSIX" --repo thucne/EiSen --ref main \
+  -f ref=main -f version=0.2.1.0
+gh run list --repo thucne/EiSen --workflow "Store MSIX" --limit 1
+gh run watch RUN_ID --repo thucne/EiSen --exit-status
+```
+
+The workflow installs and launches the diagnostic package on an ephemeral
+Windows runner, then uploads only the unsigned Store package, checksum,
+resolved manifest, and metadata. A CI launch proves packaging and activation;
+it does not replace physical Windows testing of capture, PrintScreen, tray,
+OCR, permissions, autostart, or multi-monitor behavior.
+
+### Partner Center submission
+
+Upload only the successful `EiSen_0.2.1.0_x64.msix` artifact. Keep pricing
+free, target Windows desktop x64, use the EiSen website and privacy/support
+links in the Store listing, and describe the local-only capture/OCR behavior.
+The GitHub NSIS download should be documented as a secondary unsigned fallback,
+not as the Store package. Once the Store listing is published, make the Store
+link the primary Windows CTA on the README and landing site; retain the direct
+download warning for users who need the fallback. Microsoft Store certification
+and publication are separate from the GitHub Release workflow.
+
+## 4. Prepare a release commit
 
 Versions must agree in:
 
@@ -81,7 +168,7 @@ git push origin v0.2.1
 
 Pushing a `v*` tag does not start the release workflow automatically.
 
-## 4. Publish both platforms with GitHub Actions
+## 5. Publish both platforms with GitHub Actions
 
 Use one workflow run per tag. Confirm the GitHub CLI is authenticated, then
 dispatch the workflow against the existing tag. Keep
@@ -107,7 +194,7 @@ after the macOS and Windows jobs complete, the DMG/EXE checksums verify, and
 the signed or explicitly approved unsigned Windows check passes. Do not run
 the local upload script concurrently for the same tag.
 
-## 5. Optional local macOS build
+## 6. Optional local macOS build
 
 The local path builds, signs, notarizes, and verifies the `.app`, creates a
 SHA-256 sidecar for every DMG, and can upload those macOS artifacts to an
@@ -122,7 +209,7 @@ The script requires a matching version tag when `--upload` is used. Omit
 `--upload` to keep the artifacts under
 `app/src-tauri/target/release/bundle/` without changing GitHub state.
 
-## 6. Verify downloaded artifacts
+## 7. Verify downloaded artifacts
 
 Download the complete release payload and verify every sidecar on a Unix-like
 machine. The workflow writes checksum sidecars without a platform-specific
@@ -158,7 +245,7 @@ xcrun stapler validate /Applications/EiSen.app
 `spctl --assess` must report `accepted`, and `stapler validate` must report a
 present ticket. Record the resulting `.app` size after the first signed build.
 
-## 7. First-launch expectations
+## 8. First-launch expectations
 
 EiSen is a menu-bar/system-tray app. `ActivationPolicy::Accessory` in
 `app/src-tauri/src/lib.rs` means no Dock or Taskbar icon appears by default.
@@ -169,7 +256,7 @@ will not show a system prompt. Grant access via System Settings → Privacy &
 Security → Screen Recording. A grant made while EiSen is running may need a
 relaunch. These notes are also in the README.
 
-## 8. Known product gap: no auto-updater
+## 9. Known product gap: no auto-updater
 
 There is no auto-updater (`app/src-tauri/Cargo.toml` has no
 `tauri-plugin-updater`). Users must download each new version manually from

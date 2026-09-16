@@ -5,6 +5,8 @@ import { dirname, resolve } from "node:path";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const workflow = await readFile(resolve(root, ".github/workflows/release.yml"), "utf8");
+const storeWorkflow = await readFile(resolve(root, ".github/workflows/store-msix.yml"), "utf8");
+const msixBuildScript = await readFile(resolve(root, "scripts/build-msix.ps1"), "utf8");
 
 assert.match(workflow, /concurrency:\s+group:\s+release-\$\{\{\s*inputs\.tag\s*\}\}/);
 assert.match(workflow, /allow_unsigned_windows:/);
@@ -28,5 +30,30 @@ assert.match(workflow, /SmartScreen/);
 assert.match(workflow, /timestampUrl/);
 assert.match(workflow, /codesign --verify --deep --strict/);
 assert.match(workflow, /xcrun stapler validate/);
+
+assert.match(storeWorkflow, /^name:\s*Store MSIX\s*$/m);
+assert.match(storeWorkflow, /workflow_dispatch:/);
+assert.match(storeWorkflow, /ref:\s*[\s\S]*default:\s*main/);
+assert.match(storeWorkflow, /version:\s*[\s\S]*default:\s*0\.2\.1\.0/);
+assert.match(storeWorkflow, /runs-on:\s*windows-latest/);
+assert.match(storeWorkflow, /microsoft\/setup-WinAppCli@v0\.1/);
+assert.match(storeWorkflow, /scripts\/check-version\.sh/);
+assert.match(storeWorkflow, /build-msix\.ps1\s+-Mode\s+test/);
+assert.match(storeWorkflow, /build-msix\.ps1\s+-Mode\s+store/);
+assert.match(storeWorkflow, /Add-AppxPackage/);
+assert.match(storeWorkflow, /Get-StartApps/);
+assert.match(storeWorkflow, /shell:AppsFolder/);
+assert.match(storeWorkflow, /Remove-AppxPackage/);
+assert.match(storeWorkflow, /eisen-store-msix-\$\{\{\s*inputs\.version\s*\}\}/);
+assert.match(storeWorkflow, /actions\/upload-artifact@v4/);
+
+assert.match(msixBuildScript, /ValidateSet\('store',\s*'test'\)/);
+assert.match(msixBuildScript, /--no-bundle/);
+assert.match(msixBuildScript, /manifest update-assets/);
+assert.match(msixBuildScript, /winapp pack/);
+assert.match(msixBuildScript, /--generate-cert/);
+assert.match(msixBuildScript, /--install-cert/);
+assert.match(msixBuildScript, /Get-FileHash/);
+assert.match(msixBuildScript, /finally/);
 
 console.log("release workflow contract: ok");
