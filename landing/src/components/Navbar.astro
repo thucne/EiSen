@@ -1,6 +1,6 @@
 ---
 import type { Locale } from '../i18n/utils';
-import { getDictionary, getLocalizedPath, appVersion, dmgDownloadPath, exeDownloadPath } from '../i18n/utils';
+import { getDictionary, getLocalizedPath, appVersion, dmgDownloadPath, microsoftStoreUrl } from '../i18n/utils';
 import AppleIcon from './AppleIcon.astro';
 import WindowsIcon from './WindowsIcon.astro';
 import GithubIcon from './GithubIcon.astro';
@@ -73,7 +73,9 @@ const windowsPath = locale === 'vi' ? '/vi/windows' : '/windows';
         id="navbar-download-btn"
         href={dmgDownloadPath}
         data-mac-url={dmgDownloadPath}
-        data-win-url={exeDownloadPath}
+        data-win-url={microsoftStoreUrl}
+        data-mac-label={t.nav.downloadMac}
+        data-win-label={t.nav.downloadWin}
         class="inline-flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-xl bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 text-white text-xs sm:text-sm font-semibold shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 whitespace-nowrap"
       >
         <span id="navbar-apple-icon"><AppleIcon class="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" size={16} /></span>
@@ -94,9 +96,13 @@ const windowsPath = locale === 'vi' ? '/vi/windows' : '/windows';
         const winIcon = document.getElementById('navbar-win-icon');
         if (btn && btn.dataset.winUrl) {
           btn.href = btn.dataset.winUrl;
+          btn.target = '_blank';
+          btn.rel = 'noopener noreferrer';
         }
         if (appleIcon) appleIcon.classList.add('hidden');
         if (winIcon) winIcon.classList.remove('hidden');
+        const text = document.getElementById('navbar-download-text');
+        if (text) text.textContent = btn?.dataset.winLabel || 'Windows (Store)';
       }
     } catch {}
   })();

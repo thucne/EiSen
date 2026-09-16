@@ -11,6 +11,7 @@ export const appVersion = '0.2.1';
 /** Cloudflare Pages `_redirects` maps these to GitHub Release assets. */
 export const dmgDownloadPath = '/download/mac';
 export const exeDownloadPath = '/download/windows';
+export const microsoftStoreUrl = 'https://apps.microsoft.com/detail/9NRLQNXFVBF8';
 export const releasesUrl = 'https://github.com/thucne/EiSen/releases';
 export const githubUrl = 'https://github.com/thucne/EiSen';
 

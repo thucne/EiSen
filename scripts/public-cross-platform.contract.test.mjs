@@ -44,8 +44,9 @@ test('CleanShot alternative page exposes both installers and OCR engines', async
 
   assert.match(page, /Mac & Windows/);
   assert.match(page, /Windows\.Media\.Ocr/);
+  assert.match(page, /microsoftStoreUrl/);
   assert.match(page, /exeDownloadPath/);
-  assert.match(page, /Download EiSen Free for Windows/);
+  assert.match(page, /Direct \.exe fallback/);
   assert.match(page, /downloadCopy\.windowsWarning/);
   assert.match(page, /Windows 10\/11/);
   assert.doesNotMatch(page, /CleanShot X Alternative for Mac \(2026\)/);
@@ -70,4 +71,38 @@ test('static setup mockup labels are explicitly macOS-specific', async () => {
 
   assert.match(setupGuide, /macOS: Privacy &amp; Security → Screen Recording/);
   assert.match(setupGuide, /macOS: Default: ⌥⌥ \(Double Option\)/);
+});
+
+test('Windows public CTAs prefer Microsoft Store and expose the direct fallback', async () => {
+  const utils = await source('landing/src/i18n/utils.ts');
+  const hero = await source('landing/src/components/Hero.astro');
+  const navbar = await source('landing/src/components/Navbar.astro');
+  const downloadCta = await source('landing/src/components/DownloadCta.astro');
+  const windowsPage = await source('landing/src/pages/windows.astro');
+  const vietnameseWindowsPage = await source('landing/src/pages/vi/windows.astro');
+  const alternativePage = await source('landing/src/pages/cleanshot-alternative.astro');
+  const storyPage = await source('landing/src/pages/story.astro');
+  const english = await source('landing/src/i18n/en.ts');
+  const vietnamese = await source('landing/src/i18n/vi.ts');
+
+  assert.match(utils, /microsoftStoreUrl = 'https:\/\/apps\.microsoft\.com\/detail\/9NRLQNXFVBF8'/);
+  assert.match(hero, /microsoftStoreUrl/);
+  assert.match(hero, /data-win-direct-url=\{exeUrl\}/);
+  assert.match(hero, /id="hero-windows-fallback"/);
+  assert.match(navbar, /data-win-url=\{microsoftStoreUrl\}/);
+  assert.match(downloadCta, /id="cta-win-store-btn"/);
+  assert.match(downloadCta, /id="cta-win-direct-btn"/);
+  assert.match(downloadCta, /href=\{microsoftStoreUrl\}/);
+  assert.match(windowsPage, /id="windows-store-hero-btn"/);
+  assert.match(windowsPage, /id="windows-direct-hero-btn"/);
+  assert.match(windowsPage, /href=\{microsoftStoreUrl\}/);
+  assert.match(vietnameseWindowsPage, /id="windows-store-hero-btn"/);
+  assert.match(vietnameseWindowsPage, /id="windows-direct-hero-btn"/);
+  assert.match(vietnameseWindowsPage, /href=\{microsoftStoreUrl\}/);
+  assert.match(alternativePage, /href=\{microsoftStoreUrl\}/);
+  assert.match(storyPage, /href=\{microsoftStoreUrl\}/);
+  assert.match(english, /buttonWin: "Get EiSen from Microsoft Store"/);
+  assert.match(english, /buttonWinDirect: "Direct \.exe fallback"/);
+  assert.match(vietnamese, /buttonWin: "Tải EiSen từ Microsoft Store"/);
+  assert.match(vietnamese, /buttonWinDirect: "Bản \.exe trực tiếp \(dự phòng\)"/);
 });

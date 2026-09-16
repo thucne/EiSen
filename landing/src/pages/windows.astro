@@ -3,7 +3,7 @@ import Layout from '../layouts/Layout.astro';
 import WindowsIcon from '../components/WindowsIcon.astro';
 import AppleIcon from '../components/AppleIcon.astro';
 import GithubIcon from '../components/GithubIcon.astro';
-import { exeDownloadPath, dmgDownloadPath, githubUrl, releasesUrl } from '../i18n/utils';
+import { exeDownloadPath, dmgDownloadPath, githubUrl, microsoftStoreUrl, releasesUrl } from '../i18n/utils';
 import { en } from '../i18n/en';
 
 const t = en.windowsPage;
@@ -117,12 +117,24 @@ const faqs = [
         <!-- CTA Buttons -->
         <div class="pt-4 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
           <a
-            href={exeDownloadPath}
+            id="windows-store-hero-btn"
+            href={microsoftStoreUrl}
+            target="_blank"
+            rel="noopener noreferrer"
             class="w-full sm:w-auto inline-flex items-center justify-center gap-3 px-8 py-4 rounded-2xl bg-gradient-to-r from-cyan-600 via-blue-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white font-bold text-base shadow-xl shadow-cyan-500/30 hover:shadow-cyan-500/50 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200"
           >
             <WindowsIcon class="w-5 h-5 shrink-0" size={20} />
             <span>{t.downloadCta}</span>
-            <span class="text-xs px-2 py-0.5 rounded-full bg-white/20 font-mono font-medium">EXE (~2.6MB)</span>
+            <span class="text-xs px-2 py-0.5 rounded-full bg-white/20 font-mono font-medium">MSIX</span>
+          </a>
+
+          <a
+            id="windows-direct-hero-btn"
+            href={exeDownloadPath}
+            class="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-6 py-4 rounded-2xl bg-white/5 hover:bg-white/10 border border-amber-400/25 text-amber-100 hover:text-white font-medium text-sm sm:text-base transition-all duration-200"
+          >
+            <WindowsIcon class="w-4 h-4 shrink-0 text-amber-300" size={18} />
+            <span>{t.directDownloadCta}</span>
           </a>
 
           <a
@@ -137,7 +149,7 @@ const faqs = [
         </div>
 
         <p class="text-xs text-slate-400 font-medium pt-1">
-          Supports 64-bit Windows 10 & 11 • Current-User NSIS Installer • Zero Telemetry
+          Microsoft Store MSIX recommended • Direct current-user NSIS fallback available • Zero Telemetry
         </p>
 
         <div role="note" class="mx-auto mt-4 max-w-2xl rounded-xl border border-amber-400/30 bg-amber-400/10 p-4 text-left text-sm text-amber-100">
@@ -339,11 +351,23 @@ const faqs = [
 
         <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
           <a
-            href={exeDownloadPath}
+            id="windows-store-final-btn"
+            href={microsoftStoreUrl}
+            target="_blank"
+            rel="noopener noreferrer"
             class="w-full sm:w-auto inline-flex items-center justify-center gap-3 px-8 py-4 rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold text-base shadow-xl shadow-cyan-500/30 hover:-translate-y-0.5 transition-all"
           >
             <WindowsIcon class="w-5 h-5 shrink-0" size={20} />
-            <span>Download for Windows (.exe)</span>
+            <span>{t.downloadCta}</span>
+          </a>
+
+          <a
+            id="windows-direct-final-btn"
+            href={exeDownloadPath}
+            class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-4 rounded-2xl bg-white/5 hover:bg-white/10 border border-amber-400/25 text-amber-100 hover:text-white font-medium text-base transition-all"
+          >
+            <WindowsIcon class="w-4 h-4 shrink-0 text-amber-300" size={18} />
+            <span>{t.directDownloadCta}</span>
           </a>
 
           <a

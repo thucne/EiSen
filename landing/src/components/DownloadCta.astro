@@ -1,6 +1,6 @@
 ---
 import type { Locale } from '../i18n/utils';
-import { getDictionary, dmgDownloadPath, exeDownloadPath, releasesUrl } from '../i18n/utils';
+import { getDictionary, dmgDownloadPath, exeDownloadPath, microsoftStoreUrl, releasesUrl } from '../i18n/utils';
 import AppleIcon from './AppleIcon.astro';
 import WindowsIcon from './WindowsIcon.astro';
 
@@ -53,14 +53,26 @@ const exeUrl = exeDownloadPath;
           <span>{d.buttonMac}</span>
         </a>
 
-        <!-- Windows Download Button -->
+        <!-- Windows Microsoft Store Button -->
         <a
-          id="cta-win-btn"
-          href={exeUrl}
+          id="cta-win-store-btn"
+          href={microsoftStoreUrl}
+          target="_blank"
+          rel="noopener noreferrer"
           class="w-full sm:w-auto inline-flex items-center justify-center gap-3 px-6 sm:px-8 py-3.5 sm:py-4 rounded-2xl bg-gradient-to-r from-cyan-600 via-blue-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white font-bold text-base shadow-xl shadow-cyan-500/25 hover:shadow-cyan-500/40 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200"
         >
           <WindowsIcon class="w-5 h-5 shrink-0" size={20} />
           <span>{d.buttonWin}</span>
+        </a>
+
+        <!-- Direct Windows fallback -->
+        <a
+          id="cta-win-direct-btn"
+          href={exeUrl}
+          class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 sm:px-6 py-3.5 sm:py-4 rounded-2xl bg-white/5 hover:bg-white/10 border border-amber-400/25 text-amber-100 hover:text-white font-medium text-sm sm:text-base transition-all duration-200"
+        >
+          <WindowsIcon class="w-4 h-4 shrink-0 text-amber-300" size={18} />
+          <span>{d.buttonWinDirect}</span>
         </a>
 
         <!-- GitHub Releases Button -->
@@ -107,7 +119,7 @@ const exeUrl = exeDownloadPath;
       if (isWin) {
         // Swap visual prominence if on Windows
         const macBtn = document.getElementById('cta-mac-btn');
-        const winBtn = document.getElementById('cta-win-btn');
+        const winBtn = document.getElementById('cta-win-store-btn');
         if (macBtn && winBtn && winBtn.parentNode) {
           winBtn.parentNode.insertBefore(winBtn, macBtn);
         }

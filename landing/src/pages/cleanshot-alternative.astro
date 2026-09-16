@@ -3,7 +3,7 @@ import Layout from '../layouts/Layout.astro';
 import AppleIcon from '../components/AppleIcon.astro';
 import WindowsIcon from '../components/WindowsIcon.astro';
 import GithubIcon from '../components/GithubIcon.astro';
-import { dmgDownloadPath, exeDownloadPath, getDictionary, githubUrl } from '../i18n/utils';
+import { dmgDownloadPath, exeDownloadPath, getDictionary, githubUrl, microsoftStoreUrl } from '../i18n/utils';
 
 const dmgUrl = dmgDownloadPath;
 const exeUrl = exeDownloadPath;
@@ -82,12 +82,22 @@ const faqs = [
           </a>
 
           <a
-            href={exeUrl}
-            class="w-full sm:w-auto inline-flex items-center justify-center gap-3 px-6 sm:px-8 py-3.5 rounded-2xl bg-cyan-500/15 hover:bg-cyan-500/25 border border-cyan-400/30 text-cyan-100 font-semibold text-sm sm:text-base transition-all duration-200 group"
+            href={microsoftStoreUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="w-full sm:w-auto inline-flex items-center justify-center gap-3 px-6 sm:px-8 py-3.5 rounded-2xl bg-cyan-600 hover:bg-cyan-500 text-white font-semibold text-sm sm:text-base shadow-xl shadow-cyan-600/25 transition-all duration-200 group"
           >
             <WindowsIcon class="w-5 h-5 shrink-0" size={20} />
-            <span>Download EiSen Free for Windows</span>
-            <span class="text-xs px-2 py-0.5 rounded-full bg-cyan-400/15 font-mono font-medium">EXE (~2.6 MB)</span>
+            <span>Get EiSen from Microsoft Store</span>
+            <span class="text-xs px-2 py-0.5 rounded-full bg-white/20 font-mono font-medium">MSIX</span>
+          </a>
+
+          <a
+            href={exeUrl}
+            class="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-2xl bg-white/5 hover:bg-white/10 border border-amber-400/25 text-amber-100 hover:text-white font-medium text-sm sm:text-base transition-all duration-200 group"
+          >
+            <WindowsIcon class="w-4 h-4 shrink-0 text-amber-300" size={18} />
+            <span>Direct .exe fallback</span>
           </a>
 
           <a
@@ -219,11 +229,20 @@ const faqs = [
             <span>Download EiSen Free (.dmg)</span>
           </a>
           <a
-            href={exeUrl}
+            href={microsoftStoreUrl}
+            target="_blank"
+            rel="noopener noreferrer"
             class="inline-flex items-center justify-center gap-3 px-8 py-3.5 rounded-2xl bg-cyan-600 hover:bg-cyan-500 text-white font-semibold text-base shadow-xl shadow-cyan-600/30 transition-all duration-200"
           >
             <WindowsIcon class="w-5 h-5" size={20} />
-            <span>Download EiSen Free (.exe)</span>
+            <span>Get EiSen from Microsoft Store</span>
+          </a>
+          <a
+            href={exeUrl}
+            class="inline-flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-2xl bg-white/5 hover:bg-white/10 border border-amber-400/25 text-amber-100 hover:text-white font-medium text-base transition-all duration-200"
+          >
+            <WindowsIcon class="w-4 h-4 text-amber-300" size={18} />
+            <span>Direct .exe fallback</span>
           </a>
         </div>
       </div>

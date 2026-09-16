@@ -2,7 +2,7 @@
 import "../styles/global.css";
 import AppleIcon from "../components/AppleIcon.astro";
 import WindowsIcon from "../components/WindowsIcon.astro";
-import { dmgDownloadPath, exeDownloadPath } from "../i18n/utils";
+import { dmgDownloadPath, exeDownloadPath, microsoftStoreUrl } from "../i18n/utils";
 
 const dmgUrl = dmgDownloadPath;
 const exeUrl = exeDownloadPath;
@@ -621,7 +621,7 @@ const exeUrl = exeDownloadPath;
             </div>
           </div>
 
-          <!-- Bottom Direct Download CTA Card -->
+          <!-- Bottom Download CTA Card -->
           <div class="space-y-1.5 flex-shrink-0 pb-0.5 sm:pb-1 w-full max-w-[420px] mx-auto">
             <a
               href={dmgUrl}
@@ -632,15 +632,25 @@ const exeUrl = exeDownloadPath;
             </a>
 
             <a
-              href={exeUrl}
-              class="w-full inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-cyan-600/80 text-white font-bold text-sm shadow-xl shadow-cyan-500/20 hover:brightness-110 active:scale-98 transition-all"
+              href={microsoftStoreUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="w-full inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-cyan-600 text-white font-bold text-sm shadow-xl shadow-cyan-500/20 hover:brightness-110 active:scale-98 transition-all"
             >
               <WindowsIcon class="w-4 h-4 text-white" size={18} />
-              <span>Tải EiSen Cho Windows (EXE ~2.6 MB)</span>
+              <span>Tải EiSen từ Microsoft Store (MSIX)</span>
+            </a>
+
+            <a
+              href={exeUrl}
+              class="w-full inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-white/5 border border-amber-400/25 text-amber-100 font-medium text-sm hover:bg-white/10 hover:text-white active:scale-98 transition-all"
+            >
+              <WindowsIcon class="w-4 h-4 text-amber-300" size={18} />
+              <span>Tải bản .exe trực tiếp (dự phòng)</span>
             </a>
 
             <p class="text-[10px] leading-relaxed text-amber-200/90">
-              ⚠️ Windows v0.2.1 dùng bộ cài chưa ký số; SmartScreen có thể cảnh báo. Hãy kiểm tra SHA-256 trước khi chạy.
+              Microsoft Store là đường khuyến nghị. Bản .exe trực tiếp chưa ký số có thể bị SmartScreen cảnh báo; hãy kiểm tra SHA-256 trước khi chạy.
             </p>
 
             <div class="flex flex-wrap items-center justify-center gap-2 text-[10px] text-slate-400 font-mono">

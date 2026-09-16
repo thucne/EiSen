@@ -1,6 +1,6 @@
 ---
 import type { Locale } from '../i18n/utils';
-import { getDictionary, dmgDownloadPath, exeDownloadPath, githubUrl } from '../i18n/utils';
+import { getDictionary, dmgDownloadPath, exeDownloadPath, githubUrl, microsoftStoreUrl } from '../i18n/utils';
 import AppleIcon from './AppleIcon.astro';
 import WindowsIcon from './WindowsIcon.astro';
 import GithubIcon from './GithubIcon.astro';
@@ -14,6 +14,7 @@ const t = getDictionary(locale);
 
 const dmgUrl = dmgDownloadPath;
 const exeUrl = exeDownloadPath;
+const winStoreUrl = microsoftStoreUrl;
 ---
 
 <section class="relative pt-8 pb-16 sm:pt-12 sm:pb-20 lg:pt-20 lg:pb-28 overflow-hidden">
@@ -48,7 +49,14 @@ const exeUrl = exeDownloadPath;
             id="hero-download-btn"
             href={dmgUrl}
             data-mac-url={dmgUrl}
-            data-win-url={exeUrl}
+            data-win-url={winStoreUrl}
+            data-win-direct-url={exeUrl}
+            data-mac-label={t.hero.downloadMac}
+            data-win-label={t.hero.downloadWin}
+            data-mac-badge="DMG (4.2MB)"
+            data-win-badge={t.hero.windowsStoreBadge}
+            data-switch-to-win={t.hero.switchToWin}
+            data-switch-to-mac={t.hero.switchToMac}
             class="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 sm:gap-3 px-6 sm:px-8 py-3.5 sm:py-4 rounded-2xl bg-gradient-to-r from-indigo-500 via-indigo-600 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-semibold text-sm sm:text-base shadow-xl shadow-indigo-500/25 hover:shadow-indigo-500/40 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 group focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
           >
             <span id="hero-mac-icon"><AppleIcon class="w-5 h-5 shrink-0" size={20} /></span>
@@ -80,6 +88,15 @@ const exeUrl = exeDownloadPath;
             <span aria-hidden="true" class="mt-px shrink-0">⚠️</span>
             <span>{t.hero.windowsWarning}</span>
           </p>
+        </div>
+
+        <div id="hero-windows-fallback" aria-hidden="true" class="hidden w-full max-w-xl text-center">
+          <a
+            href={exeUrl}
+            class="inline-flex items-center gap-1.5 text-xs text-amber-200/90 hover:text-amber-100 underline underline-offset-4 decoration-amber-300/40 hover:decoration-amber-200 transition-colors"
+          >
+            {t.hero.windowsFallback}
+          </a>
         </div>
 
         <!-- Secondary OS Switcher Link -->
@@ -309,6 +326,7 @@ const exeUrl = exeDownloadPath;
       const switchLink = document.getElementById('hero-os-switch-link');
       const switchText = document.getElementById('hero-switch-text');
       const windowsWarning = document.getElementById('hero-windows-warning');
+      const windowsFallback = document.getElementById('hero-windows-fallback');
 
       let currentOS = isWin ? 'win' : 'mac';
 
@@ -316,28 +334,44 @@ const exeUrl = exeDownloadPath;
         currentOS = os;
         if (os === 'win') {
           if (btn && btn.dataset.winUrl) btn.href = btn.dataset.winUrl;
+          if (btn) {
+            btn.target = '_blank';
+            btn.rel = 'noopener noreferrer';
+          }
           if (macIcon) macIcon.classList.add('hidden');
           if (winIcon) winIcon.classList.remove('hidden');
-          if (text) text.textContent = 'Download for Windows';
-          if (badge) badge.textContent = 'EXE (~2.6MB)';
+          if (text) text.textContent = btn?.dataset.winLabel || 'Get it from Microsoft Store';
+          if (badge) badge.textContent = btn?.dataset.winBadge || 'MSIX (Store)';
           if (switchLink && btn) switchLink.href = btn.dataset.macUrl || '#';
-          if (switchText) switchText.textContent = 'Looking for macOS version? Download .dmg';
+          if (switchText) switchText.textContent = btn?.dataset.switchToMac || 'Looking for macOS version? Download .dmg';
           if (windowsWarning) {
             windowsWarning.classList.remove('hidden');
             windowsWarning.setAttribute('aria-hidden', 'false');
           }
+          if (windowsFallback) {
+            windowsFallback.classList.remove('hidden');
+            windowsFallback.setAttribute('aria-hidden', 'false');
+          }
           switchMockup('win');
         } else {
           if (btn && btn.dataset.macUrl) btn.href = btn.dataset.macUrl;
+          if (btn) {
+            btn.removeAttribute('target');
+            btn.removeAttribute('rel');
+          }
           if (macIcon) macIcon.classList.remove('hidden');
           if (winIcon) winIcon.classList.add('hidden');
-          if (text) text.textContent = 'Download for macOS';
-          if (badge) badge.textContent = 'DMG (4.2MB)';
+          if (text) text.textContent = btn?.dataset.macLabel || 'Download for macOS';
+          if (badge) badge.textContent = btn?.dataset.macBadge || 'DMG (4.2MB)';
           if (switchLink && btn) switchLink.href = btn.dataset.winUrl || '#';
-          if (switchText) switchText.textContent = 'Looking for Windows version? Download .exe';
+          if (switchText) switchText.textContent = btn?.dataset.switchToWin || 'Looking for Windows version? Get it from Microsoft Store';
           if (windowsWarning) {
             windowsWarning.classList.add('hidden');
             windowsWarning.setAttribute('aria-hidden', 'true');
+          }
+          if (windowsFallback) {
+            windowsFallback.classList.add('hidden');
+            windowsFallback.setAttribute('aria-hidden', 'true');
           }
           switchMockup('mac');
         }
