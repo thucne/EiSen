@@ -1,35 +1,37 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import AppleIcon from '../components/AppleIcon.astro';
+import WindowsIcon from '../components/WindowsIcon.astro';
 import GithubIcon from '../components/GithubIcon.astro';
-import { dmgDownloadPath } from '../i18n/utils';
+import { dmgDownloadPath, exeDownloadPath, getDictionary, githubUrl } from '../i18n/utils';
 
 const dmgUrl = dmgDownloadPath;
-const githubUrl = 'https://github.com/thucne/EiSen';
+const exeUrl = exeDownloadPath;
+const downloadCopy = getDictionary('en').downloadSection;
 
-const title = 'Best Free CleanShot X Alternative for Mac (2026) | EiSen';
-const description = 'Looking for a 100% free, open-source CleanShot X alternative? EiSen gives you fast screenshot captures, step markers, privacy blur, and offline Apple Vision OCR with zero subscriptions.';
+const title = 'Best Free CleanShot X Alternative for Mac & Windows (2026) | EiSen';
+const description = 'Looking for a 100% free, open-source CleanShot X alternative for Mac or Windows? EiSen gives you fast screenshot captures, step markers, privacy blur, and offline native OCR with zero subscriptions.';
 const canonicalUrl = 'https://eisen.a302.link/cleanshot-alternative';
 
 const comparisonRows = [
   { feature: 'Price & Licensing', eisen: '100% Free Forever (MIT Open Source)', cleanshot: '$29 + $19/yr renewals (or Setapp $120/yr)' },
   { feature: 'Privacy & Telemetry', eisen: '100% Offline (Zero Telemetry, Zero Cloud)', cleanshot: 'Cloud sync & analytical tracking' },
-  { feature: 'Text OCR Engine', eisen: 'Apple Vision Neural Engine (Offline & Free)', cleanshot: 'Cloud/Proprietary (Limited on basic tier)' },
-  { feature: 'Menu Bar Resident', eisen: 'Yes (Clean, lightweight menu bar tool)', cleanshot: 'Yes' },
-  { feature: 'App Size on Disk', eisen: '~4.2 MB (Ultra-fast Rust core)', cleanshot: '~60 MB+' },
+  { feature: 'Text OCR Engine', eisen: 'Native on-device OCR (Apple Vision on macOS; Windows.Media.Ocr on Windows)', cleanshot: 'Cloud/Proprietary (Limited on basic tier)' },
+  { feature: 'Menu Bar / System Tray Resident', eisen: 'Yes (Clean, lightweight background tool)', cleanshot: 'Yes' },
+  { feature: 'Installer / App Size', eisen: '~4.2 MB macOS DMG / ~2.6 MB Windows installer', cleanshot: '~60 MB+' },
   { feature: 'Account / Login Required', eisen: 'No (Install and use immediately)', cleanshot: 'Yes (License key or CleanShot Cloud login)' },
   { feature: 'Annotation Suite', eisen: 'Numbered Steps, Loupe, Blur, Arrow, Text', eisenGood: true, cleanshot: 'Comprehensive pro editor' },
-  { feature: 'Platform Support', eisen: 'macOS 11.0+ (Optimized for Apple Silicon)', cleanshot: 'macOS 10.14+' },
+  { feature: 'Platform Support', eisen: 'macOS 11.0+ & Windows 10/11 (64-bit)', cleanshot: 'macOS 10.14+' },
 ];
 
 const faqs = [
   {
-    q: 'Why do Mac users look for a CleanShot X alternative?',
+    q: 'Why do Mac and Windows users look for a CleanShot X alternative?',
     a: 'CleanShot X is a fantastic tool, but its pricing model ($29 for one-time with only 1 year of updates, or ongoing subscriptions via Setapp) pushes many students, developers, and independent professionals to look for a reliable, free alternative. Additionally, users dealing with sensitive proprietary code or customer privacy prefer EiSen because it never connects to cloud servers.'
   },
   {
     q: 'Can EiSen extract text from images like CleanShot X OCR?',
-    a: 'Yes! EiSen includes native Apple Vision OCR built directly on top of macOS frameworks and the Apple Neural Engine. You can select any region on your screen and copy the recognized text to your clipboard in under 200 milliseconds — completely offline and unlimited.'
+    a: 'Yes! EiSen includes native on-device OCR: Apple Vision on macOS and Windows.Media.Ocr on Windows. Select any region on your screen and copy the recognized text to your clipboard — completely offline and unlimited.'
   },
   {
     q: 'Is EiSen truly free and open-source?',
@@ -37,7 +39,7 @@ const faqs = [
   },
   {
     q: 'How does EiSen compare to Shottr?',
-    a: 'Shottr was originally free, but recently introduced nag screens and a paid license tier. EiSen is committed to remaining 100% open-source and free forever, built with modern Rust and Tauri v2 for native macOS performance.'
+    a: 'Shottr was originally free, but recently introduced nag screens and a paid license tier. EiSen is committed to remaining 100% open-source and free forever, built with modern Rust and Tauri v2 for native performance on macOS and Windows.'
   },
 ];
 ---
@@ -61,11 +63,11 @@ const faqs = [
           The Free, Privacy-First <br class="hidden sm:inline" />
           <span class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-400 to-cyan-400">
             CleanShot X Alternative
-          </span> for Mac
+          </span> for Mac &amp; Windows
         </h1>
 
         <p class="text-base sm:text-xl text-slate-300 max-w-3xl mx-auto font-normal leading-relaxed">
-          Why pay $29 or buy monthly subscriptions? EiSen gives you lightning-fast screen captures, numbered step markers, redaction blur, pixel loupe, and on-device Apple Vision OCR — 100% free and open-source.
+          Why pay $29 or buy monthly subscriptions? EiSen gives you lightning-fast screen captures, numbered step markers, redaction blur, pixel loupe, and native on-device OCR on macOS and Windows — 100% free and open-source.
         </p>
 
         <!-- CTA Buttons -->
@@ -80,6 +82,15 @@ const faqs = [
           </a>
 
           <a
+            href={exeUrl}
+            class="w-full sm:w-auto inline-flex items-center justify-center gap-3 px-6 sm:px-8 py-3.5 rounded-2xl bg-cyan-500/15 hover:bg-cyan-500/25 border border-cyan-400/30 text-cyan-100 font-semibold text-sm sm:text-base transition-all duration-200 group"
+          >
+            <WindowsIcon class="w-5 h-5 shrink-0" size={20} />
+            <span>Download EiSen Free for Windows</span>
+            <span class="text-xs px-2 py-0.5 rounded-full bg-cyan-400/15 font-mono font-medium">EXE (~2.6 MB)</span>
+          </a>
+
+          <a
             href={githubUrl}
             target="_blank"
             rel="noopener noreferrer"
@@ -90,8 +101,13 @@ const faqs = [
           </a>
         </div>
 
+        <div role="note" class="max-w-2xl mx-auto rounded-xl border border-amber-400/30 bg-amber-400/10 p-3 text-left text-xs text-amber-100">
+          <p class="font-semibold text-amber-200">{downloadCopy.windowsWarningTitle}</p>
+          <p class="mt-1 leading-relaxed">{downloadCopy.windowsWarning}</p>
+        </div>
+
         <p class="text-xs text-slate-400 pt-1">
-          macOS 11.0+ (Big Sur, Monterey, Ventura, Sonoma, Sequoia) • Apple Silicon native • Zero telemetry
+          macOS 11.0+ and Windows 10/11 (64-bit) • Apple Silicon &amp; Intel • Zero telemetry
         </p>
       </div>
 
@@ -134,7 +150,7 @@ const faqs = [
       <!-- Why Choose EiSen Grid -->
       <div class="mt-20 space-y-8">
         <h2 class="text-2xl sm:text-3xl font-extrabold text-white text-center">
-          Why Mac Users are Switching to EiSen
+          Why Mac &amp; Windows Users are Switching to EiSen
         </h2>
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -154,7 +170,7 @@ const faqs = [
             </div>
             <h3 class="text-lg font-bold text-white">Absolute Privacy</h3>
             <p class="text-sm text-slate-300 leading-relaxed">
-              Zero outbound network traffic. OCR happens entirely on your Mac's Apple Neural Engine. Your captures, sensitive code, and client confidential data never touch external cloud servers.
+              Zero outbound network traffic. OCR happens entirely on your device using Apple Vision on macOS or Windows.Media.Ocr on Windows. Your captures, sensitive code, and client confidential data never touch external cloud servers.
             </p>
           </div>
 
@@ -162,9 +178,9 @@ const faqs = [
             <div class="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 font-bold">
               ⚡
             </div>
-            <h3 class="text-lg font-bold text-white">4.2 MB Native App</h3>
+            <h3 class="text-lg font-bold text-white">Lightweight Native App</h3>
             <p class="text-sm text-slate-300 leading-relaxed">
-              Engineered with Rust and Tauri v2. Cold launch is under 5ms, sits cleanly in your menu bar without hogging gigabytes of RAM or draining MacBook battery.
+              Engineered with Rust and Tauri v2. It runs quietly in your macOS menu bar or Windows system tray without hogging gigabytes of RAM or draining your battery.
             </p>
           </div>
         </div>
@@ -192,15 +208,22 @@ const faqs = [
           Ready to try the free CleanShot alternative?
         </h2>
         <p class="text-base text-slate-300 max-w-xl mx-auto">
-          Download EiSen today and enjoy lightning-fast, privacy-first screen capture on your Mac.
+          Download EiSen today and enjoy lightning-fast, privacy-first screen capture on macOS and Windows.
         </p>
-        <div class="pt-2">
+        <div class="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
           <a
             href={dmgUrl}
             class="inline-flex items-center justify-center gap-3 px-8 py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-base shadow-xl shadow-indigo-600/30 transition-all duration-200"
           >
             <AppleIcon class="w-5 h-5" size={20} />
             <span>Download EiSen Free (.dmg)</span>
+          </a>
+          <a
+            href={exeUrl}
+            class="inline-flex items-center justify-center gap-3 px-8 py-3.5 rounded-2xl bg-cyan-600 hover:bg-cyan-500 text-white font-semibold text-base shadow-xl shadow-cyan-600/30 transition-all duration-200"
+          >
+            <WindowsIcon class="w-5 h-5" size={20} />
+            <span>Download EiSen Free (.exe)</span>
           </a>
         </div>
       </div>

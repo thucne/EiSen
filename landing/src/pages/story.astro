@@ -1,7 +1,11 @@
 ---
 import "../styles/global.css";
 import AppleIcon from "../components/AppleIcon.astro";
-import GithubIcon from "../components/GithubIcon.astro";
+import WindowsIcon from "../components/WindowsIcon.astro";
+import { dmgDownloadPath, exeDownloadPath } from "../i18n/utils";
+
+const dmgUrl = dmgDownloadPath;
+const exeUrl = exeDownloadPath;
 ---
 
 <!doctype html>
@@ -9,7 +13,7 @@ import GithubIcon from "../components/GithubIcon.astro";
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>EiSen — The Native macOS Screenshot Tool (Story Demo)</title>
+    <title>EiSen — Native Screen Capture Story Demo for macOS & Windows</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <style>
       @keyframes pulse-glow {
@@ -173,8 +177,8 @@ import GithubIcon from "../components/GithubIcon.astro";
               height="38"
             />
             <div class="flex items-center gap-1">
-              <span class="text-[9px] px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 font-mono font-semibold border border-indigo-500/30">macOS</span>
-              <span class="text-[9px] px-1 py-0.5 rounded bg-emerald-500/10 text-emerald-400 font-mono font-semibold">v0.1.2</span>
+              <span class="text-[9px] px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 font-mono font-semibold border border-indigo-500/30">macOS story • Windows available</span>
+              <span class="text-[9px] px-1 py-0.5 rounded bg-emerald-500/10 text-emerald-400 font-mono font-semibold">v0.2.1</span>
             </div>
           </div>
 
@@ -204,7 +208,7 @@ import GithubIcon from "../components/GithubIcon.astro";
               Chụp Màn Hình Siêu Tốc
             </h1>
             <p class="text-[11px] sm:text-xs text-slate-300">
-              Nhấn đúp phím <span class="font-mono text-indigo-300 font-bold bg-indigo-500/20 px-1.5 py-0.5 rounded">⌥ Option</span> là chụp tức thì, phản hồi &lt;5ms
+              Nhấn đúp <span class="font-mono text-indigo-300 font-bold bg-indigo-500/20 px-1.5 py-0.5 rounded">⌥ Option</span> trên macOS hoặc <span class="font-mono text-cyan-300 font-bold bg-cyan-500/20 px-1.5 py-0.5 rounded">PrtScn</span> trên Windows để chụp tức thì
             </p>
           </div>
 
@@ -445,13 +449,13 @@ import GithubIcon from "../components/GithubIcon.astro";
           <!-- Top Title Block -->
           <div class="space-y-0.5 sm:space-y-1 text-center flex-shrink-0 pt-0.5 sm:pt-1">
             <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-cyan-500/15 border border-cyan-500/30 text-cyan-300 text-[10px] sm:text-xs font-semibold">
-              <span>🍏 03 • APPLE VISION NEURAL ENGINE</span>
+              <span>🧠 03 • NATIVE ON-DEVICE OCR</span>
             </div>
             <h2 class="text-xl sm:text-2xl font-black tracking-tight text-white leading-tight">
               OCR Trích Xuất Chữ Tức Thì
             </h2>
             <p class="text-[11px] sm:text-xs text-slate-300">
-              Nhận diện text trong ảnh bằng AI của macOS, hoàn toàn Offline 100%
+              Nhận diện text trên máy bằng Apple Vision (macOS) hoặc Windows.Media.Ocr (Windows), hoàn toàn Offline 100%
             </p>
           </div>
 
@@ -535,8 +539,8 @@ import GithubIcon from "../components/GithubIcon.astro";
           <div class="space-y-1.5 flex-shrink-0 pb-0.5 sm:pb-1 w-full max-w-[420px] mx-auto">
             <div class="grid grid-cols-3 gap-1.5 text-center text-xs">
               <div class="py-1.5 px-1 rounded-xl bg-white/[0.04] border border-white/10 flex flex-col items-center gap-0.5 shadow">
-                <span class="text-cyan-400 font-bold text-xs sm:text-sm">🍎 Vision AI</span>
-                <span class="text-slate-300 text-[10px]">Apple Native API</span>
+                <span class="text-cyan-400 font-bold text-xs sm:text-sm">🧠 Native OCR</span>
+                <span class="text-slate-300 text-[10px]">Apple Vision • Windows.Media.Ocr</span>
               </div>
               <div class="py-1.5 px-1 rounded-xl bg-white/[0.04] border border-white/10 flex flex-col items-center gap-0.5 shadow">
                 <span class="text-emerald-400 font-bold text-xs sm:text-sm">🛡️ 100% Offline</span>
@@ -548,7 +552,7 @@ import GithubIcon from "../components/GithubIcon.astro";
               </div>
             </div>
             <p class="text-[10px] text-center text-slate-400 font-mono">
-              Apple Neural Engine • 0% Tesseract • Tối ưu M1/M2/M3/M4
+              Apple Vision (macOS) • Windows.Media.Ocr (Windows) • 0% Tesseract
             </p>
           </div>
         </div>
@@ -561,10 +565,10 @@ import GithubIcon from "../components/GithubIcon.astro";
               <span>🚀 04 • 100% FREE &amp; OPEN SOURCE</span>
             </div>
             <h2 class="text-xl sm:text-2xl font-black tracking-tight text-white leading-tight">
-              Mạnh Mẽ &amp; Thuần Native Cho Mac
+              Mạnh Mẽ &amp; Thuần Native Cho Mac &amp; Windows
             </h2>
             <p class="text-[11px] sm:text-xs text-slate-300">
-              Công cụ chụp màn hình mã nguồn mở tối ưu hàng đầu cho macOS
+              Công cụ chụp màn hình mã nguồn mở tối ưu cho macOS &amp; Windows
             </p>
           </div>
 
@@ -593,7 +597,7 @@ import GithubIcon from "../components/GithubIcon.astro";
                 </div>
                 <div class="py-1.5 px-2.5 flex items-center justify-between">
                   <span class="text-slate-400">Dung lượng ứng dụng:</span>
-                  <span class="text-indigo-300 font-mono font-bold">Chỉ 4.2 MB (Siêu nhẹ)</span>
+                  <span class="text-indigo-300 font-mono font-bold">~2.6 MB Win / ~4.2 MB Mac</span>
                 </div>
                 <div class="py-1.5 px-2.5 flex items-center justify-between">
                   <span class="text-slate-400">Quyền riêng tư:</span>
@@ -601,7 +605,7 @@ import GithubIcon from "../components/GithubIcon.astro";
                 </div>
                 <div class="py-1.5 px-2.5 flex items-center justify-between">
                   <span class="text-slate-400">Hiệu năng &amp; AI:</span>
-                  <span class="text-purple-300 font-mono font-bold">Rust + Tauri v2 + Apple Vision</span>
+                  <span class="text-purple-300 font-mono font-bold">Rust + Tauri v2 + Native OCR</span>
                 </div>
               </div>
 
@@ -620,19 +624,31 @@ import GithubIcon from "../components/GithubIcon.astro";
           <!-- Bottom Direct Download CTA Card -->
           <div class="space-y-1.5 flex-shrink-0 pb-0.5 sm:pb-1 w-full max-w-[420px] mx-auto">
             <a
-              href="/download"
+              href={dmgUrl}
               class="w-full inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-indigo-500 via-indigo-600 to-purple-600 text-white font-bold text-sm shadow-xl shadow-indigo-500/30 hover:brightness-110 active:scale-98 transition-all"
             >
               <AppleIcon class="w-4 h-4 text-white" size={18} />
               <span>Tải EiSen Cho Mac (DMG 4.2 MB)</span>
             </a>
 
-            <div class="flex items-center justify-center gap-2 text-[10px] text-slate-400 font-mono">
-              <span>v0.1.2</span>
+            <a
+              href={exeUrl}
+              class="w-full inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-cyan-600/80 text-white font-bold text-sm shadow-xl shadow-cyan-500/20 hover:brightness-110 active:scale-98 transition-all"
+            >
+              <WindowsIcon class="w-4 h-4 text-white" size={18} />
+              <span>Tải EiSen Cho Windows (EXE ~2.6 MB)</span>
+            </a>
+
+            <p class="text-[10px] leading-relaxed text-amber-200/90">
+              ⚠️ Windows v0.2.1 dùng bộ cài chưa ký số; SmartScreen có thể cảnh báo. Hãy kiểm tra SHA-256 trước khi chạy.
+            </p>
+
+            <div class="flex flex-wrap items-center justify-center gap-2 text-[10px] text-slate-400 font-mono">
+              <span>v0.2.1</span>
               <span>•</span>
-              <span>Apple Silicon (M1–M4)</span>
+              <span>Apple Silicon &amp; Intel</span>
               <span>•</span>
-              <span class="text-indigo-400 font-semibold">macOS 11+</span>
+              <span class="text-indigo-400 font-semibold">macOS 11+ &amp; Windows 10/11 (64-bit)</span>
             </div>
           </div>
         </div>

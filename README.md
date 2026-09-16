@@ -31,13 +31,16 @@ Privacy: everything stays on your device. See [PRIVACY.md](PRIVACY.md) for what 
 ## Tech stack
 
 - **Frontend:** Svelte 5 / SvelteKit, TypeScript, Vanilla CSS, Lucide icons, Vitest.
-- **Backend:** Rust, Tauri v2, `objc2` macOS AppKit bindings, system `screencapture` CLI.
+- **Backend:** Rust and Tauri v2 with platform adapters: macOS AppKit bindings and `screencapture`, plus Windows `xcap` and Windows.Media.Ocr.
 
 ---
 
 ## Develop
 
-Prerequisites: Node.js `v22+` (`npm v10+`), Rust `1.75+`, Xcode Command Line Tools (`xcode-select --install`), and Screen Recording permission for `tauri dev`.
+Prerequisites: Node.js `v22+` (`npm v10+`) and Rust `1.75+`.
+
+- **macOS development:** install Xcode Command Line Tools (`xcode-select --install`) and grant Screen Recording permission for `tauri dev`.
+- **Windows development:** use the Rust MSVC toolchain with the Windows desktop build tools and SDK.
 
 ```bash
 npm --prefix app install
