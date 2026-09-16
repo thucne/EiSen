@@ -42,49 +42,55 @@ const exeUrl = exeDownloadPath;
       </p>
 
       <!-- Action Buttons for macOS and Windows -->
-      <div class="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
-        <!-- macOS Download Button -->
-        <a
-          id="cta-mac-btn"
-          href={dmgUrl}
-          class="w-full sm:w-auto inline-flex items-center justify-center gap-3 px-6 sm:px-8 py-3.5 sm:py-4 rounded-2xl bg-gradient-to-r from-indigo-500 via-indigo-600 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-bold text-base shadow-xl shadow-indigo-500/30 hover:shadow-indigo-500/50 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200"
-        >
-          <AppleIcon class="w-5 h-5 shrink-0" size={20} />
-          <span>{d.buttonMac}</span>
-        </a>
+      <div class="max-w-2xl mx-auto">
+        <!-- Primary Platform Downloads -->
+        <div class="flex flex-col sm:flex-row items-stretch justify-center gap-3 sm:gap-4">
+          <!-- macOS Download Button -->
+          <a
+            id="cta-mac-btn"
+            href={dmgUrl}
+            class="flex-1 min-h-[56px] inline-flex items-center justify-center gap-3 px-6 sm:px-8 py-3.5 sm:py-4 rounded-2xl bg-gradient-to-r from-indigo-500 via-indigo-600 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-bold text-sm sm:text-base shadow-xl shadow-indigo-500/30 hover:shadow-indigo-500/50 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 text-center"
+          >
+            <AppleIcon class="w-5 h-5 shrink-0" size={20} />
+            <span class="whitespace-normal sm:whitespace-nowrap">{d.buttonMac}</span>
+          </a>
 
-        <!-- Windows Microsoft Store Button -->
-        <a
-          id="cta-win-store-btn"
-          href={microsoftStoreUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          class="w-full sm:w-auto inline-flex items-center justify-center gap-3 px-6 sm:px-8 py-3.5 sm:py-4 rounded-2xl bg-gradient-to-r from-cyan-600 via-blue-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white font-bold text-base shadow-xl shadow-cyan-500/25 hover:shadow-cyan-500/40 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200"
-        >
-          <WindowsIcon class="w-5 h-5 shrink-0" size={20} />
-          <span>{d.buttonWin}</span>
-        </a>
+          <!-- Windows Microsoft Store Button -->
+          <a
+            id="cta-win-store-btn"
+            href={microsoftStoreUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="flex-1 min-h-[56px] inline-flex items-center justify-center gap-3 px-6 sm:px-8 py-3.5 sm:py-4 rounded-2xl bg-gradient-to-r from-cyan-600 via-blue-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white font-bold text-sm sm:text-base shadow-xl shadow-cyan-500/25 hover:shadow-cyan-500/40 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 text-center"
+          >
+            <WindowsIcon class="w-5 h-5 shrink-0" size={20} />
+            <span class="whitespace-normal sm:whitespace-nowrap">{d.buttonWin}</span>
+          </a>
+        </div>
 
-        <!-- Direct Windows fallback -->
-        <a
-          id="cta-win-direct-btn"
-          href={exeUrl}
-          class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 sm:px-6 py-3.5 sm:py-4 rounded-2xl bg-white/5 hover:bg-white/10 border border-amber-400/25 text-amber-100 hover:text-white font-medium text-sm sm:text-base transition-all duration-200"
-        >
-          <WindowsIcon class="w-4 h-4 shrink-0 text-amber-300" size={18} />
-          <span>{d.buttonWinDirect}</span>
-        </a>
+        <!-- Secondary Options: Windows Direct Fallback & GitHub Releases -->
+        <div class="flex flex-col sm:flex-row items-center justify-center gap-3 mt-3 sm:mt-4">
+          <!-- Direct Windows fallback -->
+          <a
+            id="cta-win-direct-btn"
+            href={exeUrl}
+            class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 sm:py-3 rounded-xl bg-amber-400/10 hover:bg-amber-400/15 border border-amber-400/30 text-amber-200 hover:text-white font-medium text-xs sm:text-sm transition-all duration-200"
+          >
+            <WindowsIcon class="w-4 h-4 shrink-0 text-amber-300" size={16} />
+            <span>{d.buttonWinDirect}</span>
+          </a>
 
-        <!-- GitHub Releases Button -->
-        <a
-          href={releasesUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 sm:py-4 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/15 text-slate-200 hover:text-white font-medium text-base transition-all duration-200"
-        >
-          <span>{d.viewGithub}</span>
-          <span>→</span>
-        </a>
+          <!-- GitHub Releases Button -->
+          <a
+            href={releasesUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 sm:py-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/15 text-slate-300 hover:text-white font-medium text-xs sm:text-sm transition-all duration-200"
+          >
+            <span>{d.viewGithub}</span>
+            <span>→</span>
+          </a>
+        </div>
       </div>
 
       <div class="mt-8 pt-6 border-t border-white/10 grid grid-cols-1 sm:grid-cols-2 gap-3 text-left max-w-xl mx-auto text-xs text-slate-400 font-mono">
