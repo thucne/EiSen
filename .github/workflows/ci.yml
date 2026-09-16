@@ -89,4 +89,5 @@ jobs:
       - name: Install and build landing
         run: |
           npm ci --prefix landing
+          npm --prefix landing run test
           npm --prefix landing run build

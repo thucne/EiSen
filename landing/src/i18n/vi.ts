@@ -33,6 +33,7 @@ export const vi = {
     downloadSub: "v0.2.1 • macOS & Windows • Native Rust",
     switchToWin: "Cần bản Windows? Tải bộ cài .exe",
     switchToMac: "Cần bản macOS? Tải bộ cài .dmg",
+    windowsWarning: "Bộ cài Windows chưa ký số. SmartScreen có thể báo Unknown publisher hoặc chặn bộ cài. Hãy kiểm tra SHA-256 trước khi chạy.",
     githubCta: "Mã nguồn trên GitHub",
     requirements: "Hỗ trợ macOS 11.0+ và Windows 10/11 (64-bit) • 100% Miễn phí trọn đời • Không telemetry",
     demoCaption: "Nhấn ⌥⌥ (Mac) hoặc PrtScn (Windows) ở bất kỳ đâu để chụp, cắt, chú thích và sao chép trong tích tắc.",

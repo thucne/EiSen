@@ -33,6 +33,7 @@ export const en = {
     downloadSub: "v0.2.1 • macOS & Windows • Native Rust",
     switchToWin: "Need Windows version? Download .exe installer",
     switchToMac: "Need macOS version? Download .dmg installer",
+    windowsWarning: "Unsigned Windows installer. SmartScreen may show Unknown publisher or block it. Verify SHA-256 before running.",
     githubCta: "Star on GitHub",
     requirements: "Supports macOS 11.0+ and Windows 10/11 (64-bit) • 100% Free Forever • Zero Telemetry",
     demoCaption: "Press ⌥⌥ (Mac) or PrtScn (Windows) anywhere to capture, crop, annotate, and copy in milliseconds.",

@@ -69,6 +69,19 @@ const exeUrl = exeDownloadPath;
           </a>
         </div>
 
+        <!-- Early Windows installer disclosure; hidden unless Windows is selected/detected -->
+        <div
+          id="hero-windows-warning"
+          role="note"
+          aria-hidden="true"
+          class="hidden w-full max-w-xl rounded-xl border border-amber-400/30 bg-amber-400/10 p-3 sm:p-3.5 text-left text-xs sm:text-sm text-amber-100"
+        >
+          <p class="flex items-start gap-2 leading-relaxed">
+            <span aria-hidden="true" class="mt-px shrink-0">⚠️</span>
+            <span>{t.hero.windowsWarning}</span>
+          </p>
+        </div>
+
         <!-- Secondary OS Switcher Link -->
         <div class="pt-1">
           <a
@@ -295,6 +308,7 @@ const exeUrl = exeDownloadPath;
       const badge = document.getElementById('hero-download-badge');
       const switchLink = document.getElementById('hero-os-switch-link');
       const switchText = document.getElementById('hero-switch-text');
+      const windowsWarning = document.getElementById('hero-windows-warning');
 
       let currentOS = isWin ? 'win' : 'mac';
 
@@ -308,6 +322,10 @@ const exeUrl = exeDownloadPath;
           if (badge) badge.textContent = 'EXE (~2.6MB)';
           if (switchLink && btn) switchLink.href = btn.dataset.macUrl || '#';
           if (switchText) switchText.textContent = 'Looking for macOS version? Download .dmg';
+          if (windowsWarning) {
+            windowsWarning.classList.remove('hidden');
+            windowsWarning.setAttribute('aria-hidden', 'false');
+          }
           switchMockup('win');
         } else {
           if (btn && btn.dataset.macUrl) btn.href = btn.dataset.macUrl;
@@ -317,6 +335,10 @@ const exeUrl = exeDownloadPath;
           if (badge) badge.textContent = 'DMG (4.2MB)';
           if (switchLink && btn) switchLink.href = btn.dataset.winUrl || '#';
           if (switchText) switchText.textContent = 'Looking for Windows version? Download .exe';
+          if (windowsWarning) {
+            windowsWarning.classList.add('hidden');
+            windowsWarning.setAttribute('aria-hidden', 'true');
+          }
           switchMockup('mac');
         }
       }
