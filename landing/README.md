@@ -56,7 +56,18 @@ The output will be generated into `landing/dist/`.
 
 ## Deploy to Cloudflare Pages (`eisen.a302.link`)
 
-### Method 1: Git Integration (Recommended)
+The existing `eisen` Pages project currently has no Git provider attached, so
+the canonical production path is the direct Wrangler upload below. A Git
+integration can be configured later, but pushing to GitHub alone does not
+deploy this project today.
+
+### Method 1: Direct Wrangler CLI (Current production path)
+```bash
+npm --prefix landing run build
+npx wrangler pages deploy landing/dist --project-name eisen
+```
+
+### Method 2: Git Integration (Optional)
 1. In the **Cloudflare Dashboard** → **Workers & Pages** → **Create application** → **Pages** → **Connect to Git**.
 2. Select repository: `thucne/EiSen`.
 3. Configure build settings:
@@ -69,9 +80,3 @@ The output will be generated into `landing/dist/`.
    - In your Cloudflare Pages project settings, go to **Custom domains**.
    - Enter: `eisen.a302.link`.
    - Cloudflare will automatically configure DNS and provision a free SSL certificate.
-
-### Method 2: Direct Wrangler CLI Deployment
-```bash
-npm --prefix landing run build
-npx wrangler pages deploy landing/dist --project-name eisen
-```
