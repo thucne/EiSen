@@ -182,6 +182,13 @@ gh run watch RUN_ID --repo thucne/EiSen --exit-status
 gh release view v0.2.1 --repo thucne/EiSen
 ```
 
+The tag keeps the `vX.Y.Z` convention, while the release display name must be
+`EiSen X.Y.Z` (without the leading `v`). Release notes follow the established
+structure: `What's Changed in EiSen X.Y.Z`, an introductory paragraph,
+`✨ Highlights & Improvements`, and `🔐 Checksums`. The workflow applies this
+display-name and structure automatically; edit the highlights for each release
+when publishing a manually curated release note.
+
 For the v0.2.1 compatibility release, the approved unsigned invocation is:
 
 ```bash

@@ -263,6 +263,19 @@ jobs:
     needs: [build-macos, build-windows]
     runs-on: ubuntu-latest
     steps:
+      - name: Prepare release metadata
+        id: release_metadata
+        shell: bash
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          if [[ ! "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Release tag must match vX.Y.Z: $RELEASE_TAG" >&2
+            exit 1
+          fi
+          echo "version=${RELEASE_TAG#v}" >> "$GITHUB_OUTPUT"
+
       - name: Download macOS release artifacts
         uses: actions/download-artifact@v4
         with:
@@ -294,12 +307,19 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ inputs.tag }}
+          name: EiSen ${{ steps.release_metadata.outputs.version }}
           body: |
-            ## EiSen ${{ inputs.tag }}
+            ## What's Changed in EiSen ${{ steps.release_metadata.outputs.version }}
 
-            macOS is distributed as a signed and notarized DMG. Windows is distributed as an NSIS installer.
+            EiSen v${{ steps.release_metadata.outputs.version }} is a cross-platform release for macOS and Windows. macOS is distributed as a signed and notarized DMG, while Windows is distributed as an NSIS installer.
 
-            Windows installer status: ${{ inputs.allow_unsigned_windows && 'UNSIGNED compatibility release. Windows SmartScreen may show Unknown publisher or Windows protected your PC; managed devices may block it. Verify the published SHA-256 sidecar before running.' || 'Authenticode-signed release. Verify the published SHA-256 sidecar before running.' }}
+            ### ✨ Highlights & Improvements
+            - **Cross-platform distribution:** macOS and Windows artifacts are published together from the same release tag.
+            - **Release integrity:** Every downloadable artifact includes a matching SHA-256 sidecar verified before publication.
+            - **Windows installer status:** ${{ inputs.allow_unsigned_windows && 'UNSIGNED compatibility release. Windows SmartScreen may show Unknown publisher or Windows protected your PC; managed devices may block it. Verify the published SHA-256 sidecar before running.' || 'Authenticode-signed release. Verify the published SHA-256 sidecar before running.' }}
+
+            ### 🔐 Checksums
+            - Verify the matching `.sha256` sidecar before installing. The sidecar is published next to each DMG and Windows installer.
 
             EiSen does not include a background auto-updater. Download future versions from the official GitHub Releases page or eisen.a302.link.
           files: |
