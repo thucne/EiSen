@@ -39,6 +39,17 @@ test('landing metadata is cross-platform', async () => {
   assert.match(seoHead, /og:image:alt" content="EiSen — Screen Capture & Annotation for macOS & Windows"/);
 });
 
+test('desktop app shell uses EiSen branding and cross-platform copy', async () => {
+  const appHtml = await source('app/src/app.html');
+  const english = await source('app/src/lib/i18n/en.ts');
+  const vietnamese = await source('app/src/lib/i18n/vi.ts');
+
+  assert.match(appHtml, /<title>EiSen — Screen Capture &amp; Annotation<\/title>/);
+  assert.doesNotMatch(appHtml, /Tauri \+ SvelteKit \+ Typescript App/);
+  assert.match(english, /tagline: "Fast Screen Capture for macOS & Windows"/);
+  assert.match(vietnamese, /tagline: "Chụp màn hình nhanh cho Mac & Windows"/);
+});
+
 test('CleanShot alternative page exposes both installers and OCR engines', async () => {
   const page = await source('landing/src/pages/cleanshot-alternative.astro');
 

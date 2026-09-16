@@ -97,7 +97,7 @@ export const en = {
     deleteHint: "Delete — click to remove",
   },
   hub: {
-    tagline: "Fast Screen Capture for macOS",
+    tagline: "Fast Screen Capture for macOS & Windows",
     instantTitle: "Instant Screen Capture",
     instantBody: "Press your global shortcut anywhere to capture screen regions.",
     shortcutFallback: "Ctrl + Shift + 5",

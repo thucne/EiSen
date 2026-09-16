@@ -99,7 +99,7 @@ export const vi: Dict = {
     deleteHint: "Xóa — bấm để gỡ",
   },
   hub: {
-    tagline: "Chụp màn hình nhanh cho macOS",
+    tagline: "Chụp màn hình nhanh cho Mac & Windows",
     instantTitle: "Chụp màn hình tức thì",
     instantBody: "Nhấn phím tắt toàn cục ở bất kỳ đâu để chụp vùng màn hình.",
     shortcutFallback: "Ctrl + Shift + 5",
