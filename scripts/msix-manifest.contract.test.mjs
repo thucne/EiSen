@@ -22,6 +22,8 @@ assert.match(manifest, /\buap10:TrustLevel="mediumIL"/);
 assert.doesNotMatch(manifest, /(__PARTNER_CENTER_|<Partner Center|\bTBD\b|\bTODO\b)/i);
 assert.doesNotMatch(manifest, /(?:BEGIN (?:RSA |EC )?PRIVATE KEY|\.pfx\b|password\s*=)/i);
 assert.match(packagingScript, /assets[\\/]branding[\\/]eisen-mark-on-dark-1024\.png/);
+assert.match(packagingScript, /PSIsContainer/);
+assert.doesNotMatch(packagingScript, /Get-Item[^\r\n]*-File/);
 
 const assetReferences = [
   ...manifest.matchAll(/(?:Logo|Wide310x150Logo|Square310x310Logo|Square71x71Logo|Square44x44Logo|Square150x150Logo)="([^"]+)"/g),

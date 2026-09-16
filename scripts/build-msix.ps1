@@ -100,8 +100,8 @@ function Assert-ManifestAssets {
     }
 
     $assetPath = Join-Path $ManifestDirectory $normalized
-    $asset = Get-Item -LiteralPath $assetPath -File -ErrorAction SilentlyContinue
-    if ($null -eq $asset -or $asset.Length -eq 0) {
+    $asset = Get-Item -LiteralPath $assetPath -ErrorAction SilentlyContinue
+    if ($null -eq $asset -or $asset.PSIsContainer -or $asset.Length -eq 0) {
       throw "Manifest asset is missing or empty: $reference"
     }
   }
@@ -149,8 +149,8 @@ function Invoke-WinAppPack {
     Pop-Location
   }
 
-  $package = Get-Item -LiteralPath $OutputPath -File -ErrorAction SilentlyContinue
-  if ($null -eq $package -or $package.Length -eq 0) {
+  $package = Get-Item -LiteralPath $OutputPath -ErrorAction SilentlyContinue
+  if ($null -eq $package -or $package.PSIsContainer -or $package.Length -eq 0) {
     throw "winapp did not produce a non-empty package: $OutputPath"
   }
 
@@ -253,7 +253,7 @@ finally {
   Pop-Location
 }
 
-$executable = @(Get-Item -LiteralPath $executablePath -File -ErrorAction SilentlyContinue)
+$executable = @(Get-Item -LiteralPath $executablePath -ErrorAction SilentlyContinue | Where-Object { -not $_.PSIsContainer })
 if ($executable.Count -ne 1) {
   throw "Expected exactly one release executable at $executablePath, found $($executable.Count)"
 }
