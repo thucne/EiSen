@@ -1,8 +1,9 @@
 # Cross-platform release runbook
 
 EiSen releases are cut from one tagged commit. The GitHub Actions `Release`
-workflow is the cross-platform publish path: it builds signed macOS and
-Windows artifacts, verifies their checksums, and publishes them through one
+workflow is the cross-platform publish path: it builds a signed macOS artifact
+and either a signed Windows artifact or an explicitly approved unsigned
+compatibility artifact, verifies checksums, and publishes them through one
 final job. The local macOS script remains available for a Mac-only build or
 for validating a notarized bundle before publishing.
 
@@ -33,8 +34,9 @@ certificate must remain in the login Keychain.
 
 ## 2. One-time Windows Actions setup
 
-The Windows job requires a code-signing certificate stored as a PFX. Add
-these repository Actions secrets without printing or committing their values:
+The default Windows path is Authenticode signing with a code-signing
+certificate stored as a PFX. Add these repository Actions secrets without
+printing or committing their values:
 
 | Secret | Value |
 |---|---|
@@ -46,6 +48,13 @@ The job imports the PFX into the ephemeral Windows runner, builds the NSIS
 installer with SHA-256 signing and a timestamp, then fails unless every
 produced executable has a valid Authenticode signature. Missing or mismatched
 secrets fail the job before an artifact can be published.
+
+For an explicitly approved compatibility release only, dispatch the workflow
+with `allow_unsigned_windows=true`. The Windows job then uses Tauri's
+`--no-sign` path, verifies that the produced executables are actually
+unsigned, and publishes a release-note warning. This path is not a substitute
+for signing: Windows SmartScreen or managed-device policy may warn or block
+the installer.
 
 ## 3. Prepare a release commit
 
@@ -75,19 +84,28 @@ Pushing a `v*` tag does not start the release workflow automatically.
 ## 4. Publish both platforms with GitHub Actions
 
 Use one workflow run per tag. Confirm the GitHub CLI is authenticated, then
-dispatch the workflow against the existing tag:
+dispatch the workflow against the existing tag. Keep
+`allow_unsigned_windows=false` for the normal signed path:
 
 ```bash
-gh workflow run Release --repo thucne/EiSen --ref v0.2.1 -f tag=v0.2.1
+gh workflow run Release --repo thucne/EiSen --ref main \
+  -f tag=v0.2.1 -f allow_unsigned_windows=false
 gh run list --repo thucne/EiSen --workflow Release --limit 1
 gh run watch RUN_ID --repo thucne/EiSen --exit-status
 gh release view v0.2.1 --repo thucne/EiSen
 ```
 
+For the v0.2.1 compatibility release, the approved unsigned invocation is:
+
+```bash
+gh workflow run Release --repo thucne/EiSen --ref main \
+  -f tag=v0.2.1 -f allow_unsigned_windows=true
+```
+
 The workflow checks the version triad in both platform jobs. It publishes only
 after the macOS and Windows jobs complete, the DMG/EXE checksums verify, and
-the signing checks pass. Do not run the local upload script concurrently for
-the same tag.
+the signed or explicitly approved unsigned Windows check passes. Do not run
+the local upload script concurrently for the same tag.
 
 ## 5. Optional local macOS build
 
@@ -122,6 +140,11 @@ Windows, verify the installer with PowerShell:
 Get-FileHash .\EiSen_0.2.1_x64-setup.exe -Algorithm SHA256
 Get-AuthenticodeSignature .\EiSen_0.2.1_x64-setup.exe
 ```
+
+For the v0.2.1 compatibility release, `Get-AuthenticodeSignature` is
+expected to report `NotSigned` for the Windows installer. That is a known
+release limitation and is called out in the GitHub release notes; do not treat
+the installer as signed because it was downloaded from the official page.
 
 For a clean macOS install, copy `EiSen.app` to `/Applications` and verify:
 

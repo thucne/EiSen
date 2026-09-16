@@ -11,6 +11,11 @@ on:
         description: Existing git tag to build and attach artifacts to (e.g. v0.2.1)
         required: true
         type: string
+      allow_unsigned_windows:
+        description: Publish an unsigned Windows NSIS installer for an explicitly approved compatibility release
+        required: true
+        default: false
+        type: boolean
 
 permissions:
   contents: write
@@ -136,6 +141,7 @@ jobs:
         run: npm ci --prefix app
 
       - name: Import Windows code-signing certificate
+        if: ${{ inputs.allow_unsigned_windows == false }}
         shell: pwsh
         env:
           EISEN_WINDOWS_CERTIFICATE_BASE64: ${{ secrets.WINDOWS_CERTIFICATE_BASE64 }}
@@ -171,6 +177,7 @@ jobs:
           }
 
       - name: Build the signed Windows NSIS bundle
+        if: ${{ inputs.allow_unsigned_windows == false }}
         working-directory: app
         shell: pwsh
         env:
@@ -188,7 +195,14 @@ jobs:
           } | ConvertTo-Json -Compress
           npm run tauri -- build --bundles nsis
 
-      - name: Verify Windows signatures
+      - name: Build the unsigned Windows NSIS bundle (compatibility path)
+        if: ${{ inputs.allow_unsigned_windows == true }}
+        working-directory: app
+        shell: pwsh
+        run: npm run tauri -- build --bundles nsis --no-sign
+
+      - name: Verify Windows Authenticode signatures
+        if: ${{ inputs.allow_unsigned_windows == false }}
         shell: pwsh
         run: |
           $binaries = @(Get-ChildItem "app/src-tauri/target/release/bundle" -Recurse -File -Filter *.exe)
@@ -202,6 +216,21 @@ jobs:
             }
             if ($null -eq $signature.SignerCertificate) {
               throw "No signer certificate found for $($binary.Name)"
+            }
+          }
+
+      - name: Verify unsigned Windows compatibility artifact
+        if: ${{ inputs.allow_unsigned_windows == true }}
+        shell: pwsh
+        run: |
+          $binaries = @(Get-ChildItem "app/src-tauri/target/release/bundle" -Recurse -File -Filter *.exe)
+          if ($binaries.Count -eq 0) {
+            throw "No Windows executable was produced"
+          }
+          foreach ($binary in $binaries) {
+            $signature = Get-AuthenticodeSignature -LiteralPath $binary.FullName
+            if ($signature.Status -ne "NotSigned") {
+              throw "Expected an unsigned compatibility artifact, got $($signature.Status) for $($binary.Name)"
             }
           }
 
@@ -265,6 +294,14 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ inputs.tag }}
+          body: |
+            ## EiSen ${{ inputs.tag }}
+
+            macOS is distributed as a signed and notarized DMG. Windows is distributed as an NSIS installer.
+
+            Windows installer status: ${{ inputs.allow_unsigned_windows && 'UNSIGNED compatibility release. Windows SmartScreen may show Unknown publisher or Windows protected your PC; managed devices may block it. Verify the published SHA-256 sidecar before running.' || 'Authenticode-signed release. Verify the published SHA-256 sidecar before running.' }}
+
+            EiSen does not include a background auto-updater. Download future versions from the official GitHub Releases page or eisen.a302.link.
           files: |
             release/macos/*.dmg
             release/macos/*.dmg.sha256

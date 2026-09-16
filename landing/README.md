@@ -25,6 +25,7 @@ Built with **Astro 5** and **Tailwind CSS**. Fully static, lightweight client sc
   - `/download/windows` and `/exe` 302 to GitHub Release `EiSen_0.2.1_x64-setup.exe` (~4.5 MB)
   - `/download/mac` and `/dmg` 302 to GitHub Release `EiSen_0.2.1_aarch64.dmg` (~4.2 MB)
   - Also: `/download`, `/releases`, `/github`
+- **Windows v0.2.1 disclosure:** The direct NSIS installer is an unsigned compatibility release. The site and GitHub release notes warn that SmartScreen or managed-device policy may block it; users should verify the published SHA-256 sidecar before running.
 
 ---
 

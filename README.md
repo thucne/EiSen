@@ -7,12 +7,13 @@ Fast screen capture and annotation for **macOS** and **Windows**. Built with **T
 ## Install & use
 
 1. **Platforms:** macOS 11+ and Windows 10/11.
-2. Install the signed DMG (macOS) or setup installer `.exe` (Windows) from [GitHub Releases](https://github.com/thucne/EiSen/releases) or [eisen.a302.link/download](https://eisen.a302.link/download). There is **no auto-updater**; each version is a new download (see `docs/RELEASE.md` §8).
-3. After you open EiSen there is **no Dock / Taskbar icon** by default. Look for the EiSen icon in the **menu bar / system tray**: Capture now, Settings, History, Quit.
-4. On macOS, the first capture needs **Screen Recording** permission (use the hub banner to open System Settings). On Windows, capture works immediately without extra setup.
-5. Default hotkey: double-tap Option (⌥⌥) on macOS, PrintScreen (`PrtScn`) on Windows. Change it in Settings.
-6. Capture and the overlay use the **display under the cursor**.
-7. Session History lives in memory (last 50 captures). Removing an item from the gallery does **not** delete files on disk. The gallery is empty after a relaunch; that is expected, not data loss.
+2. Install the signed DMG (macOS) or the Windows NSIS setup installer `.exe` from [GitHub Releases](https://github.com/thucne/EiSen/releases) or [eisen.a302.link/download](https://eisen.a302.link/download). There is **no auto-updater**; each version is a new download (see `docs/RELEASE.md` §8).
+3. **Windows v0.2.1 note:** this compatibility release uses an unsigned installer while Windows code signing is being prepared. SmartScreen may show **Unknown publisher** or **Windows protected your PC**, and managed devices may block it. Verify the published `.sha256` sidecar and only continue when you trust the download source.
+4. After you open EiSen there is **no Dock / Taskbar icon** by default. Look for the EiSen icon in the **menu bar / system tray**: Capture now, Settings, History, Quit.
+5. On macOS, the first capture needs **Screen Recording** permission (use the hub banner to open System Settings). On Windows, capture works immediately without extra setup.
+6. Default hotkey: double-tap Option (⌥⌥) on macOS, PrintScreen (`PrtScn`) on Windows. Change it in Settings.
+7. Capture and the overlay use the **display under the cursor**.
+8. Session History lives in memory (last 50 captures). Removing an item from the gallery does **not** delete files on disk. The gallery is empty after a relaunch; that is expected, not data loss.
 
 ---
 
