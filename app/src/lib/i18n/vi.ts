@@ -92,6 +92,7 @@ export const vi: Dict = {
     CtrlShift4Mac: "Ctrl + Shift + 4 (macOS)",
     PrtScMac: "PrtSc (macOS)",
     PrtScnWin: "PrtScn (Windows)",
+    CtrlShift5Win: "Ctrl + Shift + 5 (dự phòng Windows)",
   },
   editor: {
     title: "Trình sửa",

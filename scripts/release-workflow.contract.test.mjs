@@ -39,7 +39,7 @@ assert.match(workflow, /xcrun stapler validate/);
 assert.match(storeWorkflow, /^name:\s*Store MSIX\s*$/m);
 assert.match(storeWorkflow, /workflow_dispatch:/);
 assert.match(storeWorkflow, /ref:\s*[\s\S]*default:\s*main/);
-assert.match(storeWorkflow, /version:\s*[\s\S]*default:\s*0\.2\.1\.0/);
+assert.match(storeWorkflow, /version:\s*[\s\S]*default:\s*0\.2\.5\.0/);
 assert.match(storeWorkflow, /runs-on:\s*windows-latest/);
 assert.match(storeWorkflow, /microsoft\/setup-WinAppCli@v0\.1/);
 assert.match(storeWorkflow, /scripts\/check-version\.sh/);

@@ -77,7 +77,7 @@ const faqs = [
   },
   {
     q: 'Can I use the PrintScreen (PrtScn) key to trigger EiSen?',
-    a: 'Yes! EiSen binds directly to the PrintScreen (PrtScn) key on Windows. The Windows Settings screen exposes this supported binding.',
+    a: 'Yes! EiSen prefers the PrintScreen (PrtScn) key on Windows. If another application already owns it, EiSen automatically switches to Ctrl + Shift + 5; both choices are available in Windows Settings.',
   },
   {
     q: 'Is EiSen completely free or is there a catch?',
@@ -149,7 +149,7 @@ const faqs = [
         </div>
 
         <p class="text-xs text-slate-400 font-medium pt-1">
-          Microsoft Store certification pending • Direct current-user NSIS fallback available now • Zero Telemetry
+          Microsoft Store certification pending • Direct current-user NSIS fallback available now • PrtScn fallback included • Zero Telemetry
         </p>
 
         <div role="note" class="mx-auto mt-4 max-w-2xl rounded-xl border border-amber-400/30 bg-amber-400/10 p-4 text-left text-sm text-amber-100">
@@ -169,7 +169,7 @@ const faqs = [
             </div>
             <div class="flex items-center gap-3 shrink-0">
               <span class="hidden sm:inline-flex items-center gap-1 text-[11px] bg-white/10 px-2 py-0.5 rounded text-slate-300 font-mono">
-                <kbd>PrtScn</kbd> Trigger
+                <kbd>PrtScn</kbd> / <kbd>Ctrl + Shift + 5</kbd> Trigger
               </span>
               <div class="flex items-center gap-2.5 font-mono text-slate-400 text-xs pl-2 border-l border-white/10">
                 <span class="hover:text-white cursor-default">─</span>

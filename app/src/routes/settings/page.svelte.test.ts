@@ -174,7 +174,7 @@ describe("hotkey presets on macOS", () => {
 });
 
 describe("hotkey presets on Windows", () => {
-  it("normalizes a legacy macOS preset and exposes only PrintScreen", async () => {
+  it("normalizes a legacy macOS preset and exposes the collision fallback", async () => {
     Object.defineProperty(navigator, "userAgent", {
       configurable: true,
       value: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
@@ -183,7 +183,10 @@ describe("hotkey presets on Windows", () => {
 
     const select = await waitFor(() => screen.getAllByRole("combobox")[1] as HTMLSelectElement);
     await waitFor(() => expect(select.value).toBe("PrtScnWin"));
-    expect([...select.options].map((option) => option.value)).toEqual(["PrtScnWin"]);
+    expect([...select.options].map((option) => option.value)).toEqual([
+      "PrtScnWin",
+      "CtrlShift5Win",
+    ]);
     await waitFor(() => {
       expect(h.invoke).toHaveBeenCalledWith("cmd_set_config", {
         cfg: { ...CFG, hotkey: "PrtScnWin" },
@@ -255,13 +258,13 @@ describe("language", () => {
   it("renders version information from cmd_get_app_version", async () => {
     h.invoke.mockImplementation((cmd: string) => {
       if (cmd === "cmd_get_config") return Promise.resolve(CFG);
-      if (cmd === "cmd_get_app_version") return Promise.resolve("0.2.4");
+      if (cmd === "cmd_get_app_version") return Promise.resolve("0.2.5");
       return Promise.resolve(undefined);
     });
     render(SettingsPage);
     await waitFor(() => {
-      expect(screen.getByText("v0.2.4")).toBeInTheDocument();
-      expect(screen.getByText(/EiSen v0\.2\.4/)).toBeInTheDocument();
+      expect(screen.getByText("v0.2.5")).toBeInTheDocument();
+      expect(screen.getByText(/EiSen v0\.2\.5/)).toBeInTheDocument();
     });
   });
 });

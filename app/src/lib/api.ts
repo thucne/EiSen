@@ -8,7 +8,8 @@ export type HotkeyPreset =
   | "CmdShift4Mac"
   | "CtrlShift4Mac"
   | "PrtScMac"
-  | "PrtScnWin";
+  | "PrtScnWin"
+  | "CtrlShift5Win";
 
 export interface AppConfig {
   lang: Lang;
@@ -66,7 +67,7 @@ export function getConfig(): Promise<AppConfig> {
 /**
  * Save updated app configuration.
  */
-export function setConfig(cfg: AppConfig): Promise<void> {
+export function setConfig(cfg: AppConfig): Promise<AppConfig> {
   return invoke("cmd_set_config", { cfg });
 }
 
@@ -188,4 +189,3 @@ export function getAppVersion(): Promise<string> {
 export function playSound(effect: "shutter" | "copy" | "save"): Promise<void> {
   return invoke("cmd_play_sound", { effect });
 }
-

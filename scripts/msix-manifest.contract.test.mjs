@@ -12,7 +12,7 @@ const packagingScript = await readFile(packagingScriptPath, 'utf8');
 
 assert.match(manifest, /<Identity\b[^>]*\bName="[^"\s]+"/);
 assert.match(manifest, /<Identity\b[^>]*\bPublisher="[^"\s]+"/);
-assert.match(manifest, /<Identity\b[^>]*\bVersion="0\.2\.1\.0"/);
+assert.match(manifest, /<Identity\b[^>]*\bVersion="0\.2\.5\.0"/);
 assert.match(manifest, /<TargetDeviceFamily\b[^>]*\bName="Windows\.Desktop"/);
 assert.match(manifest, /<rescap:Capability\b[^>]*\bName="runFullTrust"/);
 assert.match(manifest, /\bId="EiSen"/);

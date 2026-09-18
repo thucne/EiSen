@@ -11,7 +11,7 @@ Fast screen capture and annotation for **macOS** and **Windows**. Built with **T
 3. **Windows direct-download note:** the GitHub/website NSIS fallback is unsigned. SmartScreen may show **Unknown publisher** or **Windows protected your PC**, and managed devices may block it. Verify the published `.sha256` sidecar and only continue when you trust the download source. The Store version will receive Store-managed updates after publication; direct downloads do not include an auto-updater.
 4. After you open EiSen there is **no Dock / Taskbar icon** by default. Look for the EiSen icon in the **menu bar / system tray**: Capture now, Settings, History, Quit.
 5. On macOS, the first capture needs **Screen Recording** permission (use the hub banner to open System Settings). On Windows, capture works immediately without extra setup.
-6. Default hotkey: double-tap Option (⌥⌥) on macOS, PrintScreen (`PrtScn`) on Windows. Change it in Settings.
+6. Default hotkey: double-tap Option (⌥⌥) on macOS, PrintScreen (`PrtScn`) on Windows. If another app already owns PrintScreen, EiSen automatically switches to `Ctrl + Shift + 5` and saves that working shortcut; both options are available in Settings.
 7. Capture and the overlay use the **display under the cursor**.
 8. Session History lives in memory (last 50 captures). Removing an item from the gallery does **not** delete files on disk. The gallery is empty after a relaunch; that is expected, not data loss.
 

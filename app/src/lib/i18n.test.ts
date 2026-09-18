@@ -46,6 +46,7 @@ describe("dictionaries", () => {
     expect(keys(en.hotkeyNames).sort()).toEqual([
       "CmdShift4Mac",
       "CtrlShift4Mac",
+      "CtrlShift5Win",
       "DoubleOption",
       "DoubleShift",
       "PrtScMac",

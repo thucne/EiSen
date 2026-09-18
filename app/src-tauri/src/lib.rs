@@ -15,6 +15,12 @@ use tauri::{Emitter, Manager, State, WebviewUrl, WebviewWindowBuilder};
 use tauri_plugin_autostart::MacosLauncher;
 use tauri_plugin_global_shortcut::GlobalShortcutExt;
 
+#[derive(Default)]
+struct HotkeyNotices {
+    error: Option<String>,
+    warning: Option<String>,
+}
+
 /// Begin a capture session: captures the whole active display to a temp PNG,
 /// shows the overlay window and emits `capture-ready` with the image path.
 /// The hotkey and the tray's "Capture now" item use the same path.
@@ -137,12 +143,32 @@ fn build_validator_roots(app: &tauri::AppHandle) -> Vec<std::path::PathBuf> {
     validator_roots(app_config(app).save_dir, history)
 }
 
-/// Persist `cfg`. If the capture hotkey preset changed, re-register first and
-/// write config only on success so disk and live shortcuts cannot disagree.
-fn save_config(app: &tauri::AppHandle, cfg: &AppConfig) -> Result<(), String> {
+fn app_config_path(app: &tauri::AppHandle) -> Result<std::path::PathBuf, String> {
     let dir = app.path().app_config_dir().map_err(|e| e.to_string())?;
     std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
-    let path = dir.join("config.json");
+    Ok(dir.join("config.json"))
+}
+
+fn persist_app_config(app: &tauri::AppHandle, cfg: &AppConfig) -> Result<(), String> {
+    let path = app_config_path(app)?;
+    persist_config(app, &path, cfg)
+}
+
+fn set_hotkey_warning(app: &tauri::AppHandle, message: String) {
+    let state = app.state::<Arc<Mutex<HotkeyNotices>>>();
+    let mut notices = state
+        .lock()
+        .unwrap_or_else(|e| e.into_inner());
+    notices.warning = Some(message.clone());
+    let _ = app.emit("hotkey-warning", &message);
+}
+
+/// Persist `cfg`. If the capture hotkey preset changed, re-register first and
+/// write config only on success so disk and live shortcuts cannot disagree.
+/// When Windows cannot claim PrintScreen, the hotkey layer returns a working
+/// fallback and this function persists the active preset instead.
+fn save_config(app: &tauri::AppHandle, cfg: &AppConfig) -> Result<AppConfig, String> {
+    let path = app_config_path(app)?;
     let old = config::load(&path);
 
     if matches!(
@@ -150,7 +176,7 @@ fn save_config(app: &tauri::AppHandle, cfg: &AppConfig) -> Result<(), String> {
         hotkey::SaveOutcome::PersistOnly
     ) {
         persist_config(app, &path, cfg)?;
-        return Ok(());
+        return Ok(cfg.clone());
     }
 
     // Decide the monitor transition up front; apply it only if the
@@ -168,26 +194,38 @@ fn save_config(app: &tauri::AppHandle, cfg: &AppConfig) -> Result<(), String> {
     app.global_shortcut()
         .unregister_all()
         .map_err(|e| format!("failed to unregister hotkeys: {e}"))?;
-    let register_err = hotkey::register(app, &cfg.hotkey).err();
-    match hotkey::save_outcome(&old.hotkey, &cfg.hotkey, register_err.is_none()) {
-        hotkey::SaveOutcome::PersistOnly => persist_config(app, &path, cfg),
+    let registration = hotkey::register(app, &cfg.hotkey);
+    match hotkey::save_outcome(&old.hotkey, &cfg.hotkey, registration.is_ok()) {
+        hotkey::SaveOutcome::PersistOnly => {
+            persist_config(app, &path, cfg)?;
+            Ok(cfg.clone())
+        }
         hotkey::SaveOutcome::Commit => {
+            let registration = registration.expect("successful registration must have a result");
             #[cfg(target_os = "macos")]
             {
                 let registry = app.state::<Arc<Mutex<platform::mac_adapter::MonitorRegistry>>>();
                 platform::mac_adapter::apply_monitor_action(app, &registry, action);
             }
-            persist_config(app, &path, cfg)
+            let mut active_cfg = cfg.clone();
+            active_cfg.hotkey = registration.active;
+            persist_config(app, &path, &active_cfg)?;
+            if let Some(message) = hotkey::registration_warning(registration) {
+                set_hotkey_warning(app, message);
+            }
+            Ok(active_cfg)
         }
         hotkey::SaveOutcome::Rollback => {
-            let e = register_err.unwrap_or_else(|| "unknown error".into());
+            let e = registration
+                .err()
+                .unwrap_or_else(|| "unknown error".into());
             let restored = app
                 .global_shortcut()
                 .unregister_all()
                 .map_err(|e2| format!("failed to unregister hotkeys: {e2}"))
                 .and_then(|_| hotkey::register(app, &old.hotkey));
             match restored {
-                Ok(()) => Err(format!(
+                Ok(_) => Err(format!(
                     "hotkey re-register failed: {e}; restored previous shortcut"
                 )),
                 Err(e2) => Err(format!(
@@ -225,7 +263,7 @@ fn apply_lang(app: &tauri::AppHandle, lang: Lang) {
 
 /// Persist a full app config from the Settings view.
 #[tauri::command]
-fn cmd_set_config(app: tauri::AppHandle, cfg: AppConfig) -> Result<(), String> {
+fn cmd_set_config(app: tauri::AppHandle, cfg: AppConfig) -> Result<AppConfig, String> {
     let mut cfg = cfg;
     // Save targets derive solely from this validated dir joined with a
     // generated filename (see cmd_save/cmd_save_bytes), so set-time
@@ -238,8 +276,7 @@ fn cmd_set_config(app: tauri::AppHandle, cfg: AppConfig) -> Result<(), String> {
 #[tauri::command]
 fn cmd_reset_config(app: tauri::AppHandle) -> Result<AppConfig, String> {
     let cfg = AppConfig::default();
-    save_config(&app, &cfg)?;
-    Ok(cfg)
+    save_config(&app, &cfg)
 }
 
 /// The current capture session (image path, region, scale) for the editor.
@@ -614,8 +651,20 @@ fn cmd_remove_history(app: tauri::AppHandle, path: String) -> Result<(), String>
 /// Last startup hotkey-registration failure, if any. The hub queries this
 /// because a `setup` emit can fire before the webview has subscribed.
 #[tauri::command]
-fn cmd_hotkey_error(slot: State<'_, Arc<Mutex<Option<String>>>>) -> Option<String> {
-    slot.lock().unwrap_or_else(|e| e.into_inner()).clone()
+fn cmd_hotkey_error(slot: State<'_, Arc<Mutex<HotkeyNotices>>>) -> Option<String> {
+    slot.lock()
+        .unwrap_or_else(|e| e.into_inner())
+        .error
+        .clone()
+}
+
+/// Last non-fatal hotkey fallback notice, if any.
+#[tauri::command]
+fn cmd_hotkey_warning(slot: State<'_, Arc<Mutex<HotkeyNotices>>>) -> Option<String> {
+    slot.lock()
+        .unwrap_or_else(|e| e.into_inner())
+        .warning
+        .clone()
 }
 
 /// Non-prompting Screen Recording (TCC) preflight. Never shows a system dialog.
@@ -652,7 +701,7 @@ pub fn run() {
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .manage(orchestrator)
         .manage(Arc::new(Mutex::new(CaptureHistory::new(50))))
-        .manage(Arc::new(Mutex::new(None::<String>)));
+        .manage(Arc::new(Mutex::new(HotkeyNotices::default())));
 
 // NOTE: MonitorRegistry must be managed on the Builder chain (applied during
 // `build()`), NOT inside `.setup()` — the setup closure runs from the
@@ -680,7 +729,7 @@ builder
             }
             core::capture::cleanup_stale_temp_files();
 
-            let cfg = app_config(app.handle());
+            let mut cfg = app_config(app.handle());
             let overlay = WebviewWindowBuilder::new(
                 app,
                 "overlay",
@@ -709,7 +758,16 @@ builder
                 eprintln!("[eisen] tray setup failed: {e}");
             }
             match hotkey::register(app.handle(), &cfg.hotkey) {
-                Ok(()) => {
+                Ok(registration) => {
+                    if registration.active != cfg.hotkey {
+                        cfg.hotkey = registration.active;
+                        if let Err(e) = persist_app_config(app.handle(), &cfg) {
+                            eprintln!("[eisen] failed to persist hotkey fallback: {e}");
+                        }
+                    }
+                    if let Some(message) = hotkey::registration_warning(registration) {
+                        set_hotkey_warning(app.handle(), message);
+                    }
                     #[cfg(target_os = "macos")]
                     {
                         use crate::core::hotkey::MonitorAction;
@@ -725,9 +783,11 @@ builder
                 Err(e) => {
                     eprintln!("[eisen] hotkey registration failed: {e}");
                     let message = e.to_string();
-                    *app.state::<Arc<Mutex<Option<String>>>>()
+                    let state = app.state::<Arc<Mutex<HotkeyNotices>>>();
+                    let mut notices = state
                         .lock()
-                        .unwrap_or_else(|e| e.into_inner()) = Some(message.clone());
+                        .unwrap_or_else(|e| e.into_inner());
+                    notices.error = Some(message.clone());
                     let _ = app.emit("hotkey-error", &message);
                 }
             }
@@ -761,6 +821,7 @@ builder
             cmd_extract_text,
             cmd_remove_history,
             cmd_hotkey_error,
+            cmd_hotkey_warning,
             cmd_screen_permission,
             cmd_open_screen_settings,
             cmd_get_app_version,

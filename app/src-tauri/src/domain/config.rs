@@ -55,6 +55,7 @@ pub enum HotkeyPreset {
     PrtScMac,
     #[cfg_attr(not(target_os = "macos"), default)]
     PrtScnWin,
+    CtrlShift5Win,
 }
 
 impl HotkeyPreset {
@@ -103,6 +104,7 @@ fn parse_hotkey_preset(s: &str) -> Option<HotkeyPreset> {
         "CtrlShift4Mac" => Some(HotkeyPreset::CtrlShift4Mac),
         "PrtScMac" => Some(HotkeyPreset::PrtScMac),
         "PrtScnWin" => Some(HotkeyPreset::PrtScnWin),
+        "CtrlShift5Win" => Some(HotkeyPreset::CtrlShift5Win),
         _ => None,
     }
 }
@@ -186,6 +188,7 @@ mod tests {
             ("CtrlShift4Mac", HotkeyPreset::CtrlShift4Mac),
             ("PrtScMac", HotkeyPreset::PrtScMac),
             ("PrtScnWin", HotkeyPreset::PrtScnWin),
+            ("CtrlShift5Win", HotkeyPreset::CtrlShift5Win),
         ];
         for (name, want) in cases {
             assert_eq!(parse_hotkey_preset(name), Some(want));

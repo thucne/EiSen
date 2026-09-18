@@ -319,6 +319,7 @@ jobs:
 
             ### ✨ Highlights & Improvements
             - **Cross-platform distribution:** macOS and Windows artifacts are published together from the same release tag.
+            - **Windows hotkey resilience:** EiSen prefers PrintScreen and automatically switches to Ctrl + Shift + 5 when another application already owns it, so capture remains available after installation.
             - **Release integrity:** Every downloadable artifact includes a matching SHA-256 sidecar verified before publication.
             - **Windows installer status:** ${{ inputs.allow_unsigned_windows && 'UNSIGNED compatibility release. Windows SmartScreen may show Unknown publisher or Windows protected your PC; managed devices may block it. Verify the published SHA-256 sidecar before running.' || 'Authenticode-signed release. Verify the published SHA-256 sidecar before running.' }}
 

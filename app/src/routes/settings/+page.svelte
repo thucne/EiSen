@@ -26,7 +26,7 @@
   const t = $derived($i18n);
 
   let cfg = $state<api.AppConfig | null>(null);
-  let appVersion = $state<string>("0.2.4");
+  let appVersion = $state<string>("0.2.5");
   let isWindows = $state(false);
   let toast = $state<{
     message: string;
@@ -69,7 +69,8 @@
       setLang(uiLangFromConfig(cfg.lang));
       if (hotkey !== loaded.hotkey) {
         try {
-          await api.setConfig(cfg);
+          const persisted = await api.setConfig(cfg);
+          cfg = persisted ?? cfg;
         } catch (err) {
           showToast(String(err), "err", true);
         }
@@ -83,7 +84,8 @@
     const prev = cfg;
     cfg = next;
     try {
-      await api.setConfig(next);
+      const persisted = await api.setConfig(next);
+      cfg = persisted ?? next;
       showToast(t.settings.saved, "ok");
     } catch (err) {
       cfg = prev; // the binding did not change

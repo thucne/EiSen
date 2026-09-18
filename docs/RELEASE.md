@@ -106,13 +106,13 @@ From the repository root, run the signed diagnostic package first, then the
 unsigned package intended for Store upload:
 
 ```powershell
-pwsh .\scripts\build-msix.ps1 -Mode test -Version 0.2.1.0
-pwsh .\scripts\build-msix.ps1 -Mode store -Version 0.2.1.0
+pwsh .\scripts\build-msix.ps1 -Mode test -Version 0.2.5.0
+pwsh .\scripts\build-msix.ps1 -Mode store -Version 0.2.5.0
 ```
 
 `test` creates a locally signed package with a development certificate for
 install/activation smoke testing. It must never be uploaded to Partner
-Center. `store` creates `EiSen_0.2.1.0_x64.msix`, its SHA-256 sidecar, and
+Center. `store` creates `EiSen_0.2.5.0_x64.msix`, its SHA-256 sidecar, and
 metadata under `artifacts/msix/`; this is the package to upload to the
 MSIX/PWA product. The script stages the executable and assets in a temporary
 directory and does not edit the repository manifest.
@@ -121,7 +121,7 @@ The reproducible CI path is the manual **Store MSIX** workflow:
 
 ```bash
 gh workflow run "Store MSIX" --repo thucne/EiSen --ref main \
-  -f ref=main -f version=0.2.1.0
+  -f ref=v0.2.5 -f version=0.2.5.0
 gh run list --repo thucne/EiSen --workflow "Store MSIX" --limit 1
 gh run watch RUN_ID --repo thucne/EiSen --exit-status
 ```
@@ -129,12 +129,13 @@ gh run watch RUN_ID --repo thucne/EiSen --exit-status
 The workflow installs and launches the diagnostic package on an ephemeral
 Windows runner, then uploads only the unsigned Store package, checksum,
 resolved manifest, and metadata. A CI launch proves packaging and activation;
-it does not replace physical Windows testing of capture, PrintScreen, tray,
+it does not replace physical Windows testing of capture, PrintScreen/fallback,
+tray,
 OCR, permissions, autostart, or multi-monitor behavior.
 
 ### Partner Center submission
 
-Upload only the successful `EiSen_0.2.1.0_x64.msix` artifact. Keep pricing
+Upload only the successful `EiSen_0.2.5.0_x64.msix` artifact. Keep pricing
 free, target Windows desktop x64, use the EiSen website and privacy/support
 links in the Store listing, and describe the local-only capture/OCR behavior.
 The GitHub NSIS download should be documented as a secondary unsigned fallback,

@@ -5,15 +5,84 @@ use crate::domain::config::HotkeyPreset;
 use tauri::AppHandle;
 use tauri_plugin_global_shortcut::{GlobalShortcutExt, ShortcutState};
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Registration {
+    pub active: HotkeyPreset,
+    pub fallback_from: Option<HotkeyPreset>,
+}
+
+#[cfg(any(target_os = "windows", test))]
+const WINDOWS_PRINTSCREEN_CANDIDATES: &[(&str, HotkeyPreset)] = &[
+    ("printscreen", HotkeyPreset::PrtScnWin),
+    ("ctrl+shift+5", HotkeyPreset::CtrlShift5Win),
+];
+#[cfg(any(target_os = "windows", test))]
+const WINDOWS_FALLBACK_CANDIDATES: &[(&str, HotkeyPreset)] =
+    &[("ctrl+shift+5", HotkeyPreset::CtrlShift5Win)];
+
+/// Try the requested Windows shortcut and, when PrintScreen is already owned
+/// by another application, fall back to a deterministic shortcut that still
+/// leaves capture usable on a fresh install.
+#[cfg(any(target_os = "windows", test))]
+fn register_capture_with_fallback<F>(
+    requested: HotkeyPreset,
+    mut register: F,
+) -> Result<Registration, String>
+where
+    F: FnMut(&str) -> Result<(), String>,
+{
+    let candidates = match requested {
+        HotkeyPreset::PrtScnWin => WINDOWS_PRINTSCREEN_CANDIDATES,
+        HotkeyPreset::CtrlShift5Win => WINDOWS_FALLBACK_CANDIDATES,
+        _ => return Err(format!("unsupported Windows capture preset: {requested:?}")),
+    };
+    let mut failures = Vec::new();
+    for (shortcut, active) in candidates {
+        match register(shortcut) {
+            Ok(()) => {
+                return Ok(Registration {
+                    active: *active,
+                    fallback_from: (*active != requested).then_some(requested),
+                });
+            }
+            Err(error) => failures.push(format!("{shortcut}: {error}")),
+        }
+    }
+    Err(format!(
+        "all Windows capture shortcuts failed ({})",
+        failures.join("; ")
+    ))
+}
+
+fn register_capture_shortcut(app: &AppHandle, shortcut: &str) -> Result<(), String> {
+    let result = app.global_shortcut().on_shortcut(shortcut, |app, _shortcut, event| {
+        if event.state == ShortcutState::Pressed {
+            let app = app.clone();
+            tauri::async_runtime::spawn(async move {
+                if let Err(e) = capture::begin_capture(&app) {
+                    eprintln!("[eisen] hotkey capture failed: {e}");
+                }
+            });
+        }
+    });
+    result.map_err(|e| format!("failed to register hotkey {shortcut}: {e}"))
+}
+
 /// Register global hotkeys / modifier monitors:
 ///   • `ctrl+shift+3`   → full-screen capture + auto-save (macOS)
 ///   • preset shortcut  → crop / selection overlay (Double-Tap or Combo)
-pub fn register(app: &AppHandle, preset: &HotkeyPreset) -> Result<(), String> {
-    // Windows currently exposes only PrintScreen. Normalize persisted or
-    // renderer-supplied legacy presets at this runtime boundary as well, so
-    // startup cannot register a macOS-only combination before Settings has a
-    // chance to migrate the config on disk.
+pub fn register(app: &AppHandle, preset: &HotkeyPreset) -> Result<Registration, String> {
+    // Normalize persisted or renderer-supplied legacy presets at this runtime
+    // boundary as well, so startup cannot register a macOS-only combination
+    // before Settings has a chance to migrate the config on disk.
     let preset = effective_preset(*preset);
+
+    #[cfg(target_os = "windows")]
+    if matches!(preset, HotkeyPreset::PrtScnWin | HotkeyPreset::CtrlShift5Win) {
+        return register_capture_with_fallback(preset, |shortcut| {
+            register_capture_shortcut(app, shortcut)
+        });
+    }
 
     // ── Ctrl+Shift+3: full-screen capture (macOS only) ───────────────────────
     #[cfg(target_os = "macos")]
@@ -47,69 +116,54 @@ pub fn register(app: &AppHandle, preset: &HotkeyPreset) -> Result<(), String> {
         #[cfg(target_os = "macos")]
         HotkeyPreset::DoubleOption => {
             eprintln!("[eisen] Double Option (⌥⌥) modifier monitor active");
-            Ok(())
+            Ok(Registration {
+                active: preset,
+                fallback_from: None,
+            })
         }
         #[cfg(target_os = "macos")]
         HotkeyPreset::DoubleShift => {
             eprintln!("[eisen] Double Shift (⇧⇧) modifier monitor active");
-            Ok(())
+            Ok(Registration {
+                active: preset,
+                fallback_from: None,
+            })
         }
         #[cfg(not(target_os = "macos"))]
         HotkeyPreset::DoubleOption | HotkeyPreset::DoubleShift => {
             let crop = "printscreen";
-            let result = app.global_shortcut().on_shortcut(crop, move |app, _shortcut, event| {
-                if event.state == ShortcutState::Pressed {
-                    let app = app.clone();
-                    tauri::async_runtime::spawn(async move {
-                        if let Err(e) = capture::begin_capture(&app) {
-                            eprintln!("[eisen] hotkey capture failed: {e}");
-                        }
-                    });
-                }
-            });
-            result.map_err(|e| format!("failed to register hotkey {crop}: {e}"))
+            register_capture_shortcut(app, crop).map(|()| Registration {
+                active: preset,
+                fallback_from: None,
+            })
         }
         HotkeyPreset::CmdShift4Mac => {
             let crop = "cmd+shift+4";
-            let result = app.global_shortcut().on_shortcut(crop, move |app, _shortcut, event| {
-                if event.state == ShortcutState::Pressed {
-                    let app = app.clone();
-                    tauri::async_runtime::spawn(async move {
-                        if let Err(e) = capture::begin_capture(&app) {
-                            eprintln!("[eisen] hotkey capture failed: {e}");
-                        }
-                    });
-                }
-            });
-            result.map_err(|e| format!("failed to register hotkey {crop}: {e}"))
+            register_capture_shortcut(app, crop).map(|()| Registration {
+                active: preset,
+                fallback_from: None,
+            })
         }
         HotkeyPreset::CtrlShift4Mac => {
             let crop = "ctrl+shift+4";
-            let result = app.global_shortcut().on_shortcut(crop, move |app, _shortcut, event| {
-                if event.state == ShortcutState::Pressed {
-                    let app = app.clone();
-                    tauri::async_runtime::spawn(async move {
-                        if let Err(e) = capture::begin_capture(&app) {
-                            eprintln!("[eisen] hotkey capture failed: {e}");
-                        }
-                    });
-                }
-            });
-            result.map_err(|e| format!("failed to register hotkey {crop}: {e}"))
+            register_capture_shortcut(app, crop).map(|()| Registration {
+                active: preset,
+                fallback_from: None,
+            })
         }
         HotkeyPreset::PrtScMac | HotkeyPreset::PrtScnWin => {
             let crop = "printscreen";
-            let result = app.global_shortcut().on_shortcut(crop, move |app, _shortcut, event| {
-                if event.state == ShortcutState::Pressed {
-                    let app = app.clone();
-                    tauri::async_runtime::spawn(async move {
-                        if let Err(e) = capture::begin_capture(&app) {
-                            eprintln!("[eisen] hotkey capture failed: {e}");
-                        }
-                    });
-                }
-            });
-            result.map_err(|e| format!("failed to register hotkey {crop}: {e}"))
+            register_capture_shortcut(app, crop).map(|()| Registration {
+                active: preset,
+                fallback_from: None,
+            })
+        }
+        HotkeyPreset::CtrlShift5Win => {
+            let crop = "ctrl+shift+5";
+            register_capture_shortcut(app, crop).map(|()| Registration {
+                active: preset,
+                fallback_from: None,
+            })
         }
     }
 }
@@ -117,12 +171,23 @@ pub fn register(app: &AppHandle, preset: &HotkeyPreset) -> Result<(), String> {
 fn effective_preset(preset: HotkeyPreset) -> HotkeyPreset {
     #[cfg(target_os = "windows")]
     {
-        let _ = preset;
-        HotkeyPreset::PrtScnWin
+        match preset {
+            HotkeyPreset::CtrlShift5Win => HotkeyPreset::CtrlShift5Win,
+            _ => HotkeyPreset::PrtScnWin,
+        }
     }
     #[cfg(not(target_os = "windows"))]
     {
         preset
+    }
+}
+
+pub fn registration_warning(registration: Registration) -> Option<String> {
+    match registration.fallback_from {
+        Some(HotkeyPreset::PrtScnWin) => Some(
+            "PrintScreen is already in use by another application. EiSen switched to Ctrl + Shift + 5 for capture.".to_string(),
+        ),
+        _ => None,
     }
 }
 
@@ -186,7 +251,7 @@ mod tests {
 
     #[test]
     #[cfg(target_os = "windows")]
-    fn windows_runtime_normalizes_every_persisted_preset_to_printscreen() {
+    fn windows_runtime_normalizes_legacy_presets_to_printscreen_but_keeps_fallback() {
         let presets = [
             HotkeyPreset::DoubleOption,
             HotkeyPreset::DoubleShift,
@@ -198,6 +263,36 @@ mod tests {
         for preset in presets {
             assert_eq!(effective_preset(preset), HotkeyPreset::PrtScnWin);
         }
+        assert_eq!(effective_preset(HotkeyPreset::CtrlShift5Win), HotkeyPreset::CtrlShift5Win);
+    }
+
+    #[test]
+    fn printscreen_conflict_uses_the_capture_fallback() {
+        let mut attempted = Vec::new();
+        let registration = register_capture_with_fallback(HotkeyPreset::PrtScnWin, |shortcut| {
+            attempted.push(shortcut.to_string());
+            if shortcut == "printscreen" {
+                Err("HotKey already registered".to_string())
+            } else {
+                Ok(())
+            }
+        })
+        .expect("fallback shortcut should register");
+
+        assert_eq!(attempted, ["printscreen", "ctrl+shift+5"]);
+        assert_eq!(registration.active, HotkeyPreset::CtrlShift5Win);
+        assert_eq!(registration.fallback_from, Some(HotkeyPreset::PrtScnWin));
+    }
+
+    #[test]
+    fn fallback_failure_keeps_both_registration_errors() {
+        let error = register_capture_with_fallback(HotkeyPreset::PrtScnWin, |shortcut| {
+            Err(format!("{shortcut} is taken"))
+        })
+        .expect_err("both occupied shortcuts should fail");
+
+        assert!(error.contains("printscreen: printscreen is taken"));
+        assert!(error.contains("ctrl+shift+5: ctrl+shift+5 is taken"));
     }
 
     #[test]

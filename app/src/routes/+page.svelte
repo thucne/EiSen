@@ -30,7 +30,7 @@
     sticky?: boolean;
   } | null>(null);
   let permissionOk = $state(true);
-  let appVersion = $state<string>("0.2.4");
+  let appVersion = $state<string>("0.2.5");
 
   function probePermission() {
     api.screenPermission()
@@ -52,11 +52,24 @@
         sticky: true,
       };
     };
+    const showHotkeyWarning = (detail: string) => {
+      toast = {
+        message: detail,
+        kind: "ok",
+        sticky: true,
+      };
+    };
     void invoke<string | null>("cmd_hotkey_error").then((msg) => {
       if (msg) showHotkeyError(msg);
     });
+    void invoke<string | null>("cmd_hotkey_warning").then((msg) => {
+      if (msg) showHotkeyWarning(msg);
+    });
     const unHotkey = listen<string>("hotkey-error", (e) => {
       showHotkeyError(e.payload);
+    });
+    const unHotkeyWarning = listen<string>("hotkey-warning", (e) => {
+      showHotkeyWarning(e.payload);
     });
     const unH = listen<string[]>("history", (e) => {
       history.set(e.payload);
@@ -82,6 +95,7 @@
       void unH.then((fn) => fn());
       void unS.then((fn) => fn());
       void unHotkey.then((fn) => fn());
+      void unHotkeyWarning.then((fn) => fn());
     };
   });
 

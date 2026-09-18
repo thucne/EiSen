@@ -11,7 +11,7 @@ on:
       version:
         description: Four-part MSIX version for the Store package
         required: true
-        default: 0.2.1.0
+        default: 0.2.5.0
         type: string
 
 permissions:
@@ -63,10 +63,6 @@ jobs:
           set -euo pipefail
           if [[ ! "$MSIX_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "MSIX version must contain four numeric components: $MSIX_VERSION" >&2
-            exit 1
-          fi
-          if [[ "$MSIX_VERSION" != "0.2.1.0" ]]; then
-            echo "The initial EiSen Store submission is pinned to MSIX version 0.2.1.0" >&2
             exit 1
           fi
           bash scripts/check-version.sh "v${MSIX_VERSION%.*}"

@@ -119,4 +119,6 @@ test('Windows public CTAs disclose pending Store certification and expose the di
   assert.match(vietnamese, /buttonWinDirect: "Dùng bản \.exe đến khi Store live"/);
   assert.match(english, /Store listing is currently undergoing certification/);
   assert.match(vietnamese, /Microsoft Store hiện đang chờ certification/);
+  assert.match(english, /automatically switches to Ctrl \+ Shift \+ 5/);
+  assert.match(vietnamese, /tự chuyển sang Ctrl \+ Shift \+ 5/);
 });
