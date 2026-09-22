@@ -18,7 +18,7 @@ const comparisonRows = [
   { feature: 'Privacy & Telemetry', eisen: '100% Offline (Zero Telemetry, Zero Cloud)', cleanshot: 'Cloud sync & analytical tracking' },
   { feature: 'Text OCR Engine', eisen: 'Native on-device OCR (Apple Vision on macOS; Windows.Media.Ocr on Windows)', cleanshot: 'Cloud/Proprietary (Limited on basic tier)' },
   { feature: 'Menu Bar / System Tray Resident', eisen: 'Yes (Clean, lightweight background tool)', cleanshot: 'Yes' },
-  { feature: 'Installer / App Size', eisen: '~4.2 MB macOS DMG / ~2.6 MB Windows installer', cleanshot: '~60 MB+' },
+  { feature: 'Installer / App Size', eisen: '~4.2 MB macOS DMG / ~2.6 MB direct Windows NSIS fallback', cleanshot: '~60 MB+' },
   { feature: 'Account / Login Required', eisen: 'No (Install and use immediately)', cleanshot: 'Yes (License key or CleanShot Cloud login)' },
   { feature: 'Annotation Suite', eisen: 'Numbered Steps, Loupe, Blur, Arrow, Text', eisenGood: true, cleanshot: 'Comprehensive pro editor' },
   { feature: 'Platform Support', eisen: 'macOS 11.0+ & Windows 10/11 (64-bit)', cleanshot: 'macOS 10.14+' },
@@ -88,7 +88,7 @@ const faqs = [
             class="w-full sm:w-auto inline-flex items-center justify-center gap-3 px-6 sm:px-8 py-3.5 rounded-2xl bg-cyan-600 hover:bg-cyan-500 text-white font-semibold text-sm sm:text-base shadow-xl shadow-cyan-600/25 transition-all duration-200 group"
           >
             <WindowsIcon class="w-5 h-5 shrink-0" size={20} />
-            <span>Microsoft Store (coming soon)</span>
+            <span>Get from Microsoft Store</span>
             <span class="text-xs px-2 py-0.5 rounded-full bg-white/20 font-mono font-medium">MSIX</span>
           </a>
 
@@ -235,7 +235,7 @@ const faqs = [
             class="inline-flex items-center justify-center gap-3 px-8 py-3.5 rounded-2xl bg-cyan-600 hover:bg-cyan-500 text-white font-semibold text-base shadow-xl shadow-cyan-600/30 transition-all duration-200"
           >
             <WindowsIcon class="w-5 h-5" size={20} />
-            <span>Microsoft Store (coming soon)</span>
+            <span>Get from Microsoft Store</span>
           </a>
           <a
             href={exeUrl}

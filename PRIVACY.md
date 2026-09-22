@@ -20,7 +20,7 @@ EiSen is a **local macOS and Windows app**. It does not send captures, OCR text,
 
 - No analytics or telemetry.
 - No crash-reporter that phones home.
-- No auto-updater and no periodic network check for new versions. You download a new DMG or Windows installer from GitHub Releases when you want one.
+- No in-app auto-updater and no periodic network check for new versions. Windows Store installations are updated by Microsoft Store; direct NSIS downloads and macOS DMGs are updated manually from GitHub Releases when you want a newer version.
 - No account, cloud sync, or remote OCR.
 
 This version makes **no outbound network requests** for capture, save, OCR, or settings. Opening GitHub Releases or macOS System Settings is something **you** do, not a background check from EiSen.

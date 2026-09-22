@@ -1,6 +1,10 @@
-# Tauri + SvelteKit + TypeScript
+# EiSen desktop app
 
-This template should help get you started developing with Tauri, SvelteKit and TypeScript in Vite.
+This directory contains the EiSen Tauri v2 desktop application. The frontend
+uses SvelteKit and TypeScript; the native core uses Rust and platform adapters
+for macOS and Windows. See the [repository README](../README.md) for product
+setup and [the release runbook](../docs/RELEASE.md) for DMG, NSIS, and MSIX
+packaging.
 
 ## Recommended IDE Setup
 

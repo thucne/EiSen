@@ -84,7 +84,7 @@ test('static setup mockup labels are explicitly macOS-specific', async () => {
   assert.match(setupGuide, /macOS: Default: ⌥⌥ \(Double Option\)/);
 });
 
-test('Windows public CTAs disclose pending Store certification and expose the direct fallback', async () => {
+test('Windows public CTAs expose the live Store path and direct fallback', async () => {
   const utils = await source('landing/src/i18n/utils.ts');
   const hero = await source('landing/src/components/Hero.astro');
   const navbar = await source('landing/src/components/Navbar.astro');
@@ -113,12 +113,14 @@ test('Windows public CTAs disclose pending Store certification and expose the di
   assert.match(vietnameseWindowsPage, /href=\{microsoftStoreUrl\}/);
   assert.match(alternativePage, /href=\{microsoftStoreUrl\}/);
   assert.match(storyPage, /href=\{microsoftStoreUrl\}/);
-  assert.match(english, /buttonWin: "Microsoft Store \(coming soon\)"/);
-  assert.match(english, /buttonWinDirect: "Use direct \.exe until Store is live"/);
-  assert.match(vietnamese, /buttonWin: "Microsoft Store \(sắp có\)"/);
-  assert.match(vietnamese, /buttonWinDirect: "Dùng bản \.exe đến khi Store live"/);
-  assert.match(english, /Store listing is currently undergoing certification/);
-  assert.match(vietnamese, /Microsoft Store hiện đang chờ certification/);
+  assert.match(english, /buttonWin: "Get from Microsoft Store"/);
+  assert.match(english, /buttonWinDirect: "Use unsigned direct \.exe fallback"/);
+  assert.match(vietnamese, /buttonWin: "Tải từ Microsoft Store"/);
+  assert.match(vietnamese, /buttonWinDirect: "Dùng bản \.exe trực tiếp chưa ký số"/);
+  assert.match(english, /Microsoft Store version is the recommended Windows install/);
+  assert.match(vietnamese, /Bản Microsoft Store là lựa chọn cài đặt chính cho Windows/);
+  assert.doesNotMatch(english, /certification pending|coming soon|currently undergoing certification/);
+  assert.doesNotMatch(vietnamese, /đang chờ certification|sắp có/);
   assert.match(english, /automatically switches to Ctrl \+ Shift \+ 5/);
   assert.match(vietnamese, /tự chuyển sang Ctrl \+ Shift \+ 5/);
 });

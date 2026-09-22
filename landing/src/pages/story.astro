@@ -597,7 +597,7 @@ const exeUrl = exeDownloadPath;
                 </div>
                 <div class="py-1.5 px-2.5 flex items-center justify-between">
                   <span class="text-slate-400">Dung lượng ứng dụng:</span>
-                  <span class="text-indigo-300 font-mono font-bold">~2.6 MB Win / ~4.2 MB Mac</span>
+              <span class="text-indigo-300 font-mono font-bold">~2.6 MB Win fallback / ~4.2 MB Mac</span>
                 </div>
                 <div class="py-1.5 px-2.5 flex items-center justify-between">
                   <span class="text-slate-400">Quyền riêng tư:</span>
@@ -638,7 +638,7 @@ const exeUrl = exeDownloadPath;
               class="w-full inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-cyan-600 text-white font-bold text-sm shadow-xl shadow-cyan-500/20 hover:brightness-110 active:scale-98 transition-all"
             >
               <WindowsIcon class="w-4 h-4 text-white" size={18} />
-              <span>Microsoft Store (sắp có) (MSIX)</span>
+              <span>Microsoft Store (MSIX)</span>
             </a>
 
             <a
@@ -650,7 +650,7 @@ const exeUrl = exeDownloadPath;
             </a>
 
             <p class="text-[10px] leading-relaxed text-amber-200/90">
-              Microsoft Store hiện đang chờ certification. Cho đến khi live, hãy dùng bản .exe trực tiếp; bản chưa ký số có thể bị SmartScreen cảnh báo. Hãy kiểm tra SHA-256 trước khi chạy.
+              Microsoft Store là kênh cài đặt chính cho Windows và tự quản lý cập nhật. Bản .exe trực tiếp chỉ là fallback chưa ký số, có thể bị SmartScreen cảnh báo; hãy kiểm tra SHA-256 trước khi chạy.
             </p>
 
             <div class="flex flex-wrap items-center justify-center gap-2 text-[10px] text-slate-400 font-mono">

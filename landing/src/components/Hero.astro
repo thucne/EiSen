@@ -77,7 +77,7 @@ const winStoreUrl = microsoftStoreUrl;
           </a>
         </div>
 
-        <!-- Early Windows installer disclosure; hidden unless Windows is selected/detected -->
+        <!-- Windows direct-download disclosure; hidden unless Windows is selected/detected -->
         <div
           id="hero-windows-warning"
           role="note"
@@ -340,8 +340,8 @@ const winStoreUrl = microsoftStoreUrl;
           }
           if (macIcon) macIcon.classList.add('hidden');
           if (winIcon) winIcon.classList.remove('hidden');
-          if (text) text.textContent = btn?.dataset.winLabel || 'Microsoft Store (coming soon)';
-          if (badge) badge.textContent = btn?.dataset.winBadge || 'Store pending';
+          if (text) text.textContent = btn?.dataset.winLabel || 'Get from Microsoft Store';
+          if (badge) badge.textContent = btn?.dataset.winBadge || 'Microsoft Store';
           if (switchLink && btn) switchLink.href = btn.dataset.macUrl || '#';
           if (switchText) switchText.textContent = btn?.dataset.switchToMac || 'Looking for macOS version? Download .dmg';
           if (windowsWarning) {
@@ -364,7 +364,7 @@ const winStoreUrl = microsoftStoreUrl;
           if (text) text.textContent = btn?.dataset.macLabel || 'Download for macOS';
           if (badge) badge.textContent = btn?.dataset.macBadge || 'DMG (4.2MB)';
           if (switchLink && btn) switchLink.href = btn.dataset.winDirectUrl || btn.dataset.winUrl || '#';
-          if (switchText) switchText.textContent = btn?.dataset.switchToWin || 'Need Windows now? Use the direct .exe fallback';
+          if (switchText) switchText.textContent = btn?.dataset.switchToWin || 'Need Windows? Get it from Microsoft Store';
           if (windowsWarning) {
             windowsWarning.classList.add('hidden');
             windowsWarning.setAttribute('aria-hidden', 'true');
