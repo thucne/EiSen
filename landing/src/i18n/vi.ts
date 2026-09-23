@@ -28,7 +28,7 @@ export const vi = {
     downloadCta: "Tải Miễn Phí",
     downloadMac: "Tải Cho macOS",
     downloadWin: "Tải từ Microsoft Store",
-    downloadSubMac: "v0.2.5 • Apple Silicon & Intel • DMG (4.2 MB)",
+    downloadSubMac: "v0.2.5 • Apple Silicon & Intel • DMG tải về 4.36 MB",
     downloadSubWin: "v0.2.5 • Windows 10/11 (64-bit) • Microsoft Store • Bản NSIS .exe trực tiếp chưa ký số",
     downloadSub: "v0.2.5 • macOS & Windows • Native Rust",
     windowsStoreBadge: "Microsoft Store",
@@ -49,7 +49,7 @@ export const vi = {
     latency: {
       value: "Native Rust",
       label: "Engine chụp siêu tốc",
-      sub: "Xây bằng Rust và Tauri v2 — overlay phản hồi tức thì dưới 5ms, tốn cực ít RAM.",
+      sub: "Xây bằng Rust và Tauri v2 — overlay phản hồi nhanh, tích hợp native với từng nền tảng.",
     },
     ocr: {
       value: "OCR Trên Máy",
@@ -138,11 +138,11 @@ export const vi = {
     rows: [
       { name: "Chi phí & Bản quyền", eisen: "100% Miễn phí trọn đời (Open Source)", macos: "Miễn phí (Tích hợp sẵn)", paid: "$29+ / Thuê bao / Màn hình nhắc mua" },
       { name: "Bảo mật & Quyền riêng tư", eisen: "Không telemetry (100% Local)", macos: "Có gửi dữ liệu chẩn đoán", paid: "Có Cloud sync / Theo dõi hành vi" },
-      { name: "Chạy gọn trên Menu Bar / System Tray", eisen: "Có (Cực nhẹ, không tốn RAM)", macos: "Không / Giới hạn", paid: "Có (Tốn nhiều RAM)" },
+      { name: "Chạy trên Menu Bar / System Tray", eisen: "Có", macos: "Không / Giới hạn", paid: "Tùy ứng dụng" },
       { name: "Bộ công cụ chú thích (Bước số, Kính lúp, Làm mờ)", eisen: "Có (Đầy đủ, sắc nét, chuẩn vector)", macos: "Chỉ có vẽ cơ bản", paid: "Có (Nhưng ShareX menu rất phức tạp)" },
       { name: "Nhận diện chữ OCR ngoại tuyến trên máy", eisen: "Có (Apple Vision & WinRT OCR)", macos: "Live Text hạn chế", paid: "Tính năng trả phí / Cần Tesseract nặng / Cloud OCR" },
       { name: "Yêu cầu tài khoản / Kích hoạt", eisen: "Không (Mở là dùng ngay)", macos: "Không", paid: "Bắt buộc tài khoản / License key" },
-      { name: "Dung lượng ứng dụng & Bộ nhớ", eisen: "~4.5 MB sau khi cài (Viết bằng Native Rust)", macos: "Theo hệ điều hành", paid: "40 MB – 120 MB" },
+      { name: "Dung lượng gói cài & bộ nhớ", eisen: "Tùy nền tảng và kênh phân phối; RAM tùy tác vụ", macos: "Tích hợp trong hệ điều hành", paid: "Tùy ứng dụng, phiên bản và tác vụ" },
     ],
   },
   faq: {
@@ -171,7 +171,7 @@ export const vi = {
       },
       {
         q: "EiSen khác gì so với các phần mềm chụp màn hình truyền thống hay công cụ lưu ảnh đám mây?",
-        a: "Khác với các ứng dụng cũ chiếm dụng hàng trăm MB bộ nhớ RAM hoặc tự động upload ảnh chụp lên các liên kết web công khai, EiSen là tiện ích native gọn nhẹ viết thuần bằng Rust. Bản NSIS Windows trực tiếp dự phòng chỉ khoảng 2.6 MB; ứng dụng chụp tức thì dưới 5ms, hoạt động hoàn toàn offline và lưu giữ 100% dữ liệu ngay trên máy tính của bạn.",
+        a: "EiSen là tiện ích chụp màn hình native viết bằng Rust, hoạt động ngoại tuyến và giữ ảnh chụp, văn bản OCR cùng chú thích trên thiết bị của bạn. File tải NSIS Windows dự phòng của v0.2.5 có kích thước 2.599.622 byte (2,60 MB); đây là dung lượng file cài, không phải dung lượng sau khi cài. Kích thước gói Microsoft Store có thể thay đổi.",
       },
       {
         q: "Làm thế nào để cập nhật khi EiSen có phiên bản mới?",
@@ -187,7 +187,7 @@ export const vi = {
     buttonWin: "Tải từ Microsoft Store",
     buttonWinDirect: "Dùng bản .exe trực tiếp chưa ký số",
     details: "Phiên bản 0.2.5 • macOS 11+ & Windows 10/11 • 100% Offline",
-    detailsMac: "Phiên bản 0.2.5 • Apple Silicon & Intel • 4.2 MB • macOS 11.0+",
+    detailsMac: "Phiên bản 0.2.5 • Apple Silicon & Intel • DMG tải về 4,36 MB • macOS 11.0+",
     detailsWin: "Phiên bản 0.2.5 • Windows 10/11 (64-bit) • Microsoft Store • Bản NSIS .exe trực tiếp chưa ký số",
     windowsWarningTitle: "Lưu ý bản tải trực tiếp cho Windows",
     windowsWarning: "Bản Microsoft Store là lựa chọn cài đặt chính cho Windows và được Store tự quản lý cập nhật. Bản NSIS .exe trực tiếp chỉ là fallback chưa ký số; SmartScreen có thể hiển thị Unknown publisher hoặc Windows protected your PC, máy công ty có thể chặn. Hãy kiểm tra sidecar SHA-256 trên GitHub Releases trước khi chạy.",
@@ -204,7 +204,7 @@ export const vi = {
     titleStart: "Công Cụ",
     titleHighlight: "Chụp Màn Hình & OCR Hiện Đại",
     titleEnd: "Dành Cho Windows.",
-    subtitle: "Tạm biệt Snipping Tool chậm chạp hay menu rối rắm của ShareX. EiSen mang đến trải nghiệm chụp tức thì bằng phím PrtScn với Ctrl + Shift + 5 dự phòng tự động, đánh số bước hướng dẫn, làm mờ bảo mật và nhận diện chữ Windows OCR trên máy — trong một ứng dụng Windows native gọn nhẹ, phân phối qua Microsoft Store.",
+    subtitle: "Tạm biệt Snipping Tool chậm chạp hay menu rối rắm của ShareX. EiSen mang đến trải nghiệm chụp tức thì bằng phím PrtScn với Ctrl + Shift + 5 dự phòng tự động, đánh số bước hướng dẫn, làm mờ bảo mật và nhận diện chữ Windows OCR trên máy — được phân phối qua Microsoft Store.",
     downloadCta: "Tải từ Microsoft Store",
     directDownloadCta: "Tải bản .exe trực tiếp (fallback)",
     downloadSub: "v0.2.5 • Windows 10 / 11 (64-bit) • Microsoft Store • Bản NSIS .exe trực tiếp chưa ký số",

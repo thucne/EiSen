@@ -18,7 +18,7 @@ const comparisonRows = [
   { feature: 'Privacy & Telemetry', eisen: '100% Offline (Zero Telemetry, Zero Cloud)', cleanshot: 'Cloud sync & analytical tracking' },
   { feature: 'Text OCR Engine', eisen: 'Native on-device OCR (Apple Vision on macOS; Windows.Media.Ocr on Windows)', cleanshot: 'Cloud/Proprietary (Limited on basic tier)' },
   { feature: 'Menu Bar / System Tray Resident', eisen: 'Yes (Clean, lightweight background tool)', cleanshot: 'Yes' },
-  { feature: 'Installer / App Size', eisen: '~4.2 MB macOS DMG / ~2.6 MB direct Windows NSIS fallback', cleanshot: '~60 MB+' },
+  { feature: 'Download Package Size (v0.2.5)', eisen: '4.36 MB macOS DMG / 2.60 MB Windows NSIS fallback; Store package varies', cleanshot: 'Varies by release' },
   { feature: 'Account / Login Required', eisen: 'No (Install and use immediately)', cleanshot: 'Yes (License key or CleanShot Cloud login)' },
   { feature: 'Annotation Suite', eisen: 'Numbered Steps, Loupe, Blur, Arrow, Text', eisenGood: true, cleanshot: 'Comprehensive pro editor' },
   { feature: 'Platform Support', eisen: 'macOS 11.0+ & Windows 10/11 (64-bit)', cleanshot: 'macOS 10.14+' },
@@ -78,7 +78,7 @@ const faqs = [
           >
             <AppleIcon class="w-5 h-5 shrink-0" size={20} />
             <span>Download EiSen Free for Mac</span>
-            <span class="text-xs px-2 py-0.5 rounded-full bg-white/20 font-mono font-medium">DMG (4.2 MB)</span>
+            <span class="text-xs px-2 py-0.5 rounded-full bg-white/20 font-mono font-medium">DMG (4.36 MB)</span>
           </a>
 
           <a
@@ -190,7 +190,7 @@ const faqs = [
             </div>
             <h3 class="text-lg font-bold text-white">Lightweight Native App</h3>
             <p class="text-sm text-slate-300 leading-relaxed">
-              Engineered with Rust and Tauri v2. It runs quietly in your macOS menu bar or Windows system tray without hogging gigabytes of RAM or draining your battery.
+              Engineered with Rust and Tauri v2. It runs quietly from the macOS menu bar or Windows system tray.
             </p>
           </div>
         </div>

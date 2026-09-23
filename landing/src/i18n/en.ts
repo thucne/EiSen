@@ -28,7 +28,7 @@ export const en = {
     downloadCta: "Download Free",
     downloadMac: "Download for macOS",
     downloadWin: "Get from Microsoft Store",
-    downloadSubMac: "v0.2.5 • Apple Silicon & Intel • DMG (4.2 MB)",
+    downloadSubMac: "v0.2.5 • Apple Silicon & Intel • DMG download 4.36 MB",
     downloadSubWin: "v0.2.5 • Windows 10/11 (64-bit) • Microsoft Store • Direct unsigned NSIS fallback",
     downloadSub: "v0.2.5 • macOS & Windows • Native Rust",
     windowsStoreBadge: "Microsoft Store",
@@ -49,7 +49,7 @@ export const en = {
     latency: {
       value: "Native Rust",
       label: "Capture engine",
-      sub: "Built with Rust and Tauri v2 for a snappy overlay, sub-5ms capture, and a small memory footprint.",
+      sub: "Built with Rust and Tauri v2 for a responsive overlay and native integration with each platform.",
     },
     ocr: {
       value: "On-Device OCR",
@@ -138,11 +138,11 @@ export const en = {
     rows: [
       { name: "Pricing & License", eisen: "100% Free Forever (MIT Open Source)", macos: "Free (Built-in)", paid: "$29+ / Subscription / Nag Screens" },
       { name: "Privacy & Telemetry", eisen: "Zero Telemetry (100% Local)", macos: "Telemetry / Cloud Sync", paid: "Cloud Uploads / Analytics" },
-      { name: "Menu Bar / System Tray Resident", eisen: "Yes (Quiet & Lightweight)", macos: "No / Partial", paid: "Yes (Heavy RAM)" },
+      { name: "Menu Bar / System Tray Resident", eisen: "Yes", macos: "No / Partial", paid: "Varies by app" },
       { name: "Annotation Suite (Steps, Loupe, Blur)", eisen: "Yes (Vector-based & Pixel-perfect)", macos: "Basic markup only", paid: "Yes (Complex setup in ShareX)" },
       { name: "Offline Native OCR", eisen: "Yes (Apple Vision & WinRT OCR)", macos: "Limited Live Text", paid: "Paid Feature / Heavy Tesseract / Cloud OCR" },
       { name: "No Account / No Paywalls", eisen: "No login or license key", macos: "None", paid: "Account or License Key Required" },
-      { name: "App Size & Memory Footprint", eisen: "~4.5 MB installed (Built with Native Rust)", macos: "System Dependent", paid: "40 MB – 120 MB" },
+      { name: "Package Size & Memory Use", eisen: "Varies by platform and distribution; memory depends on workload", macos: "Built into the OS", paid: "Varies by app, version, and workload" },
     ],
   },
   faq: {
@@ -171,7 +171,7 @@ export const en = {
       },
       {
         q: "How is EiSen different from traditional screenshot apps or cloud capture tools?",
-          a: "Unlike legacy tools that consume hundreds of megabytes of RAM or automatically upload your captures to public web URLs, EiSen is an ultra-lightweight native utility built in Rust. The direct Windows NSIS fallback is ~2.6 MB; it captures instantly (<5ms), operates 100% offline, and keeps all screenshots, OCR text, and annotations strictly on your computer.",
+          a: "EiSen is a native Rust screen capture utility that works offline and keeps screenshots, OCR text, and annotations on your computer. The v0.2.5 Windows NSIS fallback download is 2,599,622 bytes (2.60 MB); this is the installer file size, not the installed app size. Microsoft Store package size varies.",
       },
       {
         q: "How do I update to newer versions of EiSen?",
@@ -187,7 +187,7 @@ export const en = {
     buttonWin: "Get from Microsoft Store",
     buttonWinDirect: "Use unsigned direct .exe fallback",
     details: "Version 0.2.5 • macOS 11+ & Windows 10/11 • 100% Offline",
-    detailsMac: "Version 0.2.5 • Apple Silicon & Intel • 4.2 MB • macOS 11.0+",
+    detailsMac: "Version 0.2.5 • Apple Silicon & Intel • DMG download 4.36 MB • macOS 11.0+",
     detailsWin: "Version 0.2.5 • Windows 10/11 (64-bit) • Microsoft Store • Direct unsigned NSIS fallback",
     windowsWarningTitle: "Windows direct-download note",
     windowsWarning: "The Microsoft Store version is the recommended Windows install and receives Store-managed updates. The direct NSIS .exe fallback is unsigned, so SmartScreen may show Unknown publisher or Windows protected your PC, and managed devices may block it. Verify the SHA-256 sidecar on GitHub Releases before running.",
@@ -204,7 +204,7 @@ export const en = {
     titleStart: "The Modern",
     titleHighlight: "Screenshot & OCR App",
     titleEnd: "for Windows.",
-    subtitle: "Ditch the slow Snipping Tool and the bloated ShareX menus. EiSen gives you instant PrintScreen capture with an automatic Ctrl + Shift + 5 fallback, step numbering, sensitive data blur, and native on-device Windows OCR — in a compact native Windows package.",
+    subtitle: "Ditch the slow Snipping Tool and the bloated ShareX menus. EiSen gives you instant PrintScreen capture with an automatic Ctrl + Shift + 5 fallback, step numbering, sensitive data blur, and native on-device Windows OCR — distributed through the Microsoft Store.",
     downloadCta: "Get from Microsoft Store",
     directDownloadCta: "Download direct .exe (fallback)",
     downloadSub: "v0.2.5 • Windows 10 / 11 (64-bit) • Microsoft Store • Direct unsigned NSIS fallback",
