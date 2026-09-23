@@ -76,12 +76,7 @@ pub struct AppConfig {
 
 impl Default for AppConfig {
     fn default() -> Self {
-        let save_dir = std::env::var_os("USERPROFILE")
-            .or_else(|| std::env::var_os("HOME"))
-            .map(PathBuf::from)
-            .map(|h| h.join("Desktop"))
-            .filter(|p| p.is_dir())
-            .unwrap_or_else(std::env::temp_dir);
+        let save_dir = default_save_dir();
         apply_env_overrides(
             AppConfig {
                 lang: Lang::default(),
@@ -93,6 +88,47 @@ impl Default for AppConfig {
             &|k| std::env::var(k).ok(),
         )
     }
+}
+
+/// Select the first existing directory from the platform-provided candidates.
+/// The final fallback is kept injectable so selection behavior can be tested
+/// without changing process-global environment variables.
+fn select_default_save_dir<I>(candidates: I, fallback: PathBuf) -> PathBuf
+where
+    I: IntoIterator<Item = Option<PathBuf>>,
+{
+    candidates
+        .into_iter()
+        .flatten()
+        .find(|path| path.is_dir())
+        .unwrap_or(fallback)
+}
+
+#[cfg(target_os = "windows")]
+fn default_save_dir() -> PathBuf {
+    // `dirs` uses Windows known-folder APIs, so a redirected Desktop (for
+    // example, OneDrive) is returned instead of inferring `%USERPROFILE%\Desktop`.
+    // Documents, the profile, and local app data are durable user locations
+    // that keep ordinary profiles out of the TEMP directory.
+    select_default_save_dir(
+        [
+            dirs::desktop_dir(),
+            dirs::document_dir(),
+            dirs::home_dir(),
+            dirs::data_local_dir(),
+        ],
+        std::env::temp_dir(),
+    )
+}
+
+#[cfg(not(target_os = "windows"))]
+fn default_save_dir() -> PathBuf {
+    // Preserve the existing macOS/Linux behavior and environment precedence.
+    let desktop = std::env::var_os("USERPROFILE")
+        .or_else(|| std::env::var_os("HOME"))
+        .map(PathBuf::from)
+        .map(|home| home.join("Desktop"));
+    select_default_save_dir([desktop], std::env::temp_dir())
 }
 
 /// Parses a hotkey preset name exactly as serialized ("DoubleOption", ...).
@@ -210,6 +246,106 @@ mod tests {
         assert_eq!(cfg.lang, Lang::Vi);
         assert_eq!(cfg.hotkey, HotkeyPreset::CtrlShift4Mac);
         assert!(cfg.play_sounds);
+    }
+
+    #[test]
+    fn default_selector_uses_redirected_desktop_when_present() {
+        let root = tempfile::tempdir().unwrap();
+        let redirected_desktop = root.path().join("OneDrive").join("Desktop");
+        let documents = root.path().join("Documents");
+        std::fs::create_dir_all(&redirected_desktop).unwrap();
+        std::fs::create_dir_all(&documents).unwrap();
+        let fallback = root.path().join("fallback");
+
+        let selected = select_default_save_dir(
+            [Some(redirected_desktop.clone()), Some(documents), None],
+            fallback,
+        );
+
+        assert_eq!(selected, redirected_desktop);
+    }
+
+    #[test]
+    fn default_selector_uses_existing_documents_when_desktop_is_missing() {
+        let root = tempfile::tempdir().unwrap();
+        let missing_desktop = root.path().join("missing").join("Desktop");
+        let documents = root.path().join("Documents");
+        let profile = root.path().join("Profile");
+        std::fs::create_dir_all(&documents).unwrap();
+        std::fs::create_dir_all(&profile).unwrap();
+        let fallback = root.path().join("fallback");
+
+        let selected = select_default_save_dir(
+            [
+                Some(missing_desktop),
+                Some(documents.clone()),
+                Some(profile),
+            ],
+            fallback,
+        );
+
+        assert_eq!(selected, documents);
+    }
+
+    #[test]
+    fn default_selector_uses_existing_profile_before_fallback() {
+        let root = tempfile::tempdir().unwrap();
+        let profile = root.path().join("Profile");
+        let fallback = root.path().join("fallback");
+        std::fs::create_dir_all(&profile).unwrap();
+
+        let selected =
+            select_default_save_dir([None, None, Some(profile.clone())], fallback.clone());
+
+        assert_eq!(selected, profile);
+        assert_ne!(selected, fallback);
+    }
+
+    #[cfg(target_os = "windows")]
+    #[test]
+    fn windows_default_save_dir_uses_existing_durable_known_folder() {
+        let selected = default_save_dir();
+        let temp = std::env::temp_dir();
+
+        assert!(
+            selected.is_dir(),
+            "Windows default save directory must exist: {}",
+            selected.display()
+        );
+        assert!(
+            !selected.starts_with(&temp),
+            "Windows default save directory must not fall back to TEMP: {}",
+            selected.display()
+        );
+
+        if let Some(desktop) = dirs::desktop_dir().filter(|path| path.is_dir()) {
+            assert_eq!(
+                selected, desktop,
+                "an existing Windows known-folder Desktop must take precedence"
+            );
+        }
+    }
+
+    #[test]
+    fn env_save_dir_override_wins_over_default_selection() {
+        let root = tempfile::tempdir().unwrap();
+        let desktop = root.path().join("Desktop");
+        let explicit = root.path().join("Explicit");
+        std::fs::create_dir_all(&desktop).unwrap();
+
+        let base = AppConfig {
+            lang: Lang::En,
+            save_dir: select_default_save_dir([Some(desktop)], std::env::temp_dir()),
+            launch_at_login: false,
+            hotkey: HotkeyPreset::default(),
+            play_sounds: true,
+        };
+        let cfg = apply_env_overrides(base, &|key| match key {
+            "EISEN_SAVE_DIR" => Some(format!("  {}  ", explicit.display())),
+            _ => None,
+        });
+
+        assert_eq!(cfg.save_dir, explicit);
     }
 
     #[test]

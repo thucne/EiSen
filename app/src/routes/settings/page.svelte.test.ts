@@ -258,13 +258,13 @@ describe("language", () => {
   it("renders version information from cmd_get_app_version", async () => {
     h.invoke.mockImplementation((cmd: string) => {
       if (cmd === "cmd_get_config") return Promise.resolve(CFG);
-      if (cmd === "cmd_get_app_version") return Promise.resolve("0.2.5");
+      if (cmd === "cmd_get_app_version") return Promise.resolve("0.2.6");
       return Promise.resolve(undefined);
     });
     render(SettingsPage);
     await waitFor(() => {
-      expect(screen.getByText("v0.2.5")).toBeInTheDocument();
-      expect(screen.getByText(/EiSen v0\.2\.5/)).toBeInTheDocument();
+      expect(screen.getByText("v0.2.6")).toBeInTheDocument();
+      expect(screen.getByText(/EiSen v0\.2\.6/)).toBeInTheDocument();
     });
   });
 });

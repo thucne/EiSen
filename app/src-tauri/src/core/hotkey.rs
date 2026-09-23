@@ -58,7 +58,7 @@ fn register_capture_shortcut(app: &AppHandle, shortcut: &str) -> Result<(), Stri
     let result = app.global_shortcut().on_shortcut(shortcut, |app, _shortcut, event| {
         if event.state == ShortcutState::Pressed {
             let app = app.clone();
-            tauri::async_runtime::spawn(async move {
+            tauri::async_runtime::spawn_blocking(move || {
                 if let Err(e) = capture::begin_capture(&app) {
                     eprintln!("[eisen] hotkey capture failed: {e}");
                 }

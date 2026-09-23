@@ -2,7 +2,7 @@
 param(
   [ValidateSet('store', 'test')]
   [string]$Mode = 'store',
-  [string]$Version = '0.2.5.0',
+  [string]$Version = '0.2.6.0',
   [string]$OutputDirectory = 'artifacts/msix'
 )
 
