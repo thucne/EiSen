@@ -11,6 +11,16 @@ As of v0.2.5, the signed and notarized macOS DMG and the Microsoft Store
 Windows MSIX are published. The GitHub NSIS installer remains a direct-download
 fallback and is intentionally unsigned for the compatibility path.
 
+For v0.2.6, publish the signed and notarized macOS DMG on GitHub and submit
+the Windows MSIX to Microsoft Store. Hold the v0.2.6 NSIS installer. The
+cross-platform `Release` workflow below requires an NSIS artifact, so do not
+dispatch it for this release. Build the DMG with `scripts/release-macos.sh`
+from the tagged commit, attach its checksum to a draft GitHub Release, and
+publish that release after verification. Build the Store package with the
+`Store MSIX` workflow from the same tag; upload only its `store` artifact to
+Partner Center. Store certification and the Windows GUI checks remain separate
+evidence gates.
+
 Signing credentials never enter this repository. Local macOS builds read
 `~/.eisen-release.env`; GitHub Actions reads repository secrets. Do not paste a
 certificate, password, Apple app-specific password, or Team ID into a chat,

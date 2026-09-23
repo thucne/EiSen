@@ -7,6 +7,7 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const workflow = await readFile(resolve(root, ".github/workflows/release.yml"), "utf8");
 const storeWorkflow = await readFile(resolve(root, ".github/workflows/store-msix.yml"), "utf8");
 const msixBuildScript = await readFile(resolve(root, "scripts/build-msix.ps1"), "utf8");
+const appVersion = JSON.parse(await readFile(resolve(root, "app/package.json"), "utf8")).version;
 
 assert.match(workflow, /concurrency:\s+group:\s+release-\$\{\{\s*inputs\.tag\s*\}\}/);
 assert.match(workflow, /allow_unsigned_windows:/);
@@ -39,7 +40,7 @@ assert.match(workflow, /xcrun stapler validate/);
 assert.match(storeWorkflow, /^name:\s*Store MSIX\s*$/m);
 assert.match(storeWorkflow, /workflow_dispatch:/);
 assert.match(storeWorkflow, /ref:\s*[\s\S]*default:\s*main/);
-assert.match(storeWorkflow, /version:\s*[\s\S]*default:\s*0\.2\.5\.0/);
+assert.ok(storeWorkflow.includes(`default: ${appVersion}.0`));
 assert.match(storeWorkflow, /runs-on:\s*windows-latest/);
 assert.match(storeWorkflow, /microsoft\/setup-WinAppCli@v0\.1/);
 assert.match(storeWorkflow, /scripts\/check-version\.sh/);

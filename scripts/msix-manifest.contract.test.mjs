@@ -9,10 +9,11 @@ const packagingScriptPath = resolve(repoRoot, 'scripts/build-msix.ps1');
 
 const manifest = await readFile(manifestPath, 'utf8');
 const packagingScript = await readFile(packagingScriptPath, 'utf8');
+const appVersion = JSON.parse(await readFile(resolve(repoRoot, 'app/package.json'), 'utf8')).version;
 
 assert.match(manifest, /<Identity\b[^>]*\bName="[^"\s]+"/);
 assert.match(manifest, /<Identity\b[^>]*\bPublisher="[^"\s]+"/);
-assert.match(manifest, /<Identity\b[^>]*\bVersion="0\.2\.5\.0"/);
+assert.equal(manifest.match(/<Identity\b[^>]*\bVersion="([^"]+)"/)?.[1], `${appVersion}.0`);
 assert.match(manifest, /<TargetDeviceFamily\b[^>]*\bName="Windows\.Desktop"/);
 assert.match(manifest, /<rescap:Capability\b[^>]*\bName="runFullTrust"/);
 assert.match(manifest, /\bId="EiSen"/);

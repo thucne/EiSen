@@ -11,7 +11,7 @@ on:
       version:
         description: Four-part MSIX version for the Store package
         required: true
-        default: 0.2.5.0
+        default: 0.2.6.0
         type: string
 
 permissions:
