@@ -136,6 +136,11 @@ it does not replace physical Windows testing of capture, PrintScreen/fallback,
 tray,
 OCR, permissions, autostart, or multi-monitor behavior.
 
+Run the physical desktop or VM checks from the [Windows capture verification
+matrix](WINDOWS_VERIFICATION.md) for each supported package and display
+configuration. Until those rows have attached evidence, Windows GUI behavior
+remains `PENDING` even when CI and Store packaging checks are green.
+
 ### Partner Center submission
 
 Upload only the successful `EiSen_0.2.5.0_x64.msix` artifact. Keep pricing

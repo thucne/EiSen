@@ -360,6 +360,32 @@ impl Drop for TriggerClaimGuard<'_> {
     }
 }
 
+/// Convert an overlay presentation failure into a contextual error while
+/// releasing the captured session. Hiding is best-effort because the window
+/// may be the operation that failed or may already be unavailable.
+fn overlay_presentation_failure(
+    orchestrator: &CaptureOrchestrator,
+    overlay: Option<&tauri::WebviewWindow>,
+    operation: &str,
+    error: impl std::fmt::Display,
+) -> String {
+    if let Some(overlay) = overlay {
+        let _ = overlay.hide();
+    }
+    orchestrator.cancel();
+    format!("overlay {operation} failed: {error}")
+}
+
+/// Apply one overlay operation and clean up the capture if it fails.
+fn check_overlay_presentation(
+    orchestrator: &CaptureOrchestrator,
+    overlay: Option<&tauri::WebviewWindow>,
+    operation: &str,
+    result: Result<(), String>,
+) -> Result<(), String> {
+    result.map_err(|error| overlay_presentation_failure(orchestrator, overlay, operation, error))
+}
+
 /// Begin a capture session: captures the whole active display to a temp PNG,
 /// shows the overlay window and emits `capture-ready` with the image path.
 ///
@@ -380,17 +406,19 @@ pub fn begin_capture(app: &tauri::AppHandle) -> Result<String, String> {
     let Some(_claim) = TriggerClaimGuard::acquire(&orchestrator) else {
         return Err("a capture trigger is already being processed".to_string());
     };
-    if orchestrator.is_busy() {
-        if let Some(overlay) = app.get_webview_window("overlay") {
-            if !overlay.is_visible().unwrap_or(false) {
-                orchestrator.cancel();
-            }
-        }
+    let Some(overlay) = app.get_webview_window("overlay") else {
+        return Err(overlay_presentation_failure(
+            &orchestrator,
+            None,
+            "window lookup",
+            "overlay window is unavailable",
+        ));
+    };
+    if orchestrator.is_busy() && !overlay.is_visible().unwrap_or(false) {
+        orchestrator.cancel();
     }
     let hide_started = Instant::now();
-    if let Some(overlay) = app.get_webview_window("overlay") {
-        let _ = overlay.hide();
-    }
+    let _ = overlay.hide();
     if cfg!(debug_assertions) {
         eprintln!(
             "[eisen:timing] overlay hide: {}ms",
@@ -417,69 +445,119 @@ pub fn begin_capture(app: &tauri::AppHandle) -> Result<String, String> {
         );
     }
     orchestrator.set_scale(scale);
-    let (path, _, _) = orchestrator
-        .last()
-        .ok_or_else(|| "capture did not produce an image".to_string())?;
+    let (path, _, _) = orchestrator.last().ok_or_else(|| {
+        overlay_presentation_failure(
+            &orchestrator,
+            Some(&overlay),
+            "session lookup",
+            "capture did not produce an image",
+        )
+    })?;
     let path = path.to_string_lossy().to_string();
-    if let Some(overlay) = app.get_webview_window("overlay") {
-        // begin_capture may run on a worker thread now; AppKit elevation is
-        // main-thread-only (MainThreadMarker::new() returns None elsewhere),
-        // so route it through the event loop.
-        #[cfg(target_os = "macos")]
-        {
-            let ov = overlay.clone();
-            let _ = app.run_on_main_thread(move || {
+    // begin_capture may run on a worker thread now; AppKit elevation is
+    // main-thread-only (MainThreadMarker::new() returns None elsewhere),
+    // so route it through the event loop.
+    #[cfg(target_os = "macos")]
+    {
+        let ov = overlay.clone();
+        check_overlay_presentation(
+            &orchestrator,
+            Some(&overlay),
+            "elevate",
+            app.run_on_main_thread(move || {
                 crate::platform::mac_adapter::elevate_overlay_window(&ov);
-            });
-        }
-        #[cfg(target_os = "windows")]
-        {
-            let target = crate::platform::windows_adapter::active_display_geometry().ok_or_else(|| {
-                orchestrator.cancel();
-                "captured Windows monitor geometry is unavailable".to_string()
+            })
+            .map_err(|e| e.to_string()),
+        )?;
+    }
+    #[cfg(target_os = "windows")]
+    {
+        let target =
+            crate::platform::windows_adapter::active_display_geometry().ok_or_else(|| {
+                overlay_presentation_failure(
+                    &orchestrator,
+                    Some(&overlay),
+                    "monitor lookup",
+                    "captured Windows monitor geometry is unavailable",
+                )
             })?;
-            let monitors = app.available_monitors().map_err(|e| {
-                orchestrator.cancel();
-                format!("failed to query Tauri monitors: {e}")
-            })?;
-            let geometries = monitors
-                .iter()
-                .map(display_geometry_from_tauri)
-                .collect::<Vec<_>>();
-            let active_idx = matching_monitor_index(target, &geometries).ok_or_else(|| {
-                orchestrator.cancel();
-                "captured Windows monitor could not be matched to a Tauri monitor".to_string()
-            })?;
-            let monitor = monitors.get(active_idx).ok_or_else(|| {
-                orchestrator.cancel();
-                "matched Windows monitor is no longer available".to_string()
-            })?;
-            let scale = monitor.scale_factor();
-            let size = monitor.size();
-            let pos = monitor.position();
-            let _ = overlay.set_position(tauri::LogicalPosition::new(
-                pos.x as f64 / scale,
-                pos.y as f64 / scale,
-            ));
-            let _ = overlay.set_size(tauri::LogicalSize::new(
-                size.width as f64 / scale,
-                size.height as f64 / scale,
-            ));
-        }
-        let _ = overlay.show();
-        let _ = overlay.set_focus();
-        let emit_started = Instant::now();
-        let _ = overlay.emit_to(
-            tauri::EventTarget::webview_window("overlay"),
-            "capture-ready",
-            path.clone(),
+        let monitors = app.available_monitors().map_err(|e| {
+            overlay_presentation_failure(
+                &orchestrator,
+                Some(&overlay),
+                "monitor enumeration",
+                format!("failed to query Tauri monitors: {e}"),
+            )
+        })?;
+        let geometries = monitors
+            .iter()
+            .map(display_geometry_from_tauri)
+            .collect::<Vec<_>>();
+        let active_idx = matching_monitor_index(target, &geometries).ok_or_else(|| {
+            overlay_presentation_failure(
+                &orchestrator,
+                Some(&overlay),
+                "monitor matching",
+                "captured Windows monitor could not be matched to a Tauri monitor",
+            )
+        })?;
+        let monitor = monitors.get(active_idx).ok_or_else(|| {
+            overlay_presentation_failure(
+                &orchestrator,
+                Some(&overlay),
+                "monitor selection",
+                "matched Windows monitor is no longer available",
+            )
+        })?;
+        let size = monitor.size();
+        let pos = monitor.position();
+        check_overlay_presentation(
+            &orchestrator,
+            Some(&overlay),
+            "set_position",
+            overlay
+                .set_position(tauri::PhysicalPosition::new(pos.x, pos.y))
+                .map_err(|e| e.to_string()),
+        )?;
+        check_overlay_presentation(
+            &orchestrator,
+            Some(&overlay),
+            "set_size",
+            overlay
+                .set_size(tauri::PhysicalSize::new(size.width, size.height))
+                .map_err(|e| e.to_string()),
+        )?;
+    }
+    check_overlay_presentation(
+        &orchestrator,
+        Some(&overlay),
+        "show",
+        overlay.show().map_err(|e| e.to_string()),
+    )?;
+    check_overlay_presentation(
+        &orchestrator,
+        Some(&overlay),
+        "set_focus",
+        overlay.set_focus().map_err(|e| e.to_string()),
+    )?;
+    let emit_started = Instant::now();
+    check_overlay_presentation(
+        &orchestrator,
+        Some(&overlay),
+        "emit capture-ready",
+        overlay
+            .emit_to(
+                tauri::EventTarget::webview_window("overlay"),
+                "capture-ready",
+                path.clone(),
+            )
+            .map_err(|e| e.to_string()),
+    )?;
+    if cfg!(debug_assertions) {
+        eprintln!(
+            "[eisen:timing] capture-ready emit: {}ms",
+            emit_started.elapsed().as_millis()
         );
-        if cfg!(debug_assertions) {
-            eprintln!(
-                "[eisen:timing] capture-ready emit: {}ms",
-                emit_started.elapsed().as_millis()
-            );
-        }
     }
     Ok(path)
 }
@@ -496,13 +574,27 @@ pub fn begin_fullscreen_capture(app: &tauri::AppHandle) -> Result<String, String
 
     // After the overlay has the image, emit `fullscreen-ready` so the frontend
     // can auto-select the entire viewport and show the toolbar immediately.
-    if let Some(overlay) = app.get_webview_window("overlay") {
-        let _ = overlay.emit_to(
-            tauri::EventTarget::webview_window("overlay"),
-            "fullscreen-ready",
-            (),
-        );
-    }
+    let orchestrator = app.state::<Arc<CaptureOrchestrator>>();
+    let Some(overlay) = app.get_webview_window("overlay") else {
+        return Err(overlay_presentation_failure(
+            &orchestrator,
+            None,
+            "window lookup",
+            "overlay window is unavailable for fullscreen-ready",
+        ));
+    };
+    check_overlay_presentation(
+        &orchestrator,
+        Some(&overlay),
+        "emit fullscreen-ready",
+        overlay
+            .emit_to(
+                tauri::EventTarget::webview_window("overlay"),
+                "fullscreen-ready",
+                (),
+            )
+            .map_err(|e| e.to_string()),
+    )?;
 
     Ok(path)
 }
@@ -791,6 +883,39 @@ mod tests {
             o.finish(rect),
             Err(CaptureError::CapturedAlready)
         ));
+    }
+
+    #[test]
+    fn presentation_success_keeps_capture_session() {
+        let o = CaptureOrchestrator::new(StubProvider::new());
+        assert!(o.start().is_ok());
+        let (path, _, _) = o.last().expect("full capture path");
+
+        assert!(check_overlay_presentation(&o, None, "show", Ok(())).is_ok());
+        assert!(o.is_busy());
+        assert_eq!(o.last().expect("session remains").0, path);
+        assert!(path.exists());
+
+        o.cancel();
+    }
+
+    #[test]
+    fn presentation_failure_cancels_session_and_allows_retry() {
+        let o = CaptureOrchestrator::new(StubProvider::new());
+        assert!(o.start().is_ok());
+        let (path, _, _) = o.last().expect("full capture path");
+
+        let error = check_overlay_presentation(&o, None, "show", Err("test failure".to_string()))
+            .expect_err("presentation failure should propagate");
+        assert_eq!(error, "overlay show failed: test failure");
+        assert!(!o.is_busy());
+        assert!(o.last().is_none());
+        assert!(!path.exists());
+
+        assert!(o.start().is_ok(), "next capture should remain usable");
+        let retry_path = o.last().expect("retry session").0;
+        assert!(retry_path.exists());
+        o.cancel();
     }
 
     #[test]

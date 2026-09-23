@@ -30,7 +30,7 @@ pub fn setup(app: &AppHandle, lang: Lang) -> Result<(), String> {
         .on_menu_event(|app, event| match event.id().as_ref() {
             "capture" => {
                 let app = app.clone();
-                tauri::async_runtime::spawn(async move {
+                tauri::async_runtime::spawn_blocking(move || {
                     if let Err(e) = capture::begin_capture(&app) {
                         eprintln!("[eisen] tray capture failed: {e}");
                     }

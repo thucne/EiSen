@@ -306,6 +306,35 @@ pub(crate) fn compute_editor_geometry(
     (target_w, target_h, target_x, target_y)
 }
 
+/// Compute the editor rectangle in physical pixels for a Windows monitor.
+///
+/// The editor sizing policy is expressed in logical pixels, while Windows
+/// monitor frames and the physical window setters use physical pixels. The
+/// conversion uses the destination monitor's scale so mixed-DPI monitors and
+/// negative desktop origins retain the same physical rectangle.
+#[cfg(any(target_os = "windows", test))]
+fn compute_editor_physical_geometry(
+    capture_rect: (f64, f64),
+    monitor_frame: (i32, i32, u32, u32),
+    scale: f64,
+) -> (i32, i32, u32, u32) {
+    let (mon_x, mon_y, mon_w, mon_h) = monitor_frame;
+    let logical_frame = (
+        mon_x as f64 / scale,
+        mon_y as f64 / scale,
+        mon_w as f64 / scale,
+        mon_h as f64 / scale,
+    );
+    let (target_w, target_h, target_x, target_y) =
+        compute_editor_geometry(capture_rect, logical_frame);
+    (
+        (target_x * scale).round() as i32,
+        (target_y * scale).round() as i32,
+        (target_w * scale).round() as u32,
+        (target_h * scale).round() as u32,
+    )
+}
+
 /// Create (once) and reveal the editor window, sized to the current capture
 /// region plus the toolbar, centered on the screen.
 fn show_editor(app: &tauri::AppHandle, orchestrator: &CaptureOrchestrator) -> tauri::Result<()> {
@@ -347,17 +376,33 @@ fn show_editor(app: &tauri::AppHandle, orchestrator: &CaptureOrchestrator) -> ta
             let size = mon.size();
             let pos = mon.position();
 
-            let mon_w = size.width as f64 / scale;
-            let mon_h = size.height as f64 / scale;
-            let mon_x = pos.x as f64 / scale;
-            let mon_y = pos.y as f64 / scale;
+            #[cfg(target_os = "windows")]
+            {
+                let (target_x, target_y, target_w, target_h) = compute_editor_physical_geometry(
+                    (rect.width, rect.height),
+                    (pos.x, pos.y, size.width, size.height),
+                    scale,
+                );
+                let _ = window.set_min_size(Some(tauri::LogicalSize::new(680.0, 480.0)));
+                let _ = window.set_size(tauri::PhysicalSize::new(target_w, target_h));
+                let _ = window.set_position(tauri::PhysicalPosition::new(target_x, target_y));
+            }
+            #[cfg(not(target_os = "windows"))]
+            {
+                let mon_w = size.width as f64 / scale;
+                let mon_h = size.height as f64 / scale;
+                let mon_x = pos.x as f64 / scale;
+                let mon_y = pos.y as f64 / scale;
 
-            let (target_w, target_h, target_x, target_y) =
-                compute_editor_geometry((rect.width, rect.height), (mon_x, mon_y, mon_w, mon_h));
+                let (target_w, target_h, target_x, target_y) = compute_editor_geometry(
+                    (rect.width, rect.height),
+                    (mon_x, mon_y, mon_w, mon_h),
+                );
 
-            let _ = window.set_min_size(Some(tauri::LogicalSize::new(680.0, 480.0)));
-            let _ = window.set_size(tauri::LogicalSize::new(target_w, target_h));
-            let _ = window.set_position(tauri::LogicalPosition::new(target_x, target_y));
+                let _ = window.set_min_size(Some(tauri::LogicalSize::new(680.0, 480.0)));
+                let _ = window.set_size(tauri::LogicalSize::new(target_w, target_h));
+                let _ = window.set_position(tauri::LogicalPosition::new(target_x, target_y));
+            }
         } else {
             const EXTRA_HEIGHT: f64 = 224.0;
             const EXTRA_WIDTH: f64 = 96.0;
@@ -744,15 +789,25 @@ builder
             .visible(false)
             .build()?;
             if let Some(monitor) = app.primary_monitor().ok().flatten() {
-                let scale = monitor.scale_factor();
                 let size = monitor.size();
                 let pos = monitor.position();
-                let _ = overlay.set_position(
-                    tauri::LogicalPosition::new(pos.x as f64 / scale, pos.y as f64 / scale),
-                );
-                let _ = overlay.set_size(
-                    tauri::LogicalSize::new(size.width as f64 / scale, size.height as f64 / scale),
-                );
+                #[cfg(target_os = "windows")]
+                {
+                    let _ = overlay.set_position(tauri::PhysicalPosition::new(pos.x, pos.y));
+                    let _ = overlay.set_size(tauri::PhysicalSize::new(size.width, size.height));
+                }
+                #[cfg(not(target_os = "windows"))]
+                {
+                    let scale = monitor.scale_factor();
+                    let _ = overlay.set_position(tauri::LogicalPosition::new(
+                        pos.x as f64 / scale,
+                        pos.y as f64 / scale,
+                    ));
+                    let _ = overlay.set_size(tauri::LogicalSize::new(
+                        size.width as f64 / scale,
+                        size.height as f64 / scale,
+                    ));
+                }
             }
             if let Err(e) = tray::setup(app.handle(), cfg.lang) {
                 eprintln!("[eisen] tray setup failed: {e}");
@@ -920,6 +975,44 @@ mod tests {
         assert_eq!(h, 800.0);
         assert_eq!(x, 0.0);
         assert_eq!(y, 0.0);
+    }
+
+    #[test]
+    fn compute_editor_physical_geometry_handles_mixed_dpi_and_origins() {
+        let cases = [
+            (
+                (0, 0, 1920, 1080),
+                1.0,
+                (400.0, 200.0),
+                (620, 270, 680, 540),
+            ),
+            (
+                (1920, 0, 2560, 1440),
+                1.25,
+                (800.0, 600.0),
+                (2640, 205, 1120, 1030),
+            ),
+            (
+                (-1920, -1080, 1920, 1080),
+                1.5,
+                (400.0, 200.0),
+                (-1470, -945, 1020, 810),
+            ),
+        ];
+
+        for (monitor, scale, capture, expected) in cases {
+            let actual = compute_editor_physical_geometry(capture, monitor, scale);
+            assert_eq!(actual, expected);
+
+            let (monitor_x, monitor_y, monitor_w, monitor_h) = monitor;
+            let (x, y, width, height) = actual;
+            assert!(x >= monitor_x);
+            assert!(y >= monitor_y);
+            assert!(i64::from(x) + i64::from(width) <= i64::from(monitor_x) + i64::from(monitor_w));
+            assert!(
+                i64::from(y) + i64::from(height) <= i64::from(monitor_y) + i64::from(monitor_h)
+            );
+        }
     }
 
     #[test]
