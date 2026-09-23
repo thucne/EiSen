@@ -27,48 +27,52 @@ const c = t.comparison;
 
     <!-- Table Container -->
     <div class="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-none">
-      <div class="inline-block min-w-full align-middle">
-        <div class="overflow-hidden rounded-2xl border border-white/10 bg-[#161822]/90 shadow-2xl backdrop-blur-xl">
-          <table class="min-w-full divide-y divide-white/10 text-left">
-            <thead>
-              <tr class="bg-white/[0.03]">
-                <th scope="col" class="py-4 px-4 sm:py-5 sm:px-6 text-xs sm:text-sm font-semibold text-slate-300 whitespace-nowrap">
-                  {c.feature}
-                </th>
-                <th scope="col" class="py-4 px-4 sm:py-5 sm:px-6 text-sm sm:text-base font-bold text-indigo-400 bg-indigo-500/10 border-x border-indigo-500/20 whitespace-nowrap">
-                  <div class="flex items-center gap-2">
-                    <span>{c.eisen}</span>
-                    <span class="text-[9px] sm:text-[10px] uppercase font-mono px-1.5 sm:px-2 py-0.5 rounded bg-indigo-500/30 text-indigo-200">Recommended</span>
-                  </div>
-                </th>
-                <th scope="col" class="py-4 px-4 sm:py-5 sm:px-6 text-xs sm:text-sm font-medium text-slate-400 whitespace-nowrap">
-                  {c.macosDefault}
-                </th>
-                <th scope="col" class="py-4 px-4 sm:py-5 sm:px-6 text-xs sm:text-sm font-medium text-slate-400 whitespace-nowrap">
-                  {c.paidTools}
-                </th>
+      <div class="min-w-[960px] overflow-hidden rounded-2xl border border-white/10 bg-[#161822]/90 shadow-2xl backdrop-blur-xl">
+        <table class="w-full table-fixed divide-y divide-white/10 text-left">
+          <colgroup>
+            <col class="w-[24%]" />
+            <col class="w-[29%]" />
+            <col class="w-[23%]" />
+            <col class="w-[24%]" />
+          </colgroup>
+          <thead>
+            <tr class="bg-white/[0.03]">
+              <th scope="col" class="py-4 px-4 sm:py-5 sm:px-6 text-xs sm:text-sm font-semibold text-slate-300">
+                {c.feature}
+              </th>
+              <th scope="col" class="py-4 px-4 sm:py-5 sm:px-6 text-sm sm:text-base font-bold text-indigo-400 bg-indigo-500/10 border-x border-indigo-500/20">
+                <div class="flex flex-wrap items-center gap-2">
+                  <span>{c.eisen}</span>
+                  <span class="text-[9px] sm:text-[10px] uppercase font-mono px-1.5 sm:px-2 py-0.5 rounded bg-indigo-500/30 text-indigo-200">Recommended</span>
+                </div>
+              </th>
+              <th scope="col" class="py-4 px-4 sm:py-5 sm:px-6 text-xs sm:text-sm font-medium text-slate-400">
+                {c.macosDefault}
+              </th>
+              <th scope="col" class="py-4 px-4 sm:py-5 sm:px-6 text-xs sm:text-sm font-medium text-slate-400">
+                {c.paidTools}
+              </th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-white/5 text-xs sm:text-sm font-normal">
+            {c.rows.map((row, idx) => (
+              <tr class={idx % 2 === 0 ? 'bg-transparent' : 'bg-white/[0.01]'}>
+                <td class="py-3.5 px-4 sm:py-4 sm:px-6 font-medium text-slate-200 break-words">
+                  {row.name}
+                </td>
+                <td class="py-3.5 px-4 sm:py-4 sm:px-6 font-semibold text-emerald-400 bg-indigo-500/5 border-x border-indigo-500/20 break-words">
+                  {row.eisen}
+                </td>
+                <td class="py-3.5 px-4 sm:py-4 sm:px-6 text-slate-400 break-words">
+                  {row.macos}
+                </td>
+                <td class="py-3.5 px-4 sm:py-4 sm:px-6 text-slate-400 break-words">
+                  {row.paid}
+                </td>
               </tr>
-            </thead>
-            <tbody class="divide-y divide-white/5 text-xs sm:text-sm font-normal">
-              {c.rows.map((row, idx) => (
-                <tr class={idx % 2 === 0 ? 'bg-transparent' : 'bg-white/[0.01]'}>
-                  <td class="py-3.5 px-4 sm:py-4 sm:px-6 font-medium text-slate-200 whitespace-nowrap sm:whitespace-normal">
-                    {row.name}
-                  </td>
-                  <td class="py-3.5 px-4 sm:py-4 sm:px-6 font-semibold text-emerald-400 bg-indigo-500/5 border-x border-indigo-500/20 whitespace-nowrap">
-                    {row.eisen}
-                  </td>
-                  <td class="py-3.5 px-4 sm:py-4 sm:px-6 text-slate-400 whitespace-nowrap">
-                    {row.macos}
-                  </td>
-                  <td class="py-3.5 px-4 sm:py-4 sm:px-6 text-slate-400 whitespace-nowrap">
-                    {row.paid}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
 
