@@ -58,6 +58,7 @@ async fn cmd_commit_region(
                 show_editor(&app, &orch_for_ui).map_err(|e| e.to_string())?;
             } else {
                 resign_overlay_activation(&app);
+                capture::restore_editor_after_capture(&app, &orch_for_ui);
             }
             Ok(session)
         }
@@ -81,6 +82,7 @@ fn cmd_cancel_capture(
         let _ = overlay.hide();
     }
     resign_overlay_activation(&app);
+    capture::restore_editor_after_capture(&app, orchestrator.inner());
     Ok(())
 }
 
@@ -290,6 +292,95 @@ fn cmd_get_last_capture(
     Ok(CaptureSession { path, rect, scale })
 }
 
+/// The editor's private copy of the capture it is showing.
+#[tauri::command]
+fn cmd_get_editor_session(
+    orchestrator: State<'_, Arc<CaptureOrchestrator>>,
+) -> Result<CaptureSession, String> {
+    let (path, rect, scale) = orchestrator
+        .editor_pin()
+        .ok_or_else(|| "no editor capture is open".to_string())?;
+    Ok(CaptureSession { path, rect, scale })
+}
+
+/// Point the open editor at the current capture. Copies the file onto the pin
+/// so a later grab cannot delete it.
+#[tauri::command]
+fn cmd_adopt_editor_session(
+    orchestrator: State<'_, Arc<CaptureOrchestrator>>,
+) -> Result<CaptureSession, String> {
+    orchestrator.pin_from_last()?;
+    let (path, rect, scale) = orchestrator
+        .editor_pin()
+        .ok_or_else(|| "no editor capture is open".to_string())?;
+    Ok(CaptureSession { path, rect, scale })
+}
+
+fn editor_pin_path(orchestrator: &CaptureOrchestrator) -> Result<std::path::PathBuf, String> {
+    orchestrator
+        .editor_pin()
+        .map(|(path, _, _)| path)
+        .ok_or_else(|| "no editor capture is open".to_string())
+}
+
+/// Copy the pinned editor image, not the live capture session.
+#[tauri::command]
+async fn cmd_copy_editor(
+    app: tauri::AppHandle,
+    orchestrator: State<'_, Arc<CaptureOrchestrator>>,
+) -> Result<(), String> {
+    let path = editor_pin_path(orchestrator.inner())?;
+    let app_for_copy = app.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        let bytes = std::fs::read(&path).map_err(|e| format!("failed to read capture image: {e}"))?;
+        output::copy_image(&app_for_copy, &bytes).map_err(|e| e.to_string())
+    })
+    .await
+    .map_err(|e| format!("copy task failed: {e}"))??;
+    sound::play(SoundEffect::Copy, app_config(&app).play_sounds);
+    Ok(())
+}
+
+/// Save the pinned editor image, not the live capture session.
+#[tauri::command]
+async fn cmd_save_editor(
+    app: tauri::AppHandle,
+    orchestrator: State<'_, Arc<CaptureOrchestrator>>,
+) -> Result<SaveResult, String> {
+    let path = editor_pin_path(orchestrator.inner())?;
+    let dir = app_config(&app).save_dir;
+    let saved = tauri::async_runtime::spawn_blocking(move || {
+        let bytes = std::fs::read(&path).map_err(|e| format!("failed to read capture image: {e}"))?;
+        output::save_image(&dir, &naming::default_filename(), &bytes).map_err(|e| e.to_string())
+    })
+    .await
+    .map_err(|e| format!("save task failed: {e}"))??;
+    push_history(&app, saved.to_string_lossy());
+    sound::play(SoundEffect::Save, app_config(&app).play_sounds);
+    Ok(SaveResult { path: saved })
+}
+
+/// Copy and save the pinned editor image.
+#[tauri::command]
+async fn cmd_copy_and_save_editor(
+    app: tauri::AppHandle,
+    orchestrator: State<'_, Arc<CaptureOrchestrator>>,
+) -> Result<SaveResult, String> {
+    let path = editor_pin_path(orchestrator.inner())?;
+    let dir = app_config(&app).save_dir;
+    let app_for_copy = app.clone();
+    let saved = tauri::async_runtime::spawn_blocking(move || {
+        let bytes = std::fs::read(&path).map_err(|e| format!("failed to read capture image: {e}"))?;
+        output::copy_image(&app_for_copy, &bytes).map_err(|e| e.to_string())?;
+        output::save_image(&dir, &naming::default_filename(), &bytes).map_err(|e| e.to_string())
+    })
+    .await
+    .map_err(|e| format!("copy-and-save task failed: {e}"))??;
+    push_history(&app, saved.to_string_lossy());
+    sound::play(SoundEffect::Save, app_config(&app).play_sounds);
+    Ok(SaveResult { path: saved })
+}
+
 /// Compute editor window geometry (width, height, x, y) centered within `monitor_frame`
 /// and clamped to minimum dimensions (680x480) and monitor dimensions.
 pub(crate) fn compute_editor_geometry(
@@ -335,9 +426,36 @@ fn compute_editor_physical_geometry(
     )
 }
 
+/// One system glass layer behind the hub and the editor.
+/// Liquid Glass on macOS 26, vibrancy on older macOS, Mica on Windows.
+/// The fullscreen overlay is not given this effect.
+fn apply_window_glass(window: &tauri::WebviewWindow) -> tauri::Result<()> {
+    use tauri::window::{Effect, EffectsBuilder};
+    window.set_effects(
+        EffectsBuilder::new()
+            .effects([
+                Effect::LiquidGlassRegular,
+                Effect::UnderWindowBackground,
+                Effect::Mica,
+            ])
+            .radius(16.0)
+            .build(),
+    )
+}
+
 /// Create (once) and reveal the editor window, sized to the current capture
 /// region plus the toolbar, centered on the screen.
+///
+/// The first open copies the capture to the editor pin. A later open leaves
+/// that pin alone and asks the editor to adopt the new capture only when it
+/// has no marks.
 fn show_editor(app: &tauri::AppHandle, orchestrator: &CaptureOrchestrator) -> tauri::Result<()> {
+    let replacing = app.get_webview_window("editor").is_some();
+    if !replacing {
+        orchestrator
+            .pin_from_last()
+            .map_err(std::io::Error::other)?;
+    }
     let window = if let Some(w) = app.get_webview_window("editor") {
         w
     } else {
@@ -345,10 +463,12 @@ fn show_editor(app: &tauri::AppHandle, orchestrator: &CaptureOrchestrator) -> ta
             .title(app_config(app).lang.editor_title())
             .always_on_top(true)
             .skip_taskbar(true)
+            .transparent(true)
             .min_inner_size(680.0, 480.0)
             .build()?
     };
     let _ = window.set_title(app_config(app).lang.editor_title());
+    let _ = apply_window_glass(&window);
     if let Some((_, rect, _)) = orchestrator.last() {
         let monitor = {
             let monitors = app.available_monitors()?;
@@ -415,6 +535,10 @@ fn show_editor(app: &tauri::AppHandle, orchestrator: &CaptureOrchestrator) -> ta
     }
     window.show()?;
     window.set_focus()?;
+    orchestrator.clear_editor_suspended();
+    if replacing {
+        let _ = window.emit("editor-replace-request", ());
+    }
     Ok(())
 }
 
@@ -774,6 +898,12 @@ builder
             }
             core::capture::cleanup_stale_temp_files();
 
+            if let Some(main) = app.get_webview_window("main") {
+                if let Err(e) = apply_window_glass(&main) {
+                    eprintln!("[eisen] hub glass failed: {e}");
+                }
+            }
+
             let mut cfg = app_config(app.handle());
             let overlay = WebviewWindowBuilder::new(
                 app,
@@ -849,11 +979,17 @@ builder
             Ok(())
         })
         .on_window_event(|window, event| {
-            if let tauri::WindowEvent::CloseRequested { api, .. } = event {
-                if window.label() == "main" {
+            match event {
+                tauri::WindowEvent::CloseRequested { api, .. } if window.label() == "main" => {
                     let _ = window.hide();
                     api.prevent_close();
                 }
+                tauri::WindowEvent::CloseRequested { .. } if window.label() == "editor" => {
+                    window
+                        .state::<Arc<CaptureOrchestrator>>()
+                        .clear_editor_pin();
+                }
+                _ => {}
             }
         })
         .invoke_handler(tauri::generate_handler![
@@ -871,6 +1007,11 @@ builder
             cmd_set_config,
             cmd_reset_config,
             cmd_get_last_capture,
+            cmd_get_editor_session,
+            cmd_adopt_editor_session,
+            cmd_copy_editor,
+            cmd_save_editor,
+            cmd_copy_and_save_editor,
             cmd_open_in_editor,
             cmd_get_thumbnail,
             cmd_extract_text,

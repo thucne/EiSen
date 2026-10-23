@@ -85,6 +85,16 @@ export function getLastCapture(): Promise<CaptureSession> {
   return invoke("cmd_get_last_capture");
 }
 
+/** The editor's pinned copy, which a new capture will not delete. */
+export function getEditorSession(): Promise<CaptureSession> {
+  return invoke("cmd_get_editor_session");
+}
+
+/** Replace the editor pin with the current capture. */
+export function adoptEditorSession(): Promise<CaptureSession> {
+  return invoke("cmd_adopt_editor_session");
+}
+
 /**
  * Open the captured image in the Editor window.
  */
@@ -111,6 +121,21 @@ export function save(): Promise<SaveResult> {
  */
 export function copyAndSave(): Promise<SaveResult> {
   return invoke("cmd_copy_and_save");
+}
+
+/** Copy the pinned editor image, not the live capture. */
+export function copyEditor(): Promise<void> {
+  return invoke("cmd_copy_editor");
+}
+
+/** Save the pinned editor image, not the live capture. */
+export function saveEditor(): Promise<SaveResult> {
+  return invoke("cmd_save_editor");
+}
+
+/** Copy and save the pinned editor image. */
+export function copyAndSaveEditor(): Promise<SaveResult> {
+  return invoke("cmd_copy_and_save_editor");
 }
 
 /**

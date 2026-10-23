@@ -4,6 +4,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const h = vi.hoisted(() => ({
   invoke: vi.fn(),
+  hide: vi.fn().mockResolvedValue(undefined),
+  show: vi.fn().mockResolvedValue(undefined),
   listeners: new Map<string, (e: { payload: unknown }) => void>(),
 }));
 
@@ -20,16 +22,16 @@ vi.mock("@tauri-apps/api/event", () => ({
 }));
 
 vi.mock("@tauri-apps/api/window", () => ({
-  getCurrentWindow: () => ({ hide: vi.fn().mockResolvedValue(undefined) }),
+  getCurrentWindow: () => ({ hide: h.hide, show: h.show }),
 }));
 
 import OverlayPage from "./+page.svelte";
 import { en } from "$lib/i18n/en";
 
-function emit(event: string): void {
+function emit(event: string, payload: unknown = null): void {
   const cb = h.listeners.get(event);
   if (!cb) throw new Error(`no listener registered for ${event}`);
-  cb({ payload: null });
+  cb({ payload });
 }
 
 function toolbarBtn(name: string) {
@@ -38,6 +40,8 @@ function toolbarBtn(name: string) {
 
 beforeEach(() => {
   h.invoke.mockReset();
+  h.hide.mockClear();
+  h.show.mockClear();
   h.listeners.clear();
   Element.prototype.setPointerCapture ??= vi.fn();
   Element.prototype.releasePointerCapture ??= vi.fn();
@@ -156,6 +160,8 @@ describe("overlay feedback", () => {
     await tick();
     fireEvent.click(toolbarBtn(`${en.overlay.copyToClipboard} (Enter / DblClick)`));
     expect(await screen.findByText(en.toasts.copied)).toBeTruthy();
+    await waitFor(() => expect(h.hide).toHaveBeenCalled());
+    expect(h.show).not.toHaveBeenCalled();
   });
 
   it("shows an error toast containing the command failure", async () => {
@@ -171,6 +177,8 @@ describe("overlay feedback", () => {
     fireEvent.click(toolbarBtn(`${en.overlay.copyToClipboard} (Enter / DblClick)`));
     const toast = await screen.findByText(new RegExp(en.overlay.actionFailed));
     expect(toast.textContent).toMatch(/clipboard busy/);
+    expect(h.hide).not.toHaveBeenCalled();
+    await waitFor(() => expect(h.show).toHaveBeenCalled());
   });
 
   it("shows the no-text message when OCR returns empty", async () => {
@@ -188,6 +196,8 @@ describe("overlay feedback", () => {
     fireEvent.click(toolbarBtn(`${en.actions.extractText} (O)`));
     expect(await screen.findByText(en.ocr.noText)).toBeTruthy();
     expect(navigator.clipboard.writeText).not.toHaveBeenCalled();
+    expect(h.hide).not.toHaveBeenCalled();
+    await waitFor(() => expect(h.show).toHaveBeenCalled());
   });
 
   it("shows the OCR success message and still writes the clipboard", async () => {
@@ -205,6 +215,7 @@ describe("overlay feedback", () => {
     fireEvent.click(toolbarBtn(`${en.actions.extractText} (O)`));
     expect(await screen.findByText(en.ocr.copied)).toBeTruthy();
     expect(navigator.clipboard.writeText).toHaveBeenCalledWith("hello world");
+    await waitFor(() => expect(h.hide).toHaveBeenCalled());
   });
 });
 
@@ -243,6 +254,19 @@ describe("overlay selection editing", () => {
     fireEvent.pointerUp(viewport, { button: 0, clientX: 300, clientY: 250 });
     await tick();
     expect(screen.getByText("200 × 150 px")).toBeTruthy();
+  });
+
+  it("reports physical pixels when the capture scale is 2", async () => {
+    const { container } = render(OverlayPage);
+    await waitFor(() => expect(h.listeners.has("capture-ready")).toBe(true));
+    emit("capture-ready", { path: "/tmp/eisen-full.png", scale: 2 });
+    await tick();
+    const viewport = container.querySelector(".overlay-viewport")!;
+    fireEvent.pointerDown(viewport, { button: 0, clientX: 100, clientY: 100 });
+    fireEvent.pointerMove(viewport, { clientX: 300, clientY: 250 });
+    fireEvent.pointerUp(viewport, { clientX: 300, clientY: 250 });
+    await tick();
+    expect(screen.getByText("400 × 300 px")).toBeTruthy();
   });
 
   it("nudges a confirmed selection with arrow keys", async () => {

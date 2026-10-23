@@ -1,7 +1,9 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { convertFileSrc, invoke } from "@tauri-apps/api/core";
+  import { listen } from "@tauri-apps/api/event";
   import { getCurrentWindow } from "@tauri-apps/api/window";
+  import { get } from "svelte/store";
   import * as api from "$lib/api";
   import logoMark from "$lib/assets/eisen-mark-reversed.svg";
   import Toast from "$lib/components/Toast.svelte";
@@ -208,7 +210,7 @@
   });
 
   const loadSession = createSessionLoader({
-    api,
+    api: { getLastCapture: () => api.getEditorSession() },
     toFileSrc: convertFileSrc,
     onLoaded: ({ width, height, scale, fileSrc }) => {
       canvasW = width;
@@ -227,8 +229,19 @@
     void initLang();
     void loadSession(true);
     const un = watchFocusReload(getCurrentWindow(), () => loadSession());
+    const unReplace = listen("editor-replace-request", () => {
+      if (get(elements).length > 0 || get(editingId) != null) {
+        showToast(get(i18n).editor.keptOpen, "ok");
+        return;
+      }
+      void api.adoptEditorSession().then(
+        () => loadSession(true),
+        (err) => showToast(String(err), "err"),
+      );
+    });
     return () => {
       void un.then((fn) => fn());
+      void unReplace.then((fn) => fn());
     };
   });
 
@@ -535,15 +548,15 @@
     try {
       if ($elements.length === 0) {
         if (kind === "copy") {
-          await api.copy();
+          await api.copyEditor();
           showToast(t.toasts.copied, "ok");
           exitSoon();
         } else if (kind === "save") {
-          const r = await api.save();
+          const r = await api.saveEditor();
           showToast(`${t.toasts.saved}: ${basename(r.path)}`, "ok");
           exitSoon();
         } else if (kind === "copyAndSave") {
-          const r = await api.copyAndSave();
+          const r = await api.copyAndSaveEditor();
           showToast(`${t.toasts.copiedAndSaved}: ${basename(r.path)}`, "ok");
           exitSoon();
         }
@@ -1055,7 +1068,7 @@
   :global(body) {
     margin: 0;
     padding: 0;
-    background: #0b0c10;
+    background: transparent;
     overflow: hidden;
     width: 100vw;
     height: 100vh;
@@ -1067,7 +1080,7 @@
     flex-direction: column;
     width: 100vw;
     height: 100vh;
-    background: #0b0c10;
+    background: transparent;
     overflow: hidden;
   }
 
@@ -1142,7 +1155,7 @@
     align-items: center;
     overflow: auto;
     padding: 32px 32px 140px 32px;
-    background: radial-gradient(circle at center, #151722 0%, #0b0c10 100%);
+    background: radial-gradient(circle at center, rgba(21, 23, 34, 0.55) 0%, rgba(11, 12, 16, 0.28) 100%);
   }
 
   .canvas-container {

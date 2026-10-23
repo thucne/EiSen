@@ -24,7 +24,22 @@
 
   type Interaction = "idle" | "drawing" | "moving" | "resizing";
 
+  function readCaptureReady(payload: unknown): { path: string; scale: number } | null {
+    if (typeof payload === "string" && payload.length > 0) {
+      return { path: payload, scale: 1 };
+    }
+    if (!payload || typeof payload !== "object") return null;
+    const record = payload as { path?: unknown; scale?: unknown };
+    if (typeof record.path !== "string" || record.path.length === 0) return null;
+    const scale =
+      typeof record.scale === "number" && Number.isFinite(record.scale) && record.scale > 0
+        ? record.scale
+        : 1;
+    return { path: record.path, scale };
+  }
+
   let imageSrc = $state<string | null>(null);
+  let captureScale = $state(1);
   let interaction = $state<Interaction>("idle");
   let resizeAnchor = $state<Point | null>(null);
   let selectionConfirmed = $state(false);
@@ -45,7 +60,10 @@
 
   const sizeLabel = $derived.by(() => {
     if (!activeRect) return "";
-    return `${Math.round(activeRect.width)} × ${Math.round(activeRect.height)} px`;
+    const scale =
+      Number.isFinite(captureScale) && captureScale > 0 ? captureScale : 1;
+    const px = (logical: number) => Math.max(0, Math.round(logical * scale));
+    return `${px(activeRect.width)} × ${px(activeRect.height)} px`;
   });
 
   let t = $derived($i18n);
@@ -97,16 +115,16 @@
     }
   }
 
-  /** Toast dwell before hiding, so the message is actually seen. Matches the
-   *  Toast component's default 2200ms auto-dismiss minus a short tail. */
-  const TOAST_DWELL_MS = 1200;
-
-  function hideAfterToast() {
-    setTimeout(() => void hideOverlay(), TOAST_DWELL_MS);
-  }
-
   function basename(path: string): string {
     return path.split(/[\\/]/).pop() ?? path;
+  }
+
+  async function revealOverlay() {
+    try {
+      await getCurrentWindow().show();
+    } catch (err) {
+      console.error("show failed:", err);
+    }
   }
 
   async function commit(rect: Rect, target: "editor" | "copy" | "save" | "ocr") {
@@ -121,28 +139,29 @@
       if (target === "copy") {
         await invoke("cmd_copy");
         showToast(t.toasts.copied, "ok");
-        hideAfterToast();
+        await hideOverlay();
       } else if (target === "save") {
         const r = await invoke<SaveResult>("cmd_save");
         showToast(`${t.toasts.saved}: ${basename(r.path)}`, "ok");
-        hideAfterToast();
+        await hideOverlay();
       } else if (target === "ocr") {
         const text = await invoke<string>("cmd_extract_text");
         if (text) {
           await navigator.clipboard.writeText(text);
           void invoke("cmd_play_sound", { effect: "copy" });
           showToast(t.ocr.copied, "ok");
+          await hideOverlay();
         } else {
           showToast(t.ocr.noText, "err");
+          await revealOverlay();
         }
-        hideAfterToast();
       } else {
         selectionConfirmed = false;
         interaction = "idle";
       }
     } catch (err) {
       showToast(`${t.overlay.actionFailed}: ${err}`, "err");
-      hideAfterToast();
+      await revealOverlay();
     }
   }
 
@@ -304,11 +323,14 @@
 
     void initLang();
 
-    void listen<string>("capture-ready", (event) => {
+    void listen("capture-ready", (event) => {
+      const ready = readCaptureReady(event.payload);
+      if (!ready) return;
       captureReadyAt = performance.now();
       loggedFirstPointer = false;
       logOverlayTiming("capture-ready listener");
-      imageSrc = convertFileSrc(event.payload);
+      captureScale = ready.scale;
+      imageSrc = convertFileSrc(ready.path);
       interaction = "idle";
       resizeAnchor = null;
       selectionConfirmed = false;

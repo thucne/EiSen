@@ -121,6 +121,11 @@ pub struct CaptureOrchestrator {
     entering: AtomicBool,
     last: Mutex<Option<(PathBuf, LogicalRect, f64)>>,
     screen: Mutex<Option<PixelRect>>,
+    /// Copy of the image the editor is showing. `start` and `cancel` delete
+    /// `last` only, so a new capture cannot remove or replace an open edit.
+    editor_pin: Mutex<Option<(PathBuf, LogicalRect, f64)>>,
+    /// Editor window was visible and has been hidden for an in-flight capture.
+    editor_suspended: AtomicBool,
 }
 
 impl CaptureOrchestrator {
@@ -132,6 +137,8 @@ impl CaptureOrchestrator {
             entering: AtomicBool::new(false),
             last: Mutex::new(None),
             screen: Mutex::new(None),
+            editor_pin: Mutex::new(None),
+            editor_suspended: AtomicBool::new(false),
         }
     }
 
@@ -153,6 +160,10 @@ impl CaptureOrchestrator {
 
     fn lock_screen(&self) -> std::sync::MutexGuard<'_, Option<PixelRect>> {
         self.screen.lock().unwrap_or_else(|e| e.into_inner())
+    }
+
+    fn lock_pin(&self) -> std::sync::MutexGuard<'_, Option<(PathBuf, LogicalRect, f64)>> {
+        self.editor_pin.lock().unwrap_or_else(|e| e.into_inner())
     }
 
     pub fn is_busy(&self) -> bool {
@@ -288,6 +299,51 @@ impl CaptureOrchestrator {
         }
     }
 
+    /// Copy the live capture to a file `start` and `cancel` will not delete.
+    pub fn pin_from_last(&self) -> Result<(), String> {
+        let Some((src, rect, scale)) = self.last() else {
+            return Err("no capture session; commit a region first".to_string());
+        };
+        if !src.is_file() {
+            return Err(format!("capture file no longer exists: {}", src.display()));
+        }
+        let out = temp_capture_path("editor");
+        std::fs::copy(&src, &out).map_err(|e| format!("failed to pin editor capture: {e}"))?;
+        restrict_permissions(&out);
+        let old = self.lock_pin().replace((out, rect, scale));
+        if let Some((path, _, _)) = old {
+            if path != src {
+                let _ = std::fs::remove_file(path);
+            }
+        }
+        Ok(())
+    }
+
+    pub fn editor_pin(&self) -> Option<(PathBuf, LogicalRect, f64)> {
+        self.lock_pin().clone()
+    }
+
+    /// Drop the editor's private copy. Called when the editor window closes.
+    pub fn clear_editor_pin(&self) {
+        self.editor_suspended.store(false, Ordering::SeqCst);
+        if let Some((path, _, _)) = self.lock_pin().take() {
+            let _ = std::fs::remove_file(path);
+        }
+    }
+
+    pub fn mark_editor_suspended(&self) {
+        self.editor_suspended.store(true, Ordering::SeqCst);
+    }
+
+    pub fn clear_editor_suspended(&self) {
+        self.editor_suspended.store(false, Ordering::SeqCst);
+    }
+
+    /// Show the editor again if this capture hid it. Returns whether it was hidden.
+    pub fn take_editor_suspended(&self) -> bool {
+        self.editor_suspended.swap(false, Ordering::SeqCst)
+    }
+
     /// Record the display scale factor for converting logical rects to pixels.
     pub fn set_scale(&self, scale: f64) {
         if let Some((_, _, s)) = self.lock_last().as_mut() {
@@ -386,19 +442,62 @@ fn check_overlay_presentation(
     result.map_err(|error| overlay_presentation_failure(orchestrator, overlay, operation, error))
 }
 
+/// Payload for the overlay `capture-ready` event. `scale` is the display
+/// backing scale used to turn selection points into PNG pixels.
+#[derive(Clone, serde::Serialize)]
+pub(crate) struct CaptureReady {
+    pub path: String,
+    pub scale: f64,
+}
+
+/// Hide a visible editor before the grab so its window is not in the shot.
+pub(crate) fn hide_editor_for_capture(app: &tauri::AppHandle, orchestrator: &CaptureOrchestrator) {
+    use tauri::Manager;
+    if let Some(editor) = app.get_webview_window("editor") {
+        if editor.is_visible().unwrap_or(false) {
+            let _ = editor.hide();
+            orchestrator.mark_editor_suspended();
+        }
+    }
+}
+
+/// Bring the editor back after a capture that hid it ends without replacing it.
+pub(crate) fn restore_editor_after_capture(
+    app: &tauri::AppHandle,
+    orchestrator: &CaptureOrchestrator,
+) {
+    use tauri::Manager;
+    if orchestrator.take_editor_suspended() {
+        if let Some(editor) = app.get_webview_window("editor") {
+            let _ = editor.show();
+        }
+    }
+}
+
+/// Restores a suspended editor when a capture start fails. Disarm on success
+/// so the editor stays hidden until the overlay session ends.
+struct EditorHold {
+    app: tauri::AppHandle,
+    orchestrator: Arc<CaptureOrchestrator>,
+    release_on_drop: bool,
+}
+
+impl Drop for EditorHold {
+    fn drop(&mut self) {
+        if self.release_on_drop {
+            restore_editor_after_capture(&self.app, &self.orchestrator);
+        }
+    }
+}
+
 /// Begin a capture session: captures the whole active display to a temp PNG,
 /// shows the overlay window and emits `capture-ready` with the image path.
 ///
 /// Shared by the `cmd_begin_capture` command, the global hotkey and the
 /// tray's "Capture now" item, so all three trigger the same path.
+/// An open editor is hidden for the grab and its file stays pinned.
 pub fn begin_capture(app: &tauri::AppHandle) -> Result<String, String> {
     use tauri::{Emitter, Manager};
-    if let Some(editor) = app.get_webview_window("editor") {
-        let _ = editor.unminimize();
-        let _ = editor.show();
-        let _ = editor.set_focus();
-        return Err("editor is open; finish or close it before a new capture".to_string());
-    }
     let orchestrator = app.state::<Arc<CaptureOrchestrator>>();
     // Serialize entry: trigger sites may run concurrently on worker threads,
     // so a second trigger must short-circuit instead of racing through the
@@ -417,6 +516,12 @@ pub fn begin_capture(app: &tauri::AppHandle) -> Result<String, String> {
     if orchestrator.is_busy() && !overlay.is_visible().unwrap_or(false) {
         orchestrator.cancel();
     }
+    hide_editor_for_capture(app, &orchestrator);
+    let mut editor_hold = EditorHold {
+        app: app.clone(),
+        orchestrator: (*orchestrator).clone(),
+        release_on_drop: true,
+    };
     let hide_started = Instant::now();
     let _ = overlay.hide();
     if cfg!(debug_assertions) {
@@ -549,7 +654,10 @@ pub fn begin_capture(app: &tauri::AppHandle) -> Result<String, String> {
             .emit_to(
                 tauri::EventTarget::webview_window("overlay"),
                 "capture-ready",
-                path.clone(),
+                CaptureReady {
+                    path: path.clone(),
+                    scale,
+                },
             )
             .map_err(|e| e.to_string()),
     )?;
@@ -559,6 +667,7 @@ pub fn begin_capture(app: &tauri::AppHandle) -> Result<String, String> {
             emit_started.elapsed().as_millis()
         );
     }
+    editor_hold.release_on_drop = false;
     Ok(path)
 }
 
@@ -576,6 +685,7 @@ pub fn begin_fullscreen_capture(app: &tauri::AppHandle) -> Result<String, String
     // can auto-select the entire viewport and show the toolbar immediately.
     let orchestrator = app.state::<Arc<CaptureOrchestrator>>();
     let Some(overlay) = app.get_webview_window("overlay") else {
+        restore_editor_after_capture(app, &orchestrator);
         return Err(overlay_presentation_failure(
             &orchestrator,
             None,
@@ -583,7 +693,7 @@ pub fn begin_fullscreen_capture(app: &tauri::AppHandle) -> Result<String, String
             "overlay window is unavailable for fullscreen-ready",
         ));
     };
-    check_overlay_presentation(
+    if let Err(err) = check_overlay_presentation(
         &orchestrator,
         Some(&overlay),
         "emit fullscreen-ready",
@@ -594,7 +704,10 @@ pub fn begin_fullscreen_capture(app: &tauri::AppHandle) -> Result<String, String
                 (),
             )
             .map_err(|e| e.to_string()),
-    )?;
+    ) {
+        restore_editor_after_capture(app, &orchestrator);
+        return Err(err);
+    }
 
     Ok(path)
 }
@@ -758,6 +871,41 @@ mod tests {
         assert_eq!(session.scale, 1.0);
         assert!(session.path.exists());
         let _ = std::fs::remove_file(&session.path);
+    }
+
+    #[test]
+    fn editor_pin_survives_the_next_capture() {
+        let o = CaptureOrchestrator::new(StubProvider::new());
+        assert!(o.start().is_ok());
+        let rect = LogicalRect {
+            left: 0.0,
+            top: 0.0,
+            width: 40.0,
+            height: 20.0,
+        };
+        let session = o.finish(rect).expect("finish");
+        o.pin_from_last().expect("pin");
+        let (pinned, pin_rect, pin_scale) = o.editor_pin().expect("pinned session");
+        assert_ne!(pinned, session.path);
+        assert_eq!(pin_rect, rect);
+        assert_eq!(pin_scale, 1.0);
+        assert!(pinned.is_file());
+
+        assert!(o.start().is_ok());
+        assert!(
+            pinned.is_file(),
+            "a new grab must not delete the editor pin"
+        );
+        assert!(!session.path.exists(), "the live capture file is replaced");
+        let (live, _, _) = o.last().expect("new full capture");
+        assert_ne!(live, pinned);
+
+        o.cancel();
+        assert!(pinned.is_file(), "cancel must not delete the editor pin");
+        o.clear_editor_pin();
+        assert!(o.editor_pin().is_none());
+        assert!(!pinned.is_file());
+        assert!(!live.exists());
     }
 
     #[test]

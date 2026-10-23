@@ -23,7 +23,7 @@ Built with **Astro 5** and **Tailwind CSS**. Fully static, lightweight client sc
   - Local variable fonts (`Plus Jakarta Sans` & `JetBrains Mono`)
 - **Direct Downloads & Fast Redirects:**
   - `/download/windows` and `/exe` 302 to the v0.2.5 GitHub Release NSIS fallback `EiSen_0.2.5_x64-setup.exe` (2,599,622 bytes / 2.60 MB download)
-  - `/download/mac` and `/dmg` 302 to the v0.2.5 GitHub Release `EiSen_0.2.5_aarch64.dmg` (4,358,661 bytes / 4.36 MB download)
+  - `/download/mac` and `/dmg` 302 to the v0.2.7 GitHub Release `EiSen_0.2.7_aarch64.dmg`
   - Windows installed size, Microsoft Store package size, and runtime memory use are not represented by those installer download sizes.
   - Also: `/download`, `/releases`, `/github`
 - **Windows distribution:** The Microsoft Store listing is the primary Windows install path. The direct NSIS installer remains an unsigned fallback; the site and GitHub release notes warn that SmartScreen or managed-device policy may block it, and users should verify the published SHA-256 sidecar before running.

@@ -96,6 +96,7 @@ export const en = {
     title: "Editor",
     canvasLabel: "editor canvas",
     deleteHint: "Delete — click to remove",
+    keptOpen: "This edit stays open. Copy or save it before replacing it.",
   },
   hub: {
     tagline: "Fast Screen Capture for macOS & Windows",

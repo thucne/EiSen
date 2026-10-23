@@ -73,7 +73,7 @@ html, body {
   width: 100%;
   height: 100%;
   font-family: var(--font-sans);
-  background-color: var(--bg-dark);
+  background-color: transparent;
   color: var(--text-main);
   user-select: none;
   -webkit-user-select: none;

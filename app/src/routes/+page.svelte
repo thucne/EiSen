@@ -274,7 +274,7 @@
   :global(body) {
     margin: 0;
     padding: 0;
-    background: #0f1015;
+    background: transparent;
     color: #f8fafc;
     overflow-y: auto;
   }

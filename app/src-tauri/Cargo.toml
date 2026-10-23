@@ -1,6 +1,6 @@
 [package]
 name = "eisen"
-version = "0.2.6"
+version = "0.2.7"
 description = "High-performance screen capture and annotation utility"
 authors = ["Tran Trong Thuc"]
 edition = "2021"
@@ -15,10 +15,10 @@ name = "tauri_app_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]
-tauri-build = { version = "2", features = [] }
+tauri-build = { version = "2.7", features = [] }
 
 [dependencies]
-tauri = { version = "2", features = ["protocol-asset", "macos-private-api", "tray-icon", "image-png"] }
+tauri = { version = "2.12", features = ["protocol-asset", "macos-private-api", "tray-icon", "image-png"] }
 image = { version = "0.25", default-features = false, features = ["png"] }
 tauri-plugin-global-shortcut = "2"
 tauri-plugin-clipboard-manager = "2"
