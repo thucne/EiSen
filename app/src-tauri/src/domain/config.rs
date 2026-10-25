@@ -64,6 +64,15 @@ impl HotkeyPreset {
     }
 }
 
+/// Freehand stroke smoothing level for pen and highlighter.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+pub enum PenSmoothing {
+    Off,
+    #[default]
+    Medium,
+    High,
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct AppConfig {
@@ -72,6 +81,7 @@ pub struct AppConfig {
     pub launch_at_login: bool,
     pub hotkey: HotkeyPreset,
     pub play_sounds: bool,
+    pub pen_smoothing: PenSmoothing,
 }
 
 impl Default for AppConfig {
@@ -84,6 +94,7 @@ impl Default for AppConfig {
                 launch_at_login: false,
                 hotkey: HotkeyPreset::default(),
                 play_sounds: true,
+                pen_smoothing: PenSmoothing::default(),
             },
             &|k| std::env::var(k).ok(),
         )
@@ -186,6 +197,22 @@ mod tests {
     use super::*;
 
     #[test]
+    fn legacy_config_defaults_pen_smoothing_to_medium() {
+        let cfg: AppConfig = serde_json::from_str(r#"{"play_sounds":false}"#).unwrap();
+        assert_eq!(cfg.pen_smoothing, PenSmoothing::Medium);
+        assert!(!cfg.play_sounds);
+    }
+
+    #[test]
+    fn pen_smoothing_roundtrips_as_variant_name() {
+        let cfg = AppConfig { pen_smoothing: PenSmoothing::High, ..AppConfig::default() };
+        let json = serde_json::to_string(&cfg).unwrap();
+        assert!(json.contains("\"pen_smoothing\":\"High\""));
+        let back: AppConfig = serde_json::from_str(&json).unwrap();
+        assert_eq!(back.pen_smoothing, PenSmoothing::High);
+    }
+
+    #[test]
     fn config_corrupt_json_returns_defaults() {
         let p = std::env::temp_dir().join("eisen-bad.json");
         std::fs::write(&p, b"not json").unwrap();
@@ -210,6 +237,7 @@ mod tests {
             launch_at_login: true,
             hotkey: HotkeyPreset::PrtScMac, // roundtrip test uses PrtScMac
             play_sounds: true,
+            pen_smoothing: PenSmoothing::default(),
         };
         save(&p, &want).unwrap();
         assert_eq!(load(&p), want);
@@ -339,6 +367,7 @@ mod tests {
             launch_at_login: false,
             hotkey: HotkeyPreset::default(),
             play_sounds: true,
+            pen_smoothing: PenSmoothing::default(),
         };
         let cfg = apply_env_overrides(base, &|key| match key {
             "EISEN_SAVE_DIR" => Some(format!("  {}  ", explicit.display())),
@@ -356,6 +385,7 @@ mod tests {
             launch_at_login: false,
             hotkey: HotkeyPreset::PrtScMac,
             play_sounds: true,
+            pen_smoothing: PenSmoothing::default(),
         };
         let getenv = |k: &str| match k {
             "EISEN_DEFAULT_LANG" => Some("Fr".to_string()),
@@ -377,6 +407,7 @@ mod tests {
             launch_at_login: false,
             hotkey: HotkeyPreset::DoubleOption,
             play_sounds: true,
+            pen_smoothing: PenSmoothing::default(),
         };
         let getenv = |k: &str| match k {
             "EISEN_SAVE_DIR" => Some("   ".to_string()),
@@ -411,6 +442,7 @@ mod tests {
             launch_at_login: true,
             hotkey: HotkeyPreset::DoubleShift,
             play_sounds: false,
+            pen_smoothing: PenSmoothing::default(),
         };
         let cfg = apply_env_overrides(base.clone(), &|_| None);
         assert_eq!(cfg, base);

@@ -20,6 +20,7 @@
     Power,
     RotateCcw,
     Settings,
+    PenLine,
     Volume2,
   } from "@lucide/svelte";
 
@@ -140,6 +141,12 @@
     await save({ ...cfg, play_sounds: on });
   }
 
+  async function onPenSmoothingChange(e: Event) {
+    if (!cfg) return;
+    const value = (e.target as HTMLSelectElement).value as api.PenSmoothing;
+    await save({ ...cfg, pen_smoothing: value });
+  }
+
   async function onReset() {
     try {
       await disable();
@@ -242,6 +249,22 @@
           <input type="checkbox" aria-label={t.settings.playSounds} checked={cfg.play_sounds} onchange={onPlaySoundsToggle} />
           <span class="slider"></span>
         </label>
+      </div>
+
+      <!-- Pen smoothing -->
+      <div class="setting-row">
+        <div class="row-label">
+          <PenLine size={18} class="row-icon" />
+          <div>
+            <h3>{t.settings.penSmoothing}</h3>
+            <p>{t.settings.penSmoothingHelp}</p>
+          </div>
+        </div>
+        <select class="custom-select" aria-label={t.settings.penSmoothing} value={cfg.pen_smoothing} onchange={onPenSmoothingChange}>
+          <option value="Off">{t.settings.penSmoothingOff}</option>
+          <option value="Medium">{t.settings.penSmoothingMedium}</option>
+          <option value="High">{t.settings.penSmoothingHigh}</option>
+        </select>
       </div>
 
       <!-- Reset defaults -->

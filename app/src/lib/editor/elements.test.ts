@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
+  appendStrokePoint,
+  finishStrokePoints,
+  smoothPathD,
   arrowHeadPoints,
   arrowShaftEnd,
   bbox,
@@ -729,3 +732,38 @@ describe("clampTextPlacement", () => {
   });
 });
 
+
+describe("pen smoothing", () => {
+  it("keeps every point when Off", () => {
+    const pts = appendStrokePoint([{ x: 0, y: 0 }], { x: 0.5, y: 0 }, "Off");
+    expect(pts).toEqual([{ x: 0, y: 0 }, { x: 0.5, y: 0 }]);
+  });
+
+  it("drops tremor below the minimum distance and keeps the same array", () => {
+    const base = [{ x: 0, y: 0 }];
+    expect(appendStrokePoint(base, { x: 1, y: 1 }, "Medium")).toBe(base);
+  });
+
+  it("moves a fraction of the way toward the raw point (EMA)", () => {
+    const pts = appendStrokePoint([{ x: 0, y: 0 }], { x: 10, y: 0 }, "Medium");
+    expect(pts[1]).toEqual({ x: 4, y: 0 });
+    const high = appendStrokePoint([{ x: 0, y: 0 }], { x: 10, y: 0 }, "High");
+    expect(high[1]).toEqual({ x: 2, y: 0 });
+  });
+
+  it("snaps the stroke end to the cursor on release", () => {
+    const pts = [{ x: 0, y: 0 }, { x: 4, y: 0 }];
+    expect(finishStrokePoints(pts, { x: 10, y: 0 })).toEqual([...pts, { x: 10, y: 0 }]);
+    expect(finishStrokePoints(pts, { x: 4, y: 0 })).toBe(pts);
+    expect(finishStrokePoints([{ x: 0, y: 0 }], { x: 10, y: 0 })).toHaveLength(1);
+  });
+
+  it("builds smooth path data", () => {
+    expect(smoothPathD([])).toBe("");
+    expect(smoothPathD([{ x: 1, y: 2 }])).toBe("M1,2");
+    expect(smoothPathD([{ x: 0, y: 0 }, { x: 4, y: 4 }])).toBe("M0,0L4,4");
+    expect(
+      smoothPathD([{ x: 0, y: 0 }, { x: 4, y: 0 }, { x: 4, y: 4 }]),
+    ).toBe("M0,0Q4,0 4,2L4,4");
+  });
+});

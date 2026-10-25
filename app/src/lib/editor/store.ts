@@ -3,6 +3,7 @@ import {
   compactStepNumbers,
   createElement,
   extendElement,
+  finishStrokePoints,
   isCompactInk,
   isTiny,
   moveElement,
@@ -10,6 +11,7 @@ import {
   resizeElement,
   type DrawTool,
   type Element,
+  type PenSmoothing,
   type Point,
   type ResizeHandle,
   type Tool,
@@ -18,6 +20,8 @@ import {
 export const tool = writable<Tool>("select");
 export const color = writable("#ef4444");
 export const strokeSize = writable(4);
+/** Pen/highlight smoothing level, loaded from app config by the editor. */
+export const penSmoothing = writable<PenSmoothing>("Medium");
 export const elements = writable<Element[]>([]);
 export const selectedId = writable<number | null>(null);
 export const editingId = writable<number | null>(null);
@@ -41,6 +45,8 @@ const DRAW_SIZES: Record<DrawTool, number> = {
 };
 
 let anchor: Point | null = null;
+/** Last raw pointer sample of the active freehand stroke (pre-smoothing). */
+let strokeRaw: Point | null = null;
 let moveStart: Point | null = null;
 let dragOriginal: Element | null = null;
 let resizeHandle: ResizeHandle | null = null;
@@ -125,6 +131,7 @@ export function beginDraw(kind: DrawTool, p: Point, width?: number): number {
     width,
   );
   anchor = p;
+  strokeRaw = null;
   elements.update((arr) => [...arr, e]);
   selectedId.set(e.id);
   if (kind === "text") editingId.set(e.id);
@@ -134,11 +141,22 @@ export function beginDraw(kind: DrawTool, p: Point, width?: number): number {
 export function extendDraw(id: number, p: Point, square = false): void {
   const a = anchor;
   if (!a) return;
-  patch(id, (e) => extendElement(e, a, p, square));
+  strokeRaw = p;
+  const level = get(penSmoothing);
+  patch(id, (e) => extendElement(e, a, p, square, level));
 }
 
 export function endDraw(id: number): void {
   anchor = null;
+  const raw = strokeRaw;
+  strokeRaw = null;
+  if (raw) {
+    patch(id, (e) =>
+      e.kind === "pen" || e.kind === "penArrow" || e.kind === "highlight"
+        ? { ...e, points: finishStrokePoints(e.points, raw) }
+        : e,
+    );
+  }
   if (get(editingId) === id) return;
   const e = getElements().find((x) => x.id === id);
   if (e && isTiny(e)) {

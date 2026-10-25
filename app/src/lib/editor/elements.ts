@@ -387,7 +387,13 @@ export function createElement(
   }
 }
 
-export function extendElement(e: Element, start: Point, current: Point, square = false): Element {
+export function extendElement(
+  e: Element,
+  start: Point,
+  current: Point,
+  square = false,
+  smoothing: PenSmoothing = "Off",
+): Element {
   switch (e.kind) {
     case "text":
     case "step":
@@ -405,8 +411,10 @@ export function extendElement(e: Element, start: Point, current: Point, square =
     }
     case "pen":
     case "penArrow":
-    case "highlight":
-      return { ...e, points: [...e.points, current] };
+    case "highlight": {
+      const points = appendStrokePoint(e.points, current, smoothing);
+      return points === e.points ? e : { ...e, points };
+    }
   }
 }
 
@@ -576,6 +584,54 @@ export function drawableStrokePoints(points: Point[]): Point[] {
   if (points.length !== 1) return points;
   const p = points[0];
   return [p, { x: p.x + STROKE_DOT_NUDGE, y: p.y }];
+}
+
+export type PenSmoothing = "Off" | "Medium" | "High";
+
+/** `alpha` is the EMA weight of each new raw point; `minDist` drops raw
+ *  points closer than this to the last kept one (hand tremor). */
+export const PEN_SMOOTHING_PRESETS: Record<PenSmoothing, { alpha: number; minDist: number }> = {
+  Off: { alpha: 1, minDist: 0 },
+  Medium: { alpha: 0.4, minDist: 2 },
+  High: { alpha: 0.2, minDist: 3 },
+};
+
+/** Append a raw pointer sample to a stroke, filtering tremor and applying an
+ *  exponential moving average. Returns the same array when the sample is
+ *  dropped. The first point is always kept raw. */
+export function appendStrokePoint(points: Point[], raw: Point, smoothing: PenSmoothing): Point[] {
+  const { alpha, minDist } = PEN_SMOOTHING_PRESETS[smoothing];
+  const last = points[points.length - 1];
+  if (!last || smoothing === "Off") return [...points, raw];
+  if (Math.hypot(raw.x - last.x, raw.y - last.y) < minDist) return points;
+  return [...points, { x: last.x + (raw.x - last.x) * alpha, y: last.y + (raw.y - last.y) * alpha }];
+}
+
+/** On release, snap the stroke end to the real cursor so EMA lag does not
+ *  leave the line short of where the user stopped. */
+export function finishStrokePoints(points: Point[], raw: Point | null): Point[] {
+  const last = points[points.length - 1];
+  if (!raw || !last || points.length < 2) return points;
+  if (last.x === raw.x && last.y === raw.y) return points;
+  return [...points, raw];
+}
+
+/** SVG path through stroke points using quadratic curves across midpoints,
+ *  so jagged vertices become smooth bends. Same string feeds export. */
+export function smoothPathD(points: Point[]): string {
+  const n = points.length;
+  if (n === 0) return "";
+  const f = (v: number) => +v.toFixed(2);
+  let d = `M${f(points[0].x)},${f(points[0].y)}`;
+  if (n === 1) return d;
+  if (n === 2) return `${d}L${f(points[1].x)},${f(points[1].y)}`;
+  for (let i = 1; i < n - 1; i++) {
+    const c = points[i];
+    const m = { x: (c.x + points[i + 1].x) / 2, y: (c.y + points[i + 1].y) / 2 };
+    d += `Q${f(c.x)},${f(c.y)} ${f(m.x)},${f(m.y)}`;
+  }
+  const end = points[n - 1];
+  return `${d}L${f(end.x)},${f(end.y)}`;
 }
 
 export function hitTest(elements: Element[], p: Point): Element | null {

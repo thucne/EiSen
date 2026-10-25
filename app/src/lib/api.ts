@@ -11,12 +11,15 @@ export type HotkeyPreset =
   | "PrtScnWin"
   | "CtrlShift5Win";
 
+export type PenSmoothing = "Off" | "Medium" | "High";
+
 export interface AppConfig {
   lang: Lang;
   save_dir: string;
   launch_at_login: boolean;
   hotkey: HotkeyPreset;
   play_sounds: boolean;
+  pen_smoothing: PenSmoothing;
 }
 
 export interface LogicalRect {

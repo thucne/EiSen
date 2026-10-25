@@ -15,6 +15,7 @@
     bbox,
     clampTextPlacement,
     drawableStrokePoints,
+    smoothPathD,
     hitTest,
     isCompactInk,
     penArrowHead,
@@ -76,6 +77,7 @@
     endTextEdit,
     eraseAt,
     extendDraw,
+    penSmoothing,
     moveTo,
     redo,
     remove,
@@ -225,10 +227,22 @@
     },
   });
 
+  /** Pick up the Settings choice, which may change while the editor stays open. */
+  function refreshPenSmoothing() {
+    void api.getConfig().then(
+      (cfg) => penSmoothing.set(cfg.pen_smoothing ?? "Medium"),
+      () => {},
+    );
+  }
+
   onMount(() => {
     void initLang();
+    refreshPenSmoothing();
     void loadSession(true);
-    const un = watchFocusReload(getCurrentWindow(), () => loadSession());
+    const un = watchFocusReload(getCurrentWindow(), () => {
+      refreshPenSmoothing();
+      return loadSession();
+    });
     const unReplace = listen("editor-replace-request", () => {
       if (get(elements).length > 0 || get(editingId) != null) {
         showToast(get(i18n).editor.keptOpen, "ok");
@@ -891,9 +905,9 @@
                 rx={4}
               />
             {:else if el.kind === "pen"}
-              <polyline
+              <path
                 data-el-id={el.id}
-                points={drawableStrokePoints(el.points).map((p) => `${p.x},${p.y}`).join(" ")}
+                d={smoothPathD(drawableStrokePoints(el.points))}
                 stroke={el.color}
                 stroke-width={el.size}
                 stroke-linecap="round"
@@ -901,9 +915,9 @@
                 fill="none"
               />
             {:else if el.kind === "highlight"}
-              <polyline
+              <path
                 data-el-id={el.id}
-                points={drawableStrokePoints(el.points).map((p) => `${p.x},${p.y}`).join(" ")}
+                d={smoothPathD(drawableStrokePoints(el.points))}
                 stroke={el.color}
                 stroke-width={el.size}
                 stroke-linecap="round"
@@ -914,9 +928,9 @@
             {:else if el.kind === "penArrow"}
               {@const head = penArrowHead(el)}
               {@const pts = drawableStrokePoints(head ? head.points : el.points)}
-              <polyline
+              <path
                 data-el-id={el.id}
-                points={pts.map((p) => `${p.x},${p.y}`).join(" ")}
+                d={smoothPathD(pts)}
                 stroke={el.color}
                 stroke-width={el.size}
                 stroke-linecap="round"

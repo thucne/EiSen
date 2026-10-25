@@ -33,6 +33,7 @@ const CFG = {
   launch_at_login: false,
   hotkey: "DoubleOption",
   play_sounds: true,
+  pen_smoothing: "Medium",
 };
 
 beforeEach(() => {
