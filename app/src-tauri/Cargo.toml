@@ -1,6 +1,6 @@
 [package]
 name = "eisen"
-version = "0.2.8"
+version = "1.0.0"
 description = "High-performance screen capture and annotation utility"
 authors = ["Tran Trong Thuc"]
 edition = "2021"
