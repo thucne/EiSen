@@ -16,7 +16,7 @@ export function shouldBeginResize(opts: {
   targetKind: ElementKind | null | undefined;
 }): boolean {
   if (!opts.handle || !isResizableKind(opts.targetKind)) return false;
-  if (opts.tool === "eraser" || opts.tool === "eyedropper") return false;
+  if (opts.tool === "crop" || opts.tool === "eraser" || opts.tool === "eyedropper") return false;
   return true;
 }
 
@@ -25,7 +25,7 @@ export function sizeControlVisible(
   tool: Tool,
   _selectedKind?: ElementKind | null,
 ): boolean {
-  return tool !== "eraser" && tool !== "eyedropper";
+  return tool !== "crop" && tool !== "eraser" && tool !== "eyedropper";
 }
 
 export function textBodyIntent(tool: Tool): "move-or-edit" | null {

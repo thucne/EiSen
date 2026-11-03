@@ -76,6 +76,7 @@ describe("dictionaries", () => {
       [
         "arrow",
         "blur",
+        "crop",
         "ellipse",
         "eraser",
         "eyedropper",

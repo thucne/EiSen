@@ -13,6 +13,7 @@ import {
   type Element,
   type PenSmoothing,
   type Point,
+  type Rect,
   type ResizeHandle,
   type Tool,
 } from "./elements";
@@ -25,9 +26,28 @@ export const penSmoothing = writable<PenSmoothing>("Medium");
 export const elements = writable<Element[]>([]);
 export const selectedId = writable<number | null>(null);
 export const editingId = writable<number | null>(null);
+/** Part of the image to keep, in image coordinates. Annotations keep their
+ *  coordinates, so undoing or widening a crop brings everything back. */
+export const crop = writable<Rect | null>(null);
+/** Anything an export would carry that the captured image does not. */
+export const hasEdits = derived([elements, crop], ([$elements, $crop]) => $elements.length > 0 || $crop != null);
 
-const undoStack = writable<Element[][]>([]);
-const redoStack = writable<Element[][]>([]);
+interface EditState {
+  elements: Element[];
+  crop: Rect | null;
+}
+
+const undoStack = writable<EditState[]>([]);
+const redoStack = writable<EditState[]>([]);
+
+function currentState(): EditState {
+  return { elements: get(elements), crop: get(crop) };
+}
+
+function restoreState(state: EditState): void {
+  elements.set(state.elements);
+  crop.set(state.crop);
+}
 
 export const canUndo = derived(undoStack, (s) => s.length > 0);
 export const canRedo = derived(redoStack, (s) => s.length > 0);
@@ -61,7 +81,7 @@ export function setTool(t: Tool): void {
   tool.set(t);
   if (t === "text" || t === "step" || t === "highlight") {
     strokeSize.set(DRAW_SIZES[t]);
-  } else if (t !== "select" && t !== "eraser" && t !== "eyedropper") {
+  } else if (t !== "select" && t !== "crop" && t !== "eraser" && t !== "eyedropper") {
     strokeSize.set(DRAW_SIZES[t]);
   }
 }
@@ -99,7 +119,7 @@ export function select(id: number | null): void {
 }
 
 function snapshot(): void {
-  undoStack.update((s) => [...s, get(elements)]);
+  undoStack.update((s) => [...s, currentState()]);
   redoStack.set([]);
 }
 
@@ -313,8 +333,8 @@ export function undo(): void {
   undoStack.update((stack) => {
     const previous = stack.pop();
     if (previous) {
-      redoStack.update((s) => [...s, get(elements)]);
-      elements.set(previous);
+      redoStack.update((s) => [...s, currentState()]);
+      restoreState(previous);
       selectedId.set(null);
       editingId.set(null);
     }
@@ -326,8 +346,8 @@ export function redo(): void {
   redoStack.update((stack) => {
     const next = stack.pop();
     if (next) {
-      undoStack.update((s) => [...s, get(elements)]);
-      elements.set(next);
+      undoStack.update((s) => [...s, currentState()]);
+      restoreState(next);
       selectedId.set(null);
       editingId.set(null);
     }
@@ -335,8 +355,25 @@ export function redo(): void {
   });
 }
 
+/** Applies a crop as one undo step. An unchanged crop adds no step. */
+export function setCrop(next: Rect | null): void {
+  const current = get(crop);
+  const same =
+    current === next ||
+    (current != null &&
+      next != null &&
+      current.x === next.x &&
+      current.y === next.y &&
+      current.width === next.width &&
+      current.height === next.height);
+  if (same) return;
+  snapshot();
+  crop.set(next);
+}
+
 export function reset(): void {
   elements.set([]);
+  crop.set(null);
   undoStack.set([]);
   redoStack.set([]);
   selectedId.set(null);

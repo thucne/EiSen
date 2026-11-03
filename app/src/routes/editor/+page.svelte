@@ -29,6 +29,7 @@
     type DrawTool,
     type Element,
     type Point,
+    type Rect,
     type ResizeHandle,
     type TextElement,
     type Tool,
@@ -50,6 +51,14 @@
   import { createSessionLoader, watchFocusReload } from "$lib/editor/session";
   import { createCloseGuard } from "$lib/editor/closeGuard";
   import {
+    cropFromDrag,
+    cropGesture,
+    isValidCrop,
+    moveCrop,
+    resizeCrop,
+    storedCrop,
+  } from "$lib/editor/crop";
+  import {
     HANDLE_R,
     cornerHandles,
     deleteButtonPosition,
@@ -70,6 +79,7 @@
     canRedo,
     canUndo,
     color,
+    crop,
     editingId,
     elements,
     endDraw,
@@ -79,6 +89,7 @@
     endTextEdit,
     eraseAt,
     extendDraw,
+    hasEdits,
     penSmoothing,
     moveTo,
     redo,
@@ -88,6 +99,7 @@
     select,
     selectedId,
     setColor,
+    setCrop,
     setStrokeSize,
     setTool,
     setText,
@@ -151,9 +163,15 @@
     | { kind: "move"; id: number; start: Point; editIfClick?: boolean }
     | { kind: "resize"; id: number; handle: ResizeHandle; start: Point }
     | { kind: "erase"; last: Point }
-    | { kind: "placeText"; start: Point };
+    | { kind: "placeText"; start: Point }
+    | { kind: "crop"; gesture: ResizeHandle | "move" | "draw"; start: Point; original: Rect };
   let drag = $state<DragState | null>(null);
   let lastPointer = $state<Point | null>(null);
+  /** The crop being adjusted while the Crop tool is active. */
+  let cropDraft = $state<Rect | null>(null);
+  const fullImage = $derived<Rect>({ x: 0, y: 0, width: canvasW, height: canvasH });
+  /** The whole image shows while adjusting, so a crop can be widened again. */
+  const viewRect = $derived<Rect>($tool === "crop" ? fullImage : ($crop ?? fullImage));
 
   const selected = $derived($elements.find((e) => e.id === $selectedId) ?? null);
   const selectedBox = $derived(selected ? bbox(selected) : null);
@@ -222,6 +240,7 @@
       exportScale = scale;
       imageSrc = fileSrc;
       loadError = null;
+      cropDraft = null;
       reset();
     },
     onError: (message) => {
@@ -247,13 +266,13 @@
     });
     const unClose = getCurrentWindow().onCloseRequested((event) => {
       if (exportedAndClosing) return;
-      const unsaved = get(elements).length > 0 || get(editingId) != null;
+      const unsaved = get(hasEdits) || get(editingId) != null;
       if (closeGuard.allowClose(unsaved)) return;
       event.preventDefault();
       showToast(get(i18n).editor.discardWarning, "err");
     });
     const unReplace = listen("editor-replace-request", () => {
-      if (get(elements).length > 0 || get(editingId) != null) {
+      if (get(hasEdits) || get(editingId) != null) {
         showToast(get(i18n).editor.keptOpen, "ok");
         return;
       }
@@ -355,9 +374,42 @@
     beginResize(target.id, handle, p);
   }
 
+  function onCropPointerDown(e: PointerEvent, p: Point) {
+    const original = cropDraft ?? fullImage;
+    (e.currentTarget as SVGSVGElement).setPointerCapture(e.pointerId);
+    drag = { kind: "crop", gesture: cropGesture(original, p), start: p, original };
+  }
+
+  function onCropPointerMove(d: Extract<DragState, { kind: "crop" }>, p: Point) {
+    if (d.gesture === "draw") {
+      cropDraft = cropFromDrag(d.start, p, canvasW, canvasH);
+    } else if (d.gesture === "move") {
+      cropDraft = moveCrop(d.original, p.x - d.start.x, p.y - d.start.y, canvasW, canvasH);
+    } else {
+      cropDraft = resizeCrop(d.original, d.gesture, p, canvasW, canvasH);
+    }
+  }
+
+  /** Keeps the adjusted rect and leaves the tool. */
+  function applyCrop() {
+    if (cropDraft) setCrop(storedCrop(cropDraft, canvasW, canvasH));
+    cropDraft = null;
+    setTool("select");
+  }
+
+  function cancelCrop() {
+    drag = null;
+    cropDraft = null;
+    setTool("select");
+  }
+
   function onPointerDown(e: PointerEvent) {
     if (e.button !== 0) return;
     const p = svgPoint(e);
+    if ($tool === "crop") {
+      onCropPointerDown(e, p);
+      return;
+    }
     const handle = handleAtPoint(handles, p);
     const resizeTarget = editingTextEl ?? selected;
     if (
@@ -454,6 +506,10 @@
 
   function onPointerMove(e: PointerEvent) {
     const p = svgPoint(e);
+    if (drag?.kind === "crop") {
+      onCropPointerMove(drag, p);
+      return;
+    }
     if ($tool === "eyedropper") {
       sampleLoupePixels(e.clientX, e.clientY, p);
       return;
@@ -488,7 +544,10 @@
 
   function onPointerUp(e?: PointerEvent) {
     if (!drag) return;
-    if (drag.kind === "draw") endDraw(drag.id);
+    if (drag.kind === "crop") {
+      if (cropDraft && !isValidCrop(cropDraft)) cropDraft = drag.original;
+    }
+    else if (drag.kind === "draw") endDraw(drag.id);
     else if (drag.kind === "placeText") {
       const p = e ? svgPoint(e) : (lastPointer ?? drag.start);
       const minX = Math.min(drag.start.x, p.x);
@@ -513,7 +572,9 @@
 
   function cancelDrag() {
     if (!drag) return;
-    if (drag.kind === "erase") {
+    if (drag.kind === "crop") {
+      cropDraft = drag.original;
+    } else if (drag.kind === "erase") {
       if (endErase()) undo();
     } else if (drag.kind === "placeText") {
       // Gesture cancelled before text creation
@@ -568,12 +629,14 @@
       exportScale,
       svgEl: svgEl ?? null,
       getElements: () => $elements,
+      crop: get(crop),
     });
   }
 
   async function doAction(kind: "copy" | "save" | "copyAndSave") {
+    if ($tool === "crop") applyCrop();
     try {
-      if ($elements.length === 0) {
+      if (!get(hasEdits)) {
         if (kind === "copy") {
           await api.copyEditor();
           finishExport(t.toasts.copied);
@@ -603,6 +666,11 @@
   }
 
   function onKeyDown(e: KeyboardEvent) {
+    if ($tool === "crop" && e.key === "Enter") {
+      e.preventDefault();
+      applyCrop();
+      return;
+    }
     if (e.key === "Shift") applyAspectLock(true);
     const action = resolveShortcut(e, { tool: $tool, editing: $editingId != null });
     if (!action) return;
@@ -610,11 +678,13 @@
       case "undo":
         e.preventDefault();
         if ($editingId != null) commitText();
+        if ($tool === "crop") cancelCrop();
         undo();
         break;
       case "redo":
         e.preventDefault();
         if ($editingId != null) commitText();
+        if ($tool === "crop") cancelCrop();
         redo();
         break;
       case "output":
@@ -633,6 +703,7 @@
           break;
         }
         if (drag) cancelDrag();
+        else if ($tool === "crop") cancelCrop();
         else if ($editingId != null) commitText();
         else if ($selectedId != null) select(null);
         else closeEditor();
@@ -687,6 +758,11 @@
 
   function useTool(t: Tool) {
     commitIfEditing();
+    if ($tool === "crop" && t !== "crop") applyCrop();
+    if (t === "crop" && $tool !== "crop") {
+      select(null);
+      cropDraft = $crop ?? fullImage;
+    }
     setTool(t);
     if (t === "eyedropper" && imageSrc && canvasW > 0 && canvasH > 0) {
       void prepareSampling(imageSrc, canvasW, canvasH);
@@ -711,7 +787,8 @@
       <img src={logoMark} alt="EiSen Logo" class="app-logo" />
       <span class="title">EiSen {t.editor.title}</span>
       {#if canvasW > 0}
-        <span class="dimensions">{Math.round(canvasW)} × {Math.round(canvasH)}</span>
+        {@const shown = cropDraft ?? viewRect}
+        <span class="dimensions">{Math.round(shown.width)} × {Math.round(shown.height)}</span>
       {/if}
     </div>
 
@@ -760,10 +837,11 @@
         <button class="btn-primary" onclick={closeEditor}>{t.actions.dismiss}</button>
       </div>
     {:else if imageSrc}
+      <div class="canvas-frame" style="width:{viewRect.width}px;height:{viewRect.height}px">
       <div
         class="canvas-container"
         bind:this={containerEl}
-        style="width:{canvasW}px;height:{canvasH}px"
+        style="width:{canvasW}px;height:{canvasH}px;left:{-viewRect.x}px;top:{-viewRect.y}px"
         oncontextmenu={(e) => e.preventDefault()}
         role="img"
       >
@@ -1052,9 +1130,35 @@
             <X size={10} strokeWidth={2.5} />
           </button>
         {/if}
+
+        {#if cropDraft}
+          <div class="crop-dim" style="left:0;top:0;width:100%;height:{cropDraft.y}px"></div>
+          <div class="crop-dim" style="left:0;top:{cropDraft.y + cropDraft.height}px;width:100%;bottom:0"></div>
+          <div class="crop-dim" style="left:0;top:{cropDraft.y}px;width:{cropDraft.x}px;height:{cropDraft.height}px"></div>
+          <div class="crop-dim" style="left:{cropDraft.x + cropDraft.width}px;top:{cropDraft.y}px;right:0;height:{cropDraft.height}px"></div>
+          <div
+            class="crop-frame"
+            style="left:{cropDraft.x}px;top:{cropDraft.y}px;width:{cropDraft.width}px;height:{cropDraft.height}px"
+          ></div>
+          {#each cornerHandles(cropDraft) as h (h.handle)}
+            <div
+              class="crop-handle"
+              style="left:{h.x - HANDLE_R / 2}px;top:{h.y - HANDLE_R / 2}px;width:{HANDLE_R}px;height:{HANDLE_R}px"
+            ></div>
+          {/each}
+        {/if}
+      </div>
       </div>
     {/if}
   </div>
+
+  {#if cropDraft}
+    <div class="crop-bar">
+      <button class="tb-btn" onclick={cancelCrop}>{t.editor.cropCancel}</button>
+      <button class="tb-btn" onclick={() => (cropDraft = fullImage)}>{t.editor.cropReset}</button>
+      <button class="tb-btn primary" onclick={applyCrop}>{t.editor.cropApply}</button>
+    </div>
+  {/if}
 
   <!-- Toast Notification Popup -->
   {#if toast}
@@ -1188,13 +1292,60 @@
     background: radial-gradient(circle at center, rgba(21, 23, 34, 0.55) 0%, rgba(11, 12, 16, 0.28) 100%);
   }
 
-  .canvas-container {
+  .canvas-frame {
     position: relative;
     margin: 0 auto;
     box-shadow: 0 16px 40px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.1);
     border-radius: 4px;
     overflow: hidden;
     flex-shrink: 0;
+  }
+
+  .canvas-container {
+    position: absolute;
+  }
+
+  /* The canvas below takes every crop gesture; this is only what it draws. */
+  .crop-dim,
+  .crop-frame,
+  .crop-handle {
+    position: absolute;
+    pointer-events: none;
+  }
+
+  .crop-dim {
+    background: rgba(0, 0, 0, 0.55);
+  }
+
+  .crop-frame {
+    box-sizing: border-box;
+    border: 1px solid #ffffff;
+  }
+
+  .crop-handle {
+    background: #ffffff;
+    border-radius: 2px;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.5);
+  }
+
+  .crop-bar {
+    position: fixed;
+    top: 64px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 40;
+    display: flex;
+    gap: 6px;
+    padding: 6px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    background: rgba(15, 16, 21, 0.94);
+    white-space: nowrap;
+  }
+
+  .crop-bar .tb-btn {
+    width: auto;
+    padding: 0 10px;
   }
 
   .canvas {

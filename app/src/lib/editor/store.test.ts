@@ -11,6 +11,7 @@ import {
   canRedo,
   canUndo,
   color,
+  crop,
   editingId,
   elements,
   endDraw,
@@ -21,6 +22,7 @@ import {
   eraseAt,
   eraseLast,
   extendDraw,
+  hasEdits,
   moveTo,
   redo,
   remove,
@@ -30,6 +32,7 @@ import {
   select,
   selectedId,
   setColor,
+  setCrop,
   setStrokeSize,
   setText,
   setTool,
@@ -665,5 +668,57 @@ describe("styling the selection", () => {
     expect(getElements()[0]).toMatchObject({ x: 8, y: -3 });
     undo();
     expect(getElements()[0]).toMatchObject({ x: 0, y: 0 });
+  });
+});
+
+describe("crop", () => {
+  const rect = { x: 10, y: 20, width: 100, height: 50 };
+
+  beforeEach(() => reset());
+
+  it("applies as one undo step and comes back on redo", () => {
+    setCrop(rect);
+    expect(get(crop)).toEqual(rect);
+    expect(get(hasEdits)).toBe(true);
+    undo();
+    expect(get(crop)).toBe(null);
+    expect(get(hasEdits)).toBe(false);
+    redo();
+    expect(get(crop)).toEqual(rect);
+  });
+
+  it("keeps annotations when undoing a crop", () => {
+    const id = beginDraw("rectangle", { x: 0, y: 0 });
+    extendDraw(id, { x: 40, y: 40 });
+    endDraw(id);
+    setCrop(rect);
+    undo();
+    expect(get(crop)).toBe(null);
+    expect(getElements()).toHaveLength(1);
+    undo();
+    expect(getElements()).toHaveLength(0);
+  });
+
+  it("does not add an undo step for an unchanged crop", () => {
+    setCrop(null);
+    expect(get(canUndo)).toBe(false);
+    setCrop(rect);
+    setCrop({ ...rect });
+    undo();
+    expect(get(canUndo)).toBe(false);
+  });
+
+  it("clears on reset", () => {
+    setCrop(rect);
+    reset();
+    expect(get(crop)).toBe(null);
+    expect(get(canUndo)).toBe(false);
+  });
+
+  it("selecting the tool keeps the stroke size", () => {
+    setTool("rectangle");
+    const size = get(strokeSize);
+    setTool("crop");
+    expect(get(strokeSize)).toBe(size);
   });
 });

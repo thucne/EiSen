@@ -10,10 +10,11 @@ export type Tool =
   | "blur"
   | "redact"
   | "step"
+  | "crop"
   | "eraser"
   | "eyedropper";
 
-export type DrawTool = Exclude<Tool, "select" | "eraser" | "eyedropper">;
+export type DrawTool = Exclude<Tool, "select" | "crop" | "eraser" | "eyedropper">;
 
 /** Fixed and opaque so a palette choice can never leave a redaction see-through. */
 export const REDACT_FILL = "#000000";

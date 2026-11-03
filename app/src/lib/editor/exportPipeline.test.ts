@@ -6,6 +6,7 @@ import {
   blurClipRects,
   compositeBlurRegions,
   EXPORT_STRIP_SELECTOR,
+  exportCropRect,
   exportPixelSize,
   MAX_EXPORT_SCALE,
   paintExportedText,
@@ -422,5 +423,31 @@ describe("redaction export", () => {
     const { ctx, fills } = recordingCtx();
     paintRedaction(ctx, createElement("rectangle", { x: 0, y: 0 }, "#000000", 4), 1);
     expect(fills).toEqual([]);
+  });
+});
+
+describe("exportCropRect", () => {
+  it("uses the whole image without a crop", () => {
+    expect(exportCropRect(null, { width: 1600, height: 1200 }, 2)).toEqual({
+      left: 0,
+      top: 0,
+      width: 1600,
+      height: 1200,
+    });
+  });
+
+  it("scales the crop to export pixels on Retina", () => {
+    expect(
+      exportCropRect({ x: 10, y: 20, width: 300, height: 150 }, { width: 1600, height: 1200 }, 2),
+    ).toEqual({ left: 20, top: 40, width: 600, height: 300 });
+  });
+
+  it("stays inside the image and at least one pixel wide", () => {
+    expect(
+      exportCropRect({ x: 790, y: 590, width: 100, height: 100 }, { width: 800, height: 600 }, 1),
+    ).toEqual({ left: 790, top: 590, width: 10, height: 10 });
+    expect(
+      exportCropRect({ x: 900, y: 700, width: 0, height: 0 }, { width: 800, height: 600 }, 1),
+    ).toEqual({ left: 799, top: 599, width: 1, height: 1 });
   });
 });

@@ -3,6 +3,7 @@
     ChevronDown,
     ChevronUp,
     Circle,
+    Crop,
     Eraser,
     EyeOff,
     Hash,
@@ -154,6 +155,7 @@
     <!-- Annotation Tools -->
     <div class="tool-group">
       <button class="tb-btn {tool === 'select' ? 'active' : ''}" {...tip(`${t.tools.select} (V)`)} onclick={() => onselect("select")}><MousePointer2 size={15} /></button>
+      <button class="tb-btn {tool === 'crop' ? 'active' : ''}" {...tip(`${t.tools.crop} (G)`)} onclick={() => onselect("crop")}><Crop size={15} /></button>
       <button class="tb-btn {tool === 'step' ? 'active' : ''}" {...tip(`${t.tools.step} (S)`)} onclick={() => onselect("step")}><Hash size={15} /></button>
       <button class="tb-btn {tool === 'rectangle' ? 'active' : ''}" {...tip(`${t.tools.rectangle} (R)`)} onclick={() => onselect("rectangle")}><Square size={15} /></button>
       <button class="tb-btn {tool === 'ellipse' ? 'active' : ''}" {...tip(`${t.tools.ellipse} (E)`)} onclick={() => onselect("ellipse")}><Circle size={15} /></button>

@@ -84,6 +84,7 @@ const TOOL_KEYS: Readonly<Record<string, Tool>> = {
   f: "penArrow",
   b: "blur",
   k: "redact",
+  g: "crop",
   x: "eraser",
   d: "eraser",
   i: "eyedropper",

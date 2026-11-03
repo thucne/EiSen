@@ -20,7 +20,7 @@ Fast screen capture and annotation for **macOS** and **Windows**. Built with **T
 ## Features
 
 - **Capture overlay** with an adjustable crop, then Copy, Save, Edit, or OCR.
-- **Annotation tools:** Select, Text, Arrow, Ellipse, Rectangle, Pen, Pen Arrow, Highlight, Blur, Redact, Numbered Step, Eraser, Eyedropper.
+- **Annotation tools:** Select, Text, Arrow, Ellipse, Rectangle, Pen, Pen Arrow, Highlight, Blur, Redact, Crop, Numbered Step, Eraser, Eyedropper.
 - **Overlay OCR** via on-device native OCR (Apple Vision on macOS, Windows Media OCR on Windows — 100% offline, no cloud).
 - Undo/Redo, Retina-correct export, and session History from the tray.
 

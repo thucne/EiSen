@@ -54,6 +54,7 @@ describe("EditorToolbar", () => {
       `${en.tools.highlight} (H)`,
       `${en.tools.blur} (B)`,
       `${en.tools.redact} (K)`,
+      `${en.tools.crop} (G)`,
       `${en.tools.eraser} (X)`,
     ]) {
       expect(screen.getByRole("button", { name: title })).toBeTruthy();

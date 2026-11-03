@@ -6,6 +6,7 @@ import {
   textDisplayWidth,
   textLineAdvance,
   type Element,
+  type Rect,
 } from "./elements";
 
 /** Nodes stripped from the cloned SVG before export rasterization.
@@ -47,6 +48,25 @@ export function exportPixelSize(
     width: Math.max(1, Math.round(canvasW * s)),
     height: Math.max(1, Math.round(canvasH * s)),
     scale: s,
+  };
+}
+
+/** The part of the full export-pixel image that a crop keeps. */
+export function exportCropRect(
+  crop: Rect | null | undefined,
+  full: { width: number; height: number },
+  scale: number,
+): { left: number; top: number; width: number; height: number } {
+  if (!crop) return { left: 0, top: 0, width: full.width, height: full.height };
+  const left = Math.max(0, Math.min(Math.round(crop.x * scale), full.width - 1));
+  const top = Math.max(0, Math.min(Math.round(crop.y * scale), full.height - 1));
+  const right = Math.min(Math.round((crop.x + crop.width) * scale), full.width);
+  const bottom = Math.min(Math.round((crop.y + crop.height) * scale), full.height);
+  return {
+    left,
+    top,
+    width: Math.max(1, right - left),
+    height: Math.max(1, bottom - top),
   };
 }
 
@@ -289,6 +309,8 @@ export interface AnnotatedPngSource {
   /** Capture scale factor from `CaptureSession.scale`; 1 means the capture
    *  is already 1:1 with logical points. */
   exportScale?: number;
+  /** Part of the image to export, in logical points; annotations are clipped to it. */
+  crop?: Rect | null;
 }
 
 /** Renders the annotated capture to PNG bytes: base image first, then the
@@ -307,9 +329,12 @@ export async function renderAnnotatedPng(
     src.exportScale,
   );
   const canvas = document.createElement("canvas");
-  canvas.width = pxW;
-  canvas.height = pxH;
+  const kept = exportCropRect(src.crop, { width: pxW, height: pxH }, scale);
+  canvas.width = kept.width;
+  canvas.height = kept.height;
   const ctx = canvas.getContext("2d")!;
+  // Everything below draws in full-image pixels; the canvas edge does the clipping.
+  ctx.translate(-kept.left, -kept.top);
 
   // 1. Draw base captured image
   const baseImg = new Image();
