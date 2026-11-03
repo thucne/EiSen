@@ -14,6 +14,7 @@ pub enum Lang {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct MenuLabels {
     pub capture: &'static str,
+    pub repeat_capture: &'static str,
     pub settings: &'static str,
     pub history: &'static str,
     pub quit: &'static str,
@@ -24,12 +25,14 @@ impl Lang {
         match self {
             Lang::En => MenuLabels {
                 capture: "Capture now",
+                repeat_capture: "Capture previous region",
                 settings: "Settings…",
                 history: "History",
                 quit: "Quit",
             },
             Lang::Vi => MenuLabels {
                 capture: "Chụp ngay",
+                repeat_capture: "Chụp lại vùng trước",
                 settings: "Cài đặt…",
                 history: "Lịch sử",
                 quit: "Thoát",
@@ -421,6 +424,7 @@ mod tests {
     fn native_copy_follows_lang() {
         let en = Lang::En.menu_labels();
         assert_eq!(en.capture, "Capture now");
+        assert_eq!(en.repeat_capture, "Capture previous region");
         assert_eq!(en.settings, "Settings…");
         assert_eq!(en.history, "History");
         assert_eq!(en.quit, "Quit");
@@ -428,6 +432,7 @@ mod tests {
 
         let vi = Lang::Vi.menu_labels();
         assert_eq!(vi.capture, "Chụp ngay");
+        assert_eq!(vi.repeat_capture, "Chụp lại vùng trước");
         assert_eq!(vi.settings, "Cài đặt…");
         assert_eq!(vi.history, "Lịch sử");
         assert_eq!(vi.quit, "Thoát");

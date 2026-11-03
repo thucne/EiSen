@@ -48,6 +48,16 @@ pub trait ScreenProvider: Send + Sync {
     fn active_scale(&self) -> f64 {
         1.0
     }
+    /// Geometry of the display `active_display` or `select_display` selected.
+    /// `None` means this platform cannot repeat a region.
+    fn active_geometry(&self) -> Option<DisplayGeometry> {
+        None
+    }
+    /// Make the display with exactly this geometry the active one, returning
+    /// its capture index. `None` when it is gone or was rearranged or rescaled.
+    fn select_display(&self, _target: DisplayGeometry) -> Option<u32> {
+        None
+    }
 }
 
 fn crop_png(src: &Path, rect: &PixelRect, out: &Path) -> Result<(), String> {
@@ -107,6 +117,14 @@ pub struct CaptureSession {
     pub scale: f64,
 }
 
+/// The latest committed selection. Kept in memory only, so it never outlives
+/// the app and a region of the screen is never written to disk.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct LastRegion {
+    pub rect: LogicalRect,
+    pub display: DisplayGeometry,
+}
+
 pub struct CaptureOrchestrator {
     provider: Arc<dyn ScreenProvider>,
     busy: AtomicBool,
@@ -126,6 +144,7 @@ pub struct CaptureOrchestrator {
     editor_pin: Mutex<Option<(PathBuf, LogicalRect, f64)>>,
     /// Editor window was visible and has been hidden for an in-flight capture.
     editor_suspended: AtomicBool,
+    last_region: Mutex<Option<LastRegion>>,
 }
 
 impl CaptureOrchestrator {
@@ -139,6 +158,7 @@ impl CaptureOrchestrator {
             screen: Mutex::new(None),
             editor_pin: Mutex::new(None),
             editor_suspended: AtomicBool::new(false),
+            last_region: Mutex::new(None),
         }
     }
 
@@ -174,7 +194,21 @@ impl CaptureOrchestrator {
         self.provider.active_scale()
     }
 
+    pub fn last_region(&self) -> Option<LastRegion> {
+        *self.last_region.lock().unwrap_or_else(|e| e.into_inner())
+    }
+
+    pub fn active_geometry(&self) -> Option<DisplayGeometry> {
+        self.provider.active_geometry()
+    }
+
     pub fn start(&self) -> Result<CaptureHandle, CaptureError> {
+        self.start_on(None)
+    }
+
+    /// Capture `target` when that display is still attached, otherwise the
+    /// display under the cursor.
+    pub fn start_on(&self, target: Option<DisplayGeometry>) -> Result<CaptureHandle, CaptureError> {
         if self.busy.swap(true, Ordering::SeqCst) {
             return Err(CaptureError::Busy);
         }
@@ -183,7 +217,8 @@ impl CaptureOrchestrator {
             let _ = std::fs::remove_file(&path);
         }
         let path = temp_capture_path("full");
-        let display = match self.provider.active_display() {
+        let selected = target.and_then(|target| self.provider.select_display(target));
+        let display = match selected.map_or_else(|| self.provider.active_display(), Ok) {
             Ok(display) => display,
             Err(e) => {
                 self.busy.store(false, Ordering::SeqCst);
@@ -277,6 +312,10 @@ impl CaptureOrchestrator {
             );
         }
 
+        if let Some(display) = self.provider.active_geometry() {
+            *self.last_region.lock().unwrap_or_else(|e| e.into_inner()) =
+                Some(LastRegion { rect, display });
+        }
         self.busy.store(false, Ordering::SeqCst);
         self.finishing.store(false, Ordering::SeqCst);
         let old = self.lock_last().replace((out.clone(), rect, scale));
@@ -497,6 +536,13 @@ impl Drop for EditorHold {
 /// tray's "Capture now" item, so all three trigger the same path.
 /// An open editor is hidden for the grab and its file stays pinned.
 pub fn begin_capture(app: &tauri::AppHandle) -> Result<String, String> {
+    begin_capture_on(app, None)
+}
+
+fn begin_capture_on(
+    app: &tauri::AppHandle,
+    target: Option<DisplayGeometry>,
+) -> Result<String, String> {
     use tauri::{Emitter, Manager};
     let orchestrator = app.state::<Arc<CaptureOrchestrator>>();
     // Serialize entry: trigger sites may run concurrently on worker threads,
@@ -537,7 +583,7 @@ pub fn begin_capture(app: &tauri::AppHandle) -> Result<String, String> {
         );
     }
     let start_started = Instant::now();
-    orchestrator.start().map_err(|e| e.to_string())?;
+    orchestrator.start_on(target).map_err(|e| e.to_string())?;
     if cfg!(debug_assertions) {
         eprintln!(
             "[eisen:timing] orchestrator.start: {}ms",
@@ -681,14 +727,39 @@ pub fn begin_capture(app: &tauri::AppHandle) -> Result<String, String> {
 /// pre-selected, giving the user the same Copy/Edit/Save/OCR/Discard toolbar
 /// as a crop capture — triggered by Ctrl+Shift+3.
 pub fn begin_fullscreen_capture(app: &tauri::AppHandle) -> Result<String, String> {
-    use tauri::{Emitter, Manager};
-
     // Re-use the normal begin_capture path: this captures the display, stores
     // it in the orchestrator, shows the overlay, and emits `capture-ready`.
     let path = begin_capture(app)?;
 
     // After the overlay has the image, emit `fullscreen-ready` so the frontend
     // can auto-select the entire viewport and show the toolbar immediately.
+    emit_selection_ready(app, "fullscreen-ready", ())?;
+    Ok(path)
+}
+
+/// Capture the display of the last committed region and show the overlay with
+/// that region selected, so Enter copies it at once. With no previous region,
+/// or when its display is gone, this is a normal capture of the cursor's display.
+pub fn begin_repeat_capture(app: &tauri::AppHandle) -> Result<String, String> {
+    use tauri::Manager;
+
+    let orchestrator = app.state::<Arc<CaptureOrchestrator>>();
+    let region = orchestrator.last_region();
+    let path = begin_capture_on(app, region.map(|region| region.display))?;
+    if let Some(region) = region.filter(|r| orchestrator.active_geometry() == Some(r.display)) {
+        emit_selection_ready(app, "region-ready", region.rect)?;
+    }
+    Ok(path)
+}
+
+/// Tell the overlay, which already has the image, what to select.
+fn emit_selection_ready<S: serde::Serialize + Clone>(
+    app: &tauri::AppHandle,
+    event: &str,
+    payload: S,
+) -> Result<(), String> {
+    use tauri::{Emitter, Manager};
+
     let orchestrator = app.state::<Arc<CaptureOrchestrator>>();
     let Some(overlay) = app.get_webview_window("overlay") else {
         restore_editor_after_capture(app, &orchestrator);
@@ -696,18 +767,18 @@ pub fn begin_fullscreen_capture(app: &tauri::AppHandle) -> Result<String, String
             &orchestrator,
             None,
             "window lookup",
-            "overlay window is unavailable for fullscreen-ready",
+            "overlay window is unavailable for a pre-selected capture",
         ));
     };
     if let Err(err) = check_overlay_presentation(
         &orchestrator,
         Some(&overlay),
-        "emit fullscreen-ready",
+        "emit selection",
         overlay
             .emit_to(
                 tauri::EventTarget::webview_window("overlay"),
-                "fullscreen-ready",
-                (),
+                event,
+                payload,
             )
             .map_err(|e| e.to_string()),
     ) {
@@ -715,7 +786,7 @@ pub fn begin_fullscreen_capture(app: &tauri::AppHandle) -> Result<String, String
         return Err(err);
     }
 
-    Ok(path)
+    Ok(())
 }
 
 
@@ -798,6 +869,112 @@ mod tests {
         fn active_display(&self) -> Result<u32, String> {
             Err("monitor enumeration failed".to_string())
         }
+    }
+
+    fn display(x: i32) -> DisplayGeometry {
+        DisplayGeometry {
+            x,
+            y: 0,
+            width: 200,
+            height: 100,
+            scale: 1.0,
+        }
+    }
+
+    /// Two attached displays: `active_display` picks the one under the cursor.
+    struct TwoDisplayProvider {
+        attached: Vec<DisplayGeometry>,
+        cursor: usize,
+        active: Mutex<Option<usize>>,
+    }
+
+    impl TwoDisplayProvider {
+        fn new(attached: Vec<DisplayGeometry>, cursor: usize) -> Self {
+            TwoDisplayProvider {
+                attached,
+                cursor,
+                active: Mutex::new(None),
+            }
+        }
+    }
+
+    impl ScreenProvider for TwoDisplayProvider {
+        fn capture_display(&self, _display: u32, out: &Path) -> Result<(), String> {
+            StubProvider::write_png(out)
+        }
+
+        fn active_display(&self) -> Result<u32, String> {
+            *self.active.lock().unwrap_or_else(|e| e.into_inner()) = Some(self.cursor);
+            Ok(self.cursor as u32)
+        }
+
+        fn active_geometry(&self) -> Option<DisplayGeometry> {
+            let active = *self.active.lock().unwrap_or_else(|e| e.into_inner());
+            active.map(|i| self.attached[i])
+        }
+
+        fn select_display(&self, target: DisplayGeometry) -> Option<u32> {
+            let index = self.attached.iter().position(|g| *g == target)?;
+            *self.active.lock().unwrap_or_else(|e| e.into_inner()) = Some(index);
+            Some(index as u32)
+        }
+    }
+
+    fn region() -> LogicalRect {
+        LogicalRect {
+            left: 10.0,
+            top: 20.0,
+            width: 50.0,
+            height: 40.0,
+        }
+    }
+
+    #[test]
+    fn finish_remembers_the_region_on_the_captured_display() {
+        let o = CaptureOrchestrator::new(TwoDisplayProvider::new(vec![display(0), display(200)], 1));
+        assert_eq!(o.last_region(), None);
+        o.start().unwrap();
+        o.finish(region()).unwrap();
+        assert_eq!(
+            o.last_region(),
+            Some(LastRegion {
+                rect: region(),
+                display: display(200),
+            })
+        );
+    }
+
+    #[test]
+    fn a_cancelled_capture_keeps_the_previous_region() {
+        let o = CaptureOrchestrator::new(TwoDisplayProvider::new(vec![display(0)], 0));
+        o.start().unwrap();
+        o.finish(region()).unwrap();
+        o.start().unwrap();
+        o.cancel();
+        assert_eq!(o.last_region().map(|r| r.rect), Some(region()));
+    }
+
+    #[test]
+    fn repeat_captures_the_region_display_not_the_cursor_display() {
+        let o = CaptureOrchestrator::new(TwoDisplayProvider::new(vec![display(0), display(200)], 1));
+        o.start_on(Some(display(0))).unwrap();
+        assert_eq!(o.active_geometry(), Some(display(0)));
+    }
+
+    #[test]
+    fn repeat_falls_back_to_the_cursor_display_when_the_display_is_gone() {
+        let o = CaptureOrchestrator::new(TwoDisplayProvider::new(vec![display(0)], 0));
+        o.start_on(Some(display(200))).unwrap();
+        assert_eq!(o.active_geometry(), Some(display(0)));
+        assert_ne!(o.active_geometry(), Some(display(200)));
+    }
+
+    #[test]
+    fn a_provider_without_geometry_remembers_no_region() {
+        let o = CaptureOrchestrator::new(StubProvider::new());
+        o.start().unwrap();
+        o.finish(region()).unwrap();
+        assert_eq!(o.last_region(), None);
     }
 
     #[test]

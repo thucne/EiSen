@@ -1,4 +1,4 @@
-//! Menu-bar tray icon: Capture now / Settings / History / Quit.
+//! Menu-bar tray icon: Capture now / Capture previous region / Settings / History / Quit.
 //!
 //! The tray makes EiSen a resident app — the overlay stays hidden until a
 //! capture is triggered by the hotkey or "Capture now".
@@ -36,6 +36,14 @@ pub fn setup(app: &AppHandle, lang: Lang) -> Result<(), String> {
                     }
                 });
             }
+            "repeat_capture" => {
+                let app = app.clone();
+                tauri::async_runtime::spawn_blocking(move || {
+                    if let Err(e) = capture::begin_repeat_capture(&app) {
+                        eprintln!("[eisen] tray repeat capture failed: {e}");
+                    }
+                });
+            }
             "settings" => {
                 show_main_window(app);
                 if let Some(window) = app.get_webview_window("main") {
@@ -67,13 +75,21 @@ fn build_menu<R: Runtime>(app: &AppHandle<R>, lang: Lang) -> Result<Menu<R>, Str
     let labels = lang.menu_labels();
     let capture = MenuItem::with_id(app, "capture", labels.capture, true, None::<&str>)
         .map_err(|e| e.to_string())?;
+    let repeat_capture = MenuItem::with_id(
+        app,
+        "repeat_capture",
+        labels.repeat_capture,
+        true,
+        Some("Ctrl+Shift+2"),
+    )
+    .map_err(|e| e.to_string())?;
     let settings = MenuItem::with_id(app, "settings", labels.settings, true, None::<&str>)
         .map_err(|e| e.to_string())?;
     let history = MenuItem::with_id(app, "history", labels.history, true, None::<&str>)
         .map_err(|e| e.to_string())?;
     let quit = MenuItem::with_id(app, "quit", labels.quit, true, None::<&str>)
         .map_err(|e| e.to_string())?;
-    Menu::with_items(
+    let menu = Menu::with_items(
         app,
         &[
             &version_item,
@@ -85,7 +101,12 @@ fn build_menu<R: Runtime>(app: &AppHandle<R>, lang: Lang) -> Result<Menu<R>, Str
             &quit,
         ],
     )
-    .map_err(|e| e.to_string())
+    .map_err(|e| e.to_string())?;
+    // 1.0.0 repeats a region on macOS only; see ScreenProvider::active_geometry.
+    if cfg!(target_os = "macos") {
+        menu.insert(&repeat_capture, 3).map_err(|e| e.to_string())?;
+    }
+    Ok(menu)
 }
 
 /// Reveal and focus the main window (Settings / History surface).

@@ -60,6 +60,25 @@ function fullscreenSession() {
   };
 }
 
+describe("repeat capture", () => {
+  it("selects the previous region so Enter copies exactly that rect", async () => {
+    const rect = { left: 30, top: 40, width: 120, height: 90 };
+    h.invoke.mockResolvedValue({ path: "/tmp/eisen-region.png", rect, scale: 1 });
+    render(OverlayPage);
+    await waitFor(() => expect(h.listeners.has("region-ready")).toBe(true));
+    emit("capture-ready", { path: "/tmp/eisen-full.png", scale: 1 });
+    emit("region-ready", rect);
+    await tick();
+    expect(toolbarBtn(en.overlay.openEditor)).toBeTruthy();
+    fireEvent.keyDown(window, { key: "Enter" });
+    await waitFor(() => {
+      expect(h.invoke.mock.calls.some(([cmd]) => cmd === "cmd_commit_region")).toBe(true);
+    });
+    const [, args] = h.invoke.mock.calls.find(([cmd]) => cmd === "cmd_commit_region")!;
+    expect(args.rect).toEqual(rect);
+  });
+});
+
 describe("overlay IPC contract", () => {
   it("posts exactly { rect, openEditor } to cmd_commit_region (Tauri camelCase arg contract)", async () => {
     h.invoke.mockResolvedValue(fullscreenSession());

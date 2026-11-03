@@ -70,6 +70,7 @@ fn register_capture_shortcut(app: &AppHandle, shortcut: &str) -> Result<(), Stri
 
 /// Register global hotkeys / modifier monitors:
 ///   • `ctrl+shift+3`   → full-screen capture + auto-save (macOS)
+///   • `ctrl+shift+2`   → previous region selected again (macOS)
 ///   • preset shortcut  → crop / selection overlay (Double-Tap or Combo)
 pub fn register(app: &AppHandle, preset: &HotkeyPreset) -> Result<Registration, String> {
     // Normalize persisted or renderer-supplied legacy presets at this runtime
@@ -105,6 +106,23 @@ pub fn register(app: &AppHandle, preset: &HotkeyPreset) -> Result<Registration, 
         // registration or trigger a spurious settings rollback.
         if let Err(e) = result {
             eprintln!("[eisen] ctrl+shift+3 registration failed: {e}");
+        }
+
+        let result = app.global_shortcut().on_shortcut(
+            "ctrl+shift+2",
+            |app, _shortcut, event| {
+                if event.state == ShortcutState::Pressed {
+                    let app = app.clone();
+                    tauri::async_runtime::spawn_blocking(move || {
+                        if let Err(e) = capture::begin_repeat_capture(&app) {
+                            eprintln!("[eisen] repeat capture failed: {e}");
+                        }
+                    });
+                }
+            },
+        );
+        if let Err(e) = result {
+            eprintln!("[eisen] ctrl+shift+2 registration failed: {e}");
         }
     }
 

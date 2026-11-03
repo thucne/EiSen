@@ -29,6 +29,7 @@ struct ActiveScreen {
     /// 1-based `screencapture -D` index (not a CGDirectDisplayID).
     display: u32,
     scale: f64,
+    geometry: crate::core::capture::DisplayGeometry,
 }
 
 #[cfg(target_os = "macos")]
@@ -48,6 +49,28 @@ fn on_main<T: Send>(f: impl FnOnce() -> T + Send) -> T {
 }
 
 #[cfg(target_os = "macos")]
+fn describe_screen(screen: &objc2_app_kit::NSScreen, index: usize) -> ActiveScreen {
+    let frame = screen.frame();
+    let backing = screen.convertRectToBacking(frame);
+    let scale = if frame.size.width > 0.0 {
+        backing.size.width / frame.size.width
+    } else {
+        1.0
+    };
+    ActiveScreen {
+        display: (index as u32) + 1,
+        scale,
+        geometry: crate::core::capture::DisplayGeometry {
+            x: (frame.origin.x * scale).round() as i32,
+            y: (frame.origin.y * scale).round() as i32,
+            width: backing.size.width.round() as u32,
+            height: backing.size.height.round() as u32,
+            scale,
+        },
+    }
+}
+
+#[cfg(target_os = "macos")]
 fn resolve_active_screen() -> ActiveScreen {
     on_main(|| {
         use objc2::MainThreadMarker;
@@ -61,6 +84,13 @@ fn resolve_active_screen() -> ActiveScreen {
             return ActiveScreen {
                 display: 1,
                 scale: 1.0,
+                geometry: crate::core::capture::DisplayGeometry {
+                    x: 0,
+                    y: 0,
+                    width: 0,
+                    height: 0,
+                    scale: 1.0,
+                },
             };
         }
         let mut frames = Vec::with_capacity(n);
@@ -69,18 +99,7 @@ fn resolve_active_screen() -> ActiveScreen {
             frames.push((f.origin.x, f.origin.y, f.size.width, f.size.height));
         }
         let idx = screen_index_containing((loc.x, loc.y), &frames);
-        let screen = screens.objectAtIndex(idx);
-        let frame = screen.frame();
-        let backing = screen.convertRectToBacking(frame);
-        let scale = if frame.size.width > 0.0 {
-            backing.size.width / frame.size.width
-        } else {
-            1.0
-        };
-        ActiveScreen {
-            display: (idx as u32) + 1,
-            scale,
-        }
+        describe_screen(&screens.objectAtIndex(idx), idx)
     })
 }
 
@@ -143,6 +162,28 @@ impl ScreenProvider for MacAdapter {
         {
             1.0
         }
+    }
+
+    #[cfg(target_os = "macos")]
+    fn active_geometry(&self) -> Option<crate::core::capture::DisplayGeometry> {
+        LAST_ACTIVE
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .as_ref()
+            .map(|s| s.geometry)
+    }
+
+    #[cfg(target_os = "macos")]
+    fn select_display(&self, target: crate::core::capture::DisplayGeometry) -> Option<u32> {
+        let screen = on_main(move || {
+            let mtm = objc2::MainThreadMarker::new().expect("AppKit screen list is main-thread-only");
+            let screens = objc2_app_kit::NSScreen::screens(mtm);
+            (0..screens.count())
+                .map(|i| describe_screen(&screens.objectAtIndex(i), i))
+                .find(|screen| screen.geometry == target)
+        })?;
+        *LAST_ACTIVE.lock().unwrap_or_else(|e| e.into_inner()) = Some(screen);
+        Some(screen.display)
     }
 }
 

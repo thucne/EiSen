@@ -322,6 +322,7 @@
     let disposed = false;
     let unlisten: UnlistenFn | null = null;
     let unlistenFull: UnlistenFn | null = null;
+    let unlistenRegion: UnlistenFn | null = null;
 
     void initLang();
 
@@ -357,10 +358,23 @@
       else unlistenFull = un;
     });
 
+    // Repeat capture: select the previous region again, so Enter copies it.
+    void listen<{ left: number; top: number; width: number; height: number }>("region-ready", (event) => {
+      const { left, top, width, height } = event.payload;
+      start = { x: left, y: top };
+      current = { x: left + width, y: top + height };
+      interaction = "idle";
+      selectionConfirmed = true;
+    }).then((un) => {
+      if (disposed) un();
+      else unlistenRegion = un;
+    });
+
     return () => {
       disposed = true;
       unlisten?.();
       unlistenFull?.();
+      unlistenRegion?.();
     };
   });
 </script>
