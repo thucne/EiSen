@@ -17,6 +17,7 @@
     type Point,
     type Rect,
   } from "$lib/overlay/geometry";
+  import { takeHintShowing } from "$lib/overlay/hintBudget";
 
   /** Minimum confirmable selection. Below this, the drag is treated as a
    *  stray click: the selection resets but the capture session survives. */
@@ -39,6 +40,7 @@
   }
 
   let imageSrc = $state<string | null>(null);
+  let showHint = $state(false);
   let captureScale = $state(1);
   let interaction = $state<Interaction>("idle");
   let resizeAnchor = $state<Point | null>(null);
@@ -331,6 +333,7 @@
       logOverlayTiming("capture-ready listener");
       captureScale = ready.scale;
       imageSrc = convertFileSrc(ready.path);
+      showHint = takeHintShowing();
       interaction = "idle";
       resizeAnchor = null;
       selectionConfirmed = false;
@@ -393,9 +396,14 @@
     />
   {/if}
 
-  <!-- Capture Mode Hint Banner -->
-  {#if !activeRect}
-    <div class="capture-hint animate-fade">
+  <!-- The dim alone says the screen is frozen and ready for a drag. -->
+  {#if imageSrc && !activeRect}
+    <div class="ready-dim"></div>
+  {/if}
+
+  <!-- Usage hint for the first captures only -->
+  {#if imageSrc && showHint && !activeRect}
+    <div class="capture-hint">
       <span>{t.overlay.hint}</span>
     </div>
   {/if}
@@ -526,9 +534,24 @@
     overflow: visible;
   }
 
+  .ready-dim {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.2);
+    pointer-events: none;
+    animation: ready-dim-in 120ms ease-out;
+  }
+
+  @keyframes ready-dim-in {
+    from {
+      opacity: 0;
+    }
+  }
+
+  /* Bottom center clears the menu bar and notch; bottom inset clears the Dock. */
   .capture-hint {
     position: absolute;
-    top: 28px;
+    bottom: 96px;
     left: 50%;
     transform: translateX(-50%);
     padding: 8px 18px;
@@ -542,6 +565,39 @@
     font-weight: 500;
     pointer-events: none;
     z-index: 100;
+    animation: capture-hint-life 2.4s ease-out forwards;
+  }
+
+  @keyframes capture-hint-life {
+    0% {
+      opacity: 0;
+    }
+    8%,
+    80% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .ready-dim {
+      animation: none;
+    }
+
+    .capture-hint {
+      animation: capture-hint-life-reduced 2.4s step-end forwards;
+    }
+  }
+
+  @keyframes capture-hint-life-reduced {
+    0% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+    }
   }
 
   .full-screen-img {

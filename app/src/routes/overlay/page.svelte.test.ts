@@ -27,6 +27,7 @@ vi.mock("@tauri-apps/api/window", () => ({
 
 import OverlayPage from "./+page.svelte";
 import { en } from "$lib/i18n/en";
+import { HINT_CAPTURES } from "$lib/overlay/hintBudget";
 
 function emit(event: string, payload: unknown = null): void {
   const cb = h.listeners.get(event);
@@ -231,6 +232,62 @@ describe("overlay feedback", () => {
   });
 });
 
+describe("overlay ready signal", () => {
+  async function capture() {
+    const view = render(OverlayPage);
+    await waitFor(() => expect(h.listeners.has("capture-ready")).toBe(true));
+    emit("capture-ready", { path: "/tmp/eisen-full.png", scale: 2 });
+    await tick();
+    return view;
+  }
+
+  beforeEach(() => {
+    const values = new Map<string, string>();
+    Object.defineProperty(window, "localStorage", {
+      value: {
+        getItem: (key: string) => values.get(key) ?? null,
+        setItem: (key: string, value: string) => values.set(key, value),
+      },
+      configurable: true,
+    });
+  });
+
+  it("dims the screen and shows the hint once the capture is ready", async () => {
+    const { container } = await capture();
+    expect(container.querySelector(".ready-dim")).toBeTruthy();
+    expect(screen.getByText(en.overlay.hint)).toBeTruthy();
+  });
+
+  it("shows nothing before a capture exists", async () => {
+    const { container } = render(OverlayPage);
+    await tick();
+    expect(container.querySelector(".ready-dim")).toBeNull();
+    expect(screen.queryByText(en.overlay.hint)).toBeNull();
+  });
+
+  it("drops the dim and hint when a drag starts", async () => {
+    const { container } = await capture();
+    fireEvent.pointerDown(container.querySelector(".overlay-viewport")!, {
+      button: 0,
+      clientX: 50,
+      clientY: 50,
+    });
+    await tick();
+    expect(container.querySelector(".ready-dim")).toBeNull();
+    expect(screen.queryByText(en.overlay.hint)).toBeNull();
+  });
+
+  it("keeps the dim but stops the hint after the first captures", async () => {
+    for (let i = 0; i < HINT_CAPTURES; i++) {
+      const { unmount } = await capture();
+      unmount();
+    }
+    const { container } = await capture();
+    expect(container.querySelector(".ready-dim")).toBeTruthy();
+    expect(screen.queryByText(en.overlay.hint)).toBeNull();
+  });
+});
+
 describe("overlay selection editing", () => {
   async function mountOverlay() {
     const view = render(OverlayPage);
@@ -247,7 +304,7 @@ describe("overlay selection editing", () => {
     fireEvent.pointerUp(viewport, { button: 0, clientX: 50, clientY: 50 });
     await tick();
     expect(h.invoke.mock.calls.some(([cmd]) => cmd === "cmd_cancel_capture")).toBe(false);
-    expect(screen.getByText(en.overlay.hint)).toBeTruthy();
+    expect(container.querySelector(".crop-frame")).toBeNull();
   });
 
   it("still cancels on Escape", async () => {

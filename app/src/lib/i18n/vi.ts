@@ -51,7 +51,7 @@ export const vi: Dict = {
     afterGrant: "Sau khi cấp quyền, hãy thoát và mở lại EiSen.",
   },
   overlay: {
-    hint: "Kéo để chọn • Kéo cạnh hoặc phím mũi tên để chỉnh • Esc để hủy",
+    hint: "Kéo để chọn • Esc để hủy",
     actionFailed: "Không thực hiện được thao tác",
     copyToClipboard: "Sao chép vào clipboard",
     openEditor: "Mở trình sửa",

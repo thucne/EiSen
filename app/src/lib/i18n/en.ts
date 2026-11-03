@@ -49,7 +49,7 @@ export const en = {
     afterGrant: "After granting access, quit and reopen EiSen.",
   },
   overlay: {
-    hint: "Drag to select • Drag edges or arrow keys to adjust • Esc to cancel",
+    hint: "Drag to select • Esc to cancel",
     actionFailed: "Capture action failed",
     copyToClipboard: "Copy to Clipboard",
     openEditor: "Open Editor",
