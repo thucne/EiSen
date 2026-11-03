@@ -4,7 +4,7 @@ export const HANDLE_R = 8;
 export const DELETE_BUTTON_SIZE = 18;
 export const TEXT_DRAG_THRESHOLD = 4;
 
-const RESIZABLE: ReadonlySet<ElementKind> = new Set(["text", "ellipse", "rectangle", "blur", "step"]);
+const RESIZABLE: ReadonlySet<ElementKind> = new Set(["text", "ellipse", "rectangle", "blur", "redact", "step"]);
 
 export function isResizableKind(kind: ElementKind | null | undefined): boolean {
   return kind != null && RESIZABLE.has(kind);

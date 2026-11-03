@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { createElement, extendElement, type Element } from "./elements";
+import { createElement, extendElement, type Element, type Point } from "./elements";
 import {
   BLUR_EXPORT_RADIUS_PX,
   BLUR_STD_DEVIATION,
@@ -9,6 +9,7 @@ import {
   exportPixelSize,
   MAX_EXPORT_SCALE,
   paintExportedText,
+  paintRedaction,
   scaleClipRect,
   segmentElementsForExport,
   wrapTextByWidth,
@@ -355,5 +356,71 @@ describe("compositeBlurRegions", () => {
       2,
     );
     expect(ctx.fillRect).toHaveBeenCalledWith(20, 40, 200, 200);
+  });
+});
+
+describe("redaction export", () => {
+  function redactElement(p1: Point, p2: Point): Element {
+    const el = createElement("redact", p1, "#ff0000", 4);
+    return extendElement(el, p1, p2);
+  }
+
+  function recordingCtx() {
+    const fills: { rect: number[]; fillStyle: string; alpha: number; op: string; filter: string }[] = [];
+    const ctx = {
+      globalAlpha: 0.2,
+      globalCompositeOperation: "multiply",
+      filter: "blur(8px)",
+      fillStyle: "#ffffff",
+      save: () => {},
+      restore: () => {},
+      fillRect(...rect: number[]) {
+        fills.push({
+          rect,
+          fillStyle: ctx.fillStyle,
+          alpha: ctx.globalAlpha,
+          op: ctx.globalCompositeOperation,
+          filter: ctx.filter,
+        });
+      },
+    };
+    return { ctx: ctx as unknown as CanvasRenderingContext2D, fills };
+  }
+
+  it("gets its own segment, so it covers earlier marks and stays under later ones", () => {
+    const before = createElement("arrow", { x: 0, y: 0 }, "#000000", 4);
+    const redact = redactElement({ x: 0, y: 0 }, { x: 50, y: 50 });
+    const after = createElement("arrow", { x: 1, y: 1 }, "#000000", 4);
+    expect(segmentElementsForExport([before, redact, after])).toEqual([
+      { kind: "run", elements: [before] },
+      { kind: "redact", element: redact },
+      { kind: "run", elements: [after] },
+    ]);
+  });
+
+  it("paints opaque black, whatever color was picked or state the canvas is in", () => {
+    const { ctx, fills } = recordingCtx();
+    paintRedaction(ctx, redactElement({ x: 10, y: 20 }, { x: 30, y: 40 }), 1);
+    expect(fills).toEqual([
+      {
+        rect: [10, 20, 20, 20],
+        fillStyle: "#000000",
+        alpha: 1,
+        op: "source-over",
+        filter: "none",
+      },
+    ]);
+  });
+
+  it("rounds fractional edges outward at the export scale", () => {
+    const { ctx, fills } = recordingCtx();
+    paintRedaction(ctx, redactElement({ x: 10.25, y: 20.25 }, { x: 30.25, y: 40.25 }), 2);
+    expect(fills[0].rect).toEqual([20, 40, 41, 41]);
+  });
+
+  it("ignores other element kinds", () => {
+    const { ctx, fills } = recordingCtx();
+    paintRedaction(ctx, createElement("rectangle", { x: 0, y: 0 }, "#000000", 4), 1);
+    expect(fills).toEqual([]);
   });
 });

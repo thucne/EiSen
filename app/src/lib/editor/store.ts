@@ -42,6 +42,7 @@ const DRAW_SIZES: Record<DrawTool, number> = {
   penArrow: 4,
   highlight: 20,
   blur: 4,
+  redact: 4,
 };
 
 let anchor: Point | null = null;
@@ -235,7 +236,7 @@ export function beginResize(id: number, handle: ResizeHandle, start: Point): voi
   moveStart = start;
   const e = getElements().find((x) => x.id === id);
   resizeOriginal =
-    e && (e.kind === "ellipse" || e.kind === "rectangle" || e.kind === "blur" || e.kind === "text" || e.kind === "step")
+    e && (e.kind === "ellipse" || e.kind === "rectangle" || e.kind === "blur" || e.kind === "redact" || e.kind === "text" || e.kind === "step")
       ? e
       : null;
 }

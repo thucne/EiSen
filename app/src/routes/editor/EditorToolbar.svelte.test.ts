@@ -53,6 +53,7 @@ describe("EditorToolbar", () => {
       `${en.tools.penArrow} (F)`,
       `${en.tools.highlight} (H)`,
       `${en.tools.blur} (B)`,
+      `${en.tools.redact} (K)`,
       `${en.tools.eraser} (X)`,
     ]) {
       expect(screen.getByRole("button", { name: title })).toBeTruthy();
@@ -82,7 +83,8 @@ describe("EditorToolbar", () => {
     );
     const i = (name: string) => tips.indexOf(name);
     expect(i(`${en.tools.highlight} (H)`)).toBeLessThan(i(`${en.tools.blur} (B)`));
-    expect(i(`${en.tools.blur} (B)`)).toBeLessThan(i(`${en.tools.arrow} (A)`));
+    expect(i(`${en.tools.blur} (B)`)).toBe(i(`${en.tools.redact} (K)`) - 1);
+    expect(i(`${en.tools.redact} (K)`)).toBeLessThan(i(`${en.tools.arrow} (A)`));
     expect(i(`${en.tools.arrow} (A)`)).toBe(i(`${en.tools.text} (T)`) - 1);
     expect(i(`${en.tools.text} (T)`)).toBe(i(`${en.tools.pen} (P)`) - 1);
     expect(i(`${en.tools.pen} (P)`)).toBe(i(`${en.tools.penArrow} (F)`) - 1);

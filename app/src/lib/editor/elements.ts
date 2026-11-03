@@ -8,11 +8,15 @@ export type Tool =
   | "penArrow"
   | "highlight"
   | "blur"
+  | "redact"
   | "step"
   | "eraser"
   | "eyedropper";
 
 export type DrawTool = Exclude<Tool, "select" | "eraser" | "eyedropper">;
+
+/** Fixed and opaque so a palette choice can never leave a redaction see-through. */
+export const REDACT_FILL = "#000000";
 
 export function rgbToHex(r: number, g: number, b: number): string {
   const toHex = (n: number) => Math.max(0, Math.min(255, Math.round(n))).toString(16).padStart(2, "0").toUpperCase();
@@ -33,6 +37,7 @@ export type ElementKind =
   | "penArrow"
   | "highlight"
   | "blur"
+  | "redact"
   | "step";
 
 export interface Rect {
@@ -67,7 +72,7 @@ export interface ArrowElement extends BaseElement {
 }
 
 export interface ShapeElement extends BaseElement {
-  kind: "ellipse" | "rectangle" | "blur";
+  kind: "ellipse" | "rectangle" | "blur" | "redact";
   x: number;
   y: number;
   width: number;
@@ -313,6 +318,7 @@ export function bbox(e: Element): Rect {
     case "ellipse":
     case "rectangle":
     case "blur":
+    case "redact":
       return { x: e.x, y: e.y, width: e.width, height: e.height };
     case "pen":
     case "penArrow":
@@ -370,6 +376,7 @@ export function createElement(
     case "ellipse":
     case "rectangle":
     case "blur":
+    case "redact":
       return {
         id,
         kind,
@@ -405,7 +412,8 @@ export function extendElement(
       const r = normalizeRect(start, current, square);
       return { ...e, ...r };
     }
-    case "blur": {
+    case "blur":
+    case "redact": {
       const r = normalizeRect(start, current);
       return { ...e, ...r };
     }
@@ -434,6 +442,7 @@ export function moveElement(e: Element, dx: number, dy: number): Element {
     case "ellipse":
     case "rectangle":
     case "blur":
+    case "redact":
       return { ...e, x: e.x + dx, y: e.y + dy };
     case "pen":
     case "penArrow":
@@ -506,7 +515,7 @@ export function resizeElement(
     }
     return { ...e, x, y, width, size };
   }
-  if (e.kind === "ellipse" || e.kind === "rectangle" || e.kind === "blur") {
+  if (e.kind === "ellipse" || e.kind === "rectangle" || e.kind === "blur" || e.kind === "redact") {
     let { x, y, width, height } = e;
     switch (handle) {
       case "nw":

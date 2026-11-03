@@ -85,11 +85,11 @@ export const en = {
     },
     redact: {
       tag: "Security & Redaction",
-      title: "Blur Sensitive Information in One Drag",
-      description: "Keep API tokens, passwords, credit card numbers, and private customer information safe. The smooth blur tool conceals data cleanly before you share.",
-      bullet1: "Gaussian privacy blur baked into the exported PNG",
+      title: "Cover Sensitive Information in One Drag",
+      description: "On macOS, Redact paints a solid block over API tokens, passwords, and card numbers before you share. Blur softens anything that only needs to fade into the background.",
+      bullet1: "Redact replaces the covered pixels in the exported PNG",
       bullet2: "Non-destructive undo and redo support",
-      bullet3: "Exported PNGs never leak covered underlying data",
+      bullet3: "Use Redact for secrets: large text can stay readable under blur",
     },
     ocr: {
       tag: "Native OCR",
@@ -237,7 +237,7 @@ export const en = {
       {
         icon: "🎯",
         title: "Numbered Steps & Redaction Blur",
-        desc: "Create beautiful bug reports and visual guides with auto-incrementing ① ② ③ step badges and high-security Gaussian blur.",
+        desc: "Create beautiful bug reports and visual guides with auto-incrementing ① ② ③ step badges and Gaussian blur.",
       },
       {
         icon: "🎨",

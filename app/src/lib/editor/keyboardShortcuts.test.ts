@@ -150,6 +150,7 @@ describe("single-key tool switching", () => {
     ["f", "penArrow"],
     ["h", "highlight"],
     ["b", "blur"],
+    ["k", "redact"],
     ["x", "eraser"],
     ["d", "eraser"],
     ["i", "eyedropper"],
@@ -173,7 +174,7 @@ describe("single-key tool switching", () => {
   });
 
   it("keeps non-tool letters unbound", () => {
-    for (const k of ["q", "w", "g", "j", "k", "l", "n", "o", "u", "y", "1"]) {
+    for (const k of ["q", "w", "g", "j", "l", "n", "o", "u", "y", "1"]) {
       expect(resolveShortcut(key({ key: k }), CTX)).toBe(null);
     }
   });

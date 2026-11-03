@@ -85,11 +85,11 @@ export const vi = {
     },
     redact: {
       tag: "Bảo Mật & Làm Mờ",
-      title: "Che Mờ Thông Tin Nhạy Cảm Chỉ Với 1 Thao Tác",
-      description: "Bảo vệ mật khẩu, mã khóa API, số thẻ ngân hàng và thông tin cá nhân của khách hàng. Công cụ làm mờ Gaussian giúp che chắn an toàn trước khi chia sẻ ảnh.",
-      bullet1: "Làm mờ Gaussian được nung trực tiếp vào PNG khi xuất",
+      title: "Che Thông Tin Nhạy Cảm Chỉ Với 1 Thao Tác",
+      description: "Trên macOS, Che đặc phủ một khối kín lên mã khóa API, mật khẩu và số thẻ trước khi bạn chia sẻ ảnh. Làm mờ phù hợp với nội dung chỉ cần lùi về phía sau.",
+      bullet1: "Che đặc thay hẳn các pixel bị che trong PNG khi xuất",
       bullet2: "Hỗ trợ hoàn tác (Undo) và làm lại (Redo) linh hoạt",
-      bullet3: "File PNG xuất ra đảm bảo không để lộ dữ liệu bị che bên dưới",
+      bullet3: "Hãy dùng Che đặc cho dữ liệu bí mật: chữ lớn vẫn có thể đọc được khi chỉ làm mờ",
     },
     ocr: {
       tag: "Nhận Diện Chữ OCR",

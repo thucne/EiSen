@@ -13,6 +13,7 @@
     arrowHeadPoints,
     arrowShaftEnd,
     bbox,
+    REDACT_FILL,
     clampTextPlacement,
     drawableStrokePoints,
     smoothPathD,
@@ -190,7 +191,7 @@
     if (
       selected &&
       selectedBox &&
-      (selected.kind === "ellipse" || selected.kind === "rectangle" || selected.kind === "blur" || selected.kind === "step")
+      (selected.kind === "ellipse" || selected.kind === "rectangle" || selected.kind === "blur" || selected.kind === "redact" || selected.kind === "step")
     ) {
       return cornerHandles(selectedBox);
     }
@@ -909,6 +910,15 @@
                 stroke-dasharray="4 4"
                 fill="none"
                 rx={4}
+              />
+            {:else if el.kind === "redact"}
+              <rect
+                data-el-id={el.id}
+                x={el.x}
+                y={el.y}
+                width={el.width}
+                height={el.height}
+                fill={REDACT_FILL}
               />
             {:else if el.kind === "pen"}
               <path

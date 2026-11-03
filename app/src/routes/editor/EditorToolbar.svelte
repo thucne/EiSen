@@ -159,6 +159,11 @@
       <button class="tb-btn {tool === 'ellipse' ? 'active' : ''}" {...tip(`${t.tools.ellipse} (E)`)} onclick={() => onselect("ellipse")}><Circle size={15} /></button>
       <button class="tb-btn {tool === 'highlight' ? 'active' : ''}" {...tip(`${t.tools.highlight} (H)`)} onclick={() => onselect("highlight")}><Highlighter size={15} /></button>
       <button class="tb-btn {tool === 'blur' ? 'active' : ''}" {...tip(`${t.tools.blur} (B)`)} onclick={() => onselect("blur")}><EyeOff size={15} /></button>
+      <button class="tb-btn {tool === 'redact' ? 'active' : ''}" {...tip(`${t.tools.redact} (K)`)} onclick={() => onselect("redact")}>
+        <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true">
+          <rect x="1.5" y="4" width="13" height="8" fill="currentColor" />
+        </svg>
+      </button>
       <button class="tb-btn {tool === 'arrow' ? 'active' : ''}" {...tip(`${t.tools.arrow} (A)`)} onclick={() => onselect("arrow")}>
         <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true">
           <path d="M3 13 L11.2 4.6" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" />

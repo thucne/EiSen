@@ -83,6 +83,7 @@ describe("dictionaries", () => {
         "pen",
         "penArrow",
         "rectangle",
+        "redact",
         "select",
         "step",
         "text",

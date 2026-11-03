@@ -1,4 +1,5 @@
 import {
+  REDACT_FILL,
   TEXT_FONT_FAMILY,
   TEXT_FONT_WEIGHT,
   textContentMaxWidth,
@@ -99,6 +100,7 @@ function traceRoundedRect(
 export type ExportSegment =
   | { kind: "run"; elements: Element[] }
   | { kind: "blur"; element: Element }
+  | { kind: "redact"; element: Element }
   | { kind: "text"; element: Element };
 
 /** Splits elements so exports reproduce live-view occlusion: a run BEFORE a
@@ -119,6 +121,9 @@ export function segmentElementsForExport(
     if (el.kind === "blur") {
       flushRun();
       segments.push({ kind: "blur", element: el });
+    } else if (el.kind === "redact") {
+      flushRun();
+      segments.push({ kind: "redact", element: el });
     } else if (el.kind === "text") {
       flushRun();
       segments.push({ kind: "text", element: el });
@@ -247,13 +252,35 @@ export function compositeBlurRegions(
   }
 }
 
+/** Paints a redaction straight onto the export canvas. It never goes through
+ *  SVG rasterization, so a failed or dropped layer cannot uncover the pixels.
+ *  Edges round outward so no partly covered pixel keeps source color. */
+export function paintRedaction(
+  ctx: CanvasRenderingContext2D,
+  el: Element,
+  scale = 1,
+): void {
+  if (el.kind !== "redact") return;
+  const left = Math.floor(el.x * scale);
+  const top = Math.floor(el.y * scale);
+  const right = Math.ceil((el.x + el.width) * scale);
+  const bottom = Math.ceil((el.y + el.height) * scale);
+  ctx.save();
+  ctx.globalAlpha = 1;
+  ctx.globalCompositeOperation = "source-over";
+  ctx.filter = "none";
+  ctx.fillStyle = REDACT_FILL;
+  ctx.fillRect(left, top, right - left, bottom - top);
+  ctx.restore();
+}
+
 export interface AnnotatedPngSource {
   /** Asset URL of the captured base image (already validated non-empty). */
   imageSrc: string;
   canvasW: number;
   canvasH: number;
-  /** Live editor SVG whose annotation nodes get rasterized; null skips
-   *  annotation rasterization and exports the bare base image. */
+  /** Live editor SVG whose annotation nodes get rasterized; null skips only
+   *  those SVG layers. Text, blur and redactions are still painted. */
   svgEl: SVGSVGElement | null;
   /** Read at each z-order step so commits that land mid-render (e.g. a text
    *  edit ending during base-image decode) are honored exactly like the
@@ -295,51 +322,54 @@ export async function renderAnnotatedPng(
   ctx.drawImage(baseImg, 0, 0, pxW, pxH);
 
   // 2. Clone SVG element & strip selection UI overlays
-  if (src.svgEl) {
-    const clone = src.svgEl.cloneNode(true) as SVGSVGElement;
-    clone
-      .querySelectorAll(EXPORT_STRIP_SELECTOR)
-      .forEach((node) => node.remove());
-    clone.setAttribute("width", String(pxW));
-    clone.setAttribute("height", String(pxH));
-    const annotatedNodes = Array.from(clone.querySelectorAll("[data-el-id]"));
+  const clone = src.svgEl?.cloneNode(true) as SVGSVGElement | undefined;
+  clone
+    ?.querySelectorAll(EXPORT_STRIP_SELECTOR)
+    .forEach((node) => node.remove());
+  clone?.setAttribute("width", String(pxW));
+  clone?.setAttribute("height", String(pxH));
+  const annotatedNodes = clone ? Array.from(clone.querySelectorAll("[data-el-id]")) : [];
 
-    // Reproduce live-view stacking: walk elements in array order, drawing
-    // each non-blur run as its own partial layer and compositing each blur
-    // region at its exact position (elements before a blur stay occluded,
-    // elements after it render above).
-    for (const seg of segmentElementsForExport(src.getElements())) {
-      if (seg.kind === "blur") {
-        compositeBlurRegions(ctx, baseImg, [seg.element], canvasW, canvasH, scale);
-        continue;
-      }
-      if (seg.kind === "text") {
-        paintExportedText(ctx, seg.element, canvasW, scale);
-        continue;
-      }
-      const visibleIds = new Set(seg.elements.map((e) => String(e.id)));
-      for (const node of annotatedNodes) {
-        const elId = node.getAttribute("data-el-id");
-        if (elId != null && visibleIds.has(elId)) {
-          (node as SVGElement).removeAttribute("style");
-        } else {
-          (node as SVGElement).style.display = "none";
-        }
-      }
-
-      const xml = new XMLSerializer().serializeToString(clone);
-      const svgBlob = new Blob([xml], { type: "image/svg+xml;charset=utf-8" });
-      const url = URL.createObjectURL(svgBlob);
-
-      const svgImg = new Image();
-      await new Promise((resolve, reject) => {
-        svgImg.onload = resolve;
-        svgImg.onerror = () => reject(new Error("Failed to rasterize annotations"));
-        svgImg.src = url;
-      });
-      ctx.drawImage(svgImg, 0, 0, pxW, pxH);
-      URL.revokeObjectURL(url);
+  // Reproduce live-view stacking: walk elements in array order, drawing
+  // each non-blur run as its own partial layer and compositing each blur
+  // region at its exact position (elements before a blur stay occluded,
+  // elements after it render above).
+  for (const seg of segmentElementsForExport(src.getElements())) {
+    if (seg.kind === "blur") {
+      compositeBlurRegions(ctx, baseImg, [seg.element], canvasW, canvasH, scale);
+      continue;
     }
+    if (seg.kind === "redact") {
+      paintRedaction(ctx, seg.element, scale);
+      continue;
+    }
+    if (seg.kind === "text") {
+      paintExportedText(ctx, seg.element, canvasW, scale);
+      continue;
+    }
+    if (!clone) continue;
+    const visibleIds = new Set(seg.elements.map((e) => String(e.id)));
+    for (const node of annotatedNodes) {
+      const elId = node.getAttribute("data-el-id");
+      if (elId != null && visibleIds.has(elId)) {
+        (node as SVGElement).removeAttribute("style");
+      } else {
+        (node as SVGElement).style.display = "none";
+      }
+    }
+
+    const xml = new XMLSerializer().serializeToString(clone);
+    const svgBlob = new Blob([xml], { type: "image/svg+xml;charset=utf-8" });
+    const url = URL.createObjectURL(svgBlob);
+
+    const svgImg = new Image();
+    await new Promise((resolve, reject) => {
+      svgImg.onload = resolve;
+      svgImg.onerror = () => reject(new Error("Failed to rasterize annotations"));
+      svgImg.src = url;
+    });
+    ctx.drawImage(svgImg, 0, 0, pxW, pxH);
+    URL.revokeObjectURL(url);
   }
 
   // 3. Convert Canvas to PNG byte array
