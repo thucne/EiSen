@@ -143,7 +143,7 @@ pub fn active_display_index() -> Option<usize> {
 impl ScreenProvider for MacAdapter {
     fn capture_display(&self, display: u32, out: &Path) -> Result<(), String> {
         // ScreenCaptureKit skips a process spawn and PNG compression, which
-        // cuts capture to backdrop from about 189 ms to 106 ms on an M3 Pro. Any
+        // cuts capture to backdrop from about 190 ms to 120 ms on an M3 Pro. Any
         // failure, a permission one included, falls through to `screencapture`,
         // which also covers macOS below 14.
         #[cfg(target_os = "macos")]
