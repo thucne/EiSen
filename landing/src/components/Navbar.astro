@@ -14,7 +14,8 @@ const t = getDictionary(locale);
 
 const currentPath = Astro.url.pathname;
 const targetLocale: Locale = locale === 'en' ? 'vi' : 'en';
-const switchPath = getLocalizedPath(currentPath, targetLocale);
+// The CleanShot page is English only, so its switch goes to the Vietnamese home page.
+const switchPath = currentPath.startsWith('/cleanshot-alternative') ? '/vi/' : getLocalizedPath(currentPath, targetLocale);
 
 const homePath = locale === 'vi' ? '/vi/' : '/';
 const windowsPath = locale === 'vi' ? '/vi/windows' : '/windows';
