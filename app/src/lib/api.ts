@@ -206,6 +206,13 @@ export function extractText(): Promise<string> {
 }
 
 /**
+ * Extract text from a rendered PNG, such as the editor's cropped and redacted result.
+ */
+export function extractTextBytes(bytes: Uint8Array): Promise<string> {
+  return invoke("cmd_extract_text_bytes", { bytes });
+}
+
+/**
  * Get (and cache) a thumbnail path for a capture image.
  */
 export function getThumbnail(path: string): Promise<string> {

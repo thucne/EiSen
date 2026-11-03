@@ -326,7 +326,10 @@
     if (isExtractingText) return;
     isExtractingText = true;
     try {
-      const text = await api.extractText();
+      // Read what would be exported, so a crop or Redact block hides text from OCR too.
+      const text = $hasEdits
+        ? await api.extractTextBytes(await exportRenderedBytes())
+        : await api.extractText();
       if (!text || text.trim().length === 0) {
         showToast(t.ocr.noText, "err");
       } else {

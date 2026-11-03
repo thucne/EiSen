@@ -768,6 +768,10 @@ async fn cmd_extract_text(
     let (path, _, _) = orchestrator
         .last()
         .ok_or_else(|| "no capture session active".to_string())?;
+    extract_text_from_path(path).await
+}
+
+async fn extract_text_from_path(path: std::path::PathBuf) -> Result<String, String> {
     #[cfg(target_os = "macos")]
     {
         tauri::async_runtime::spawn_blocking(move || {
@@ -785,6 +789,24 @@ async fn cmd_extract_text(
         let _ = path;
         Err("OCR is currently supported on macOS and Windows only".to_string())
     }
+}
+
+/// Extract text from the editor's rendered result, so OCR reads what the user
+/// would export: nothing outside a crop or under a Redact block.
+#[tauri::command]
+async fn cmd_extract_text_bytes(bytes: Vec<u8>) -> Result<String, String> {
+    let path = capture::temp_capture_path("ocr");
+    let written = path.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        std::fs::write(&written, &bytes).map_err(|e| e.to_string())?;
+        capture::restrict_permissions(&written);
+        Ok::<_, String>(())
+    })
+    .await
+    .map_err(|e| format!("OCR task failed: {e}"))??;
+    let text = extract_text_from_path(path.clone()).await;
+    let _ = std::fs::remove_file(&path);
+    text
 }
 
 /// Record a capture id (its persisted image path) in the session history.
@@ -1258,6 +1280,7 @@ builder
             cmd_open_in_editor,
             cmd_get_thumbnail,
             cmd_extract_text,
+            cmd_extract_text_bytes,
             cmd_remove_history,
             cmd_hotkey_error,
             cmd_hotkey_warning,

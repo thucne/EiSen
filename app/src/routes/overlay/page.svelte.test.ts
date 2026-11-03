@@ -60,6 +60,17 @@ function fullscreenSession() {
   };
 }
 
+describe("capture trigger while the overlay is open", () => {
+  it("cancels the capture and hides the overlay", async () => {
+    h.invoke.mockResolvedValue(undefined);
+    render(OverlayPage);
+    await waitFor(() => expect(h.listeners.has("capture-cancel")).toBe(true));
+    emit("capture-cancel");
+    await waitFor(() => expect(h.invoke).toHaveBeenCalledWith("cmd_cancel_capture"));
+    await waitFor(() => expect(h.hide).toHaveBeenCalled());
+  });
+});
+
 describe("repeat capture", () => {
   it("selects the previous region so Enter copies exactly that rect", async () => {
     const rect = { left: 30, top: 40, width: 120, height: 90 };

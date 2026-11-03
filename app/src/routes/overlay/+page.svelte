@@ -323,6 +323,7 @@
     let unlisten: UnlistenFn | null = null;
     let unlistenFull: UnlistenFn | null = null;
     let unlistenRegion: UnlistenFn | null = null;
+    let unlistenCancel: UnlistenFn | null = null;
 
     void initLang();
 
@@ -370,11 +371,20 @@
       else unlistenRegion = un;
     });
 
+    // A capture trigger arrived while this overlay was open.
+    void listen<null>("capture-cancel", () => {
+      void cancelCapture();
+    }).then((un) => {
+      if (disposed) un();
+      else unlistenCancel = un;
+    });
+
     return () => {
       disposed = true;
       unlisten?.();
       unlistenFull?.();
       unlistenRegion?.();
+      unlistenCancel?.();
     };
   });
 </script>

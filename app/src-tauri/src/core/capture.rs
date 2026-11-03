@@ -590,7 +590,19 @@ fn begin_capture_on(
             "overlay window is unavailable",
         ));
     };
-    if orchestrator.is_busy() && !overlay.is_visible().unwrap_or(false) {
+    if orchestrator.is_busy() {
+        if overlay.is_visible().unwrap_or(false) {
+            // The overlay is open, so another trigger means "never mind". Its
+            // own cancel path resets the selection and restores focus.
+            return overlay
+                .emit_to(
+                    tauri::EventTarget::webview_window("overlay"),
+                    "capture-cancel",
+                    (),
+                )
+                .map_err(|e| e.to_string())
+                .and_then(|()| Err("cancelled the open capture".to_string()));
+        }
         orchestrator.cancel();
     }
     #[cfg(target_os = "macos")]
