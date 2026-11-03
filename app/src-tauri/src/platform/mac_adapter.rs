@@ -298,6 +298,111 @@ pub fn show_without_activation(window: &tauri::WebviewWindow) {
     }
 }
 
+/// Answers AppKit during a file drag: dropping copies, so Finder never moves
+/// the file away, and the end of the drag is reported to the feedback window.
+#[cfg(target_os = "macos")]
+mod file_drag {
+    use objc2::rc::Retained;
+    use objc2::runtime::{NSObject, NSObjectProtocol};
+    use objc2::{define_class, msg_send, DefinedClass, MainThreadMarker, MainThreadOnly};
+    use objc2_app_kit::{NSDragOperation, NSDraggingContext, NSDraggingSession, NSDraggingSource};
+    use objc2_foundation::NSPoint;
+    use tauri::{Emitter, Manager};
+
+    define_class!(
+        #[unsafe(super(NSObject))]
+        #[thread_kind = MainThreadOnly]
+        #[name = "EiSenFileDragSource"]
+        #[ivars = tauri::AppHandle]
+        pub struct FileDragSource;
+
+        unsafe impl NSObjectProtocol for FileDragSource {}
+
+        unsafe impl NSDraggingSource for FileDragSource {
+            #[unsafe(method(draggingSession:sourceOperationMaskForDraggingContext:))]
+            fn operation_mask(
+                &self,
+                _session: &NSDraggingSession,
+                _context: NSDraggingContext,
+            ) -> NSDragOperation {
+                NSDragOperation::Copy
+            }
+
+            #[unsafe(method(draggingSession:endedAtPoint:operation:))]
+            fn ended(&self, _session: &NSDraggingSession, _at: NSPoint, _operation: NSDragOperation) {
+                if let Some(window) = self.ivars().get_webview_window("feedback") {
+                    let _ = window.emit("feedback-drag-ended", ());
+                }
+            }
+        }
+    );
+
+    impl FileDragSource {
+        pub fn new(app: tauri::AppHandle, mtm: MainThreadMarker) -> Retained<Self> {
+            let this = Self::alloc(mtm).set_ivars(app);
+            unsafe { msg_send![super(this), init] }
+        }
+    }
+}
+
+#[cfg(target_os = "macos")]
+thread_local! {
+    /// Keeps the current drag's source alive until the next drag replaces it.
+    static FILE_DRAG_SOURCE: std::cell::RefCell<Option<objc2::rc::Retained<file_drag::FileDragSource>>> =
+        const { std::cell::RefCell::new(None) };
+}
+
+/// Begin dragging `path` from `window`, using the mouse event being handled.
+/// Must run on the main thread.
+#[cfg(target_os = "macos")]
+pub fn start_file_drag(
+    app: &tauri::AppHandle,
+    window: &tauri::WebviewWindow,
+    path: &Path,
+) -> Result<(), String> {
+    use objc2::runtime::ProtocolObject;
+    use objc2::{AllocAnyThread, MainThreadMarker};
+    use objc2_app_kit::{NSApplication, NSDraggingItem, NSImage, NSWindow};
+    use objc2_foundation::{NSArray, NSPoint, NSRect, NSSize, NSString, NSURL};
+
+    const DRAG_IMAGE_WIDTH: f64 = 140.0;
+
+    let mtm = MainThreadMarker::new().ok_or("file drag must start on the main thread")?;
+    let event = NSApplication::sharedApplication(mtm)
+        .currentEvent()
+        .ok_or("no mouse event to start the drag from")?;
+    let ns_win = window.ns_window().map_err(|e| e.to_string())? as *mut NSWindow;
+    let win: &NSWindow = unsafe { &*ns_win };
+    let view = win.contentView().ok_or("feedback window has no content view")?;
+
+    let path = NSString::from_str(&path.to_string_lossy());
+    let url = NSURL::fileURLWithPath(&path);
+    let image = NSImage::initWithContentsOfFile(NSImage::alloc(), &path)
+        .ok_or("failed to load the drag image")?;
+    let size = image.size();
+    let height = DRAG_IMAGE_WIDTH * size.height / size.width.max(1.0);
+    let at = view.convertPoint_fromView(event.locationInWindow(), None);
+    let frame = NSRect::new(
+        NSPoint::new(at.x - DRAG_IMAGE_WIDTH / 2.0, at.y - height / 2.0),
+        NSSize::new(DRAG_IMAGE_WIDTH, height),
+    );
+
+    let item = NSDraggingItem::initWithPasteboardWriter(
+        NSDraggingItem::alloc(),
+        ProtocolObject::from_ref(&*url),
+    );
+    unsafe { item.setDraggingFrame_contents(frame, Some(&image)) };
+
+    let source = file_drag::FileDragSource::new(app.clone(), mtm);
+    view.beginDraggingSessionWithItems_event_source(
+        &NSArray::from_retained_slice(&[item]),
+        &event,
+        ProtocolObject::from_ref(&*source),
+    );
+    FILE_DRAG_SOURCE.with(|slot| *slot.borrow_mut() = Some(source));
+    Ok(())
+}
+
 /// Elevate the overlay window above the macOS Menu Bar and Dock (NSScreenSaverWindowLevel)
 /// so dragging selection boxes across the menu bar and dock receives pointer events.
 #[cfg(target_os = "macos")]

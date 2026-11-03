@@ -21,7 +21,7 @@
     RotateCcw,
     Settings,
     PenLine,
-    Volume2,
+    Volume2, GalleryThumbnails,
   } from "@lucide/svelte";
 
   const t = $derived($i18n);
@@ -141,6 +141,12 @@
     await save({ ...cfg, play_sounds: on });
   }
 
+  async function onShowThumbnailToggle(e: Event) {
+    if (!cfg) return;
+    const on = (e.target as HTMLInputElement).checked;
+    await save({ ...cfg, show_thumbnail: on });
+  }
+
   async function onPenSmoothingChange(e: Event) {
     if (!cfg) return;
     const value = (e.target as HTMLSelectElement).value as api.PenSmoothing;
@@ -250,6 +256,22 @@
           <span class="slider"></span>
         </label>
       </div>
+
+      {#if !isWindows}
+        <div class="setting-row">
+          <div class="row-label">
+            <GalleryThumbnails size={18} class="row-icon" />
+            <div>
+              <h3>{t.settings.showThumbnail}</h3>
+              <p>{t.settings.showThumbnailHelp}</p>
+            </div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" aria-label={t.settings.showThumbnail} checked={cfg.show_thumbnail} onchange={onShowThumbnailToggle} />
+            <span class="slider"></span>
+          </label>
+        </div>
+      {/if}
 
       <!-- Pen smoothing -->
       <div class="setting-row">

@@ -62,6 +62,7 @@ export const en = {
     choose: "Choose…",
     launchAtLogin: "Launch at login",
     playSounds: "Sound effects",
+    showThumbnail: "Floating thumbnail",
     penSmoothing: "Pen smoothing",
     penSmoothingHelp: "Steady pen and highlighter strokes against hand tremor. Applies to new strokes",
     penSmoothingOff: "Off",
@@ -81,6 +82,7 @@ export const en = {
     hotkeyHelp: "Global keyboard shortcut to trigger capture",
     launchHelp: "Automatically start EiSen resident in tray on system boot",
     playSoundsHelp: "Play audio feedback on capture, copy, and save",
+    showThumbnailHelp: "Show a preview after each capture. Click to edit, or drag it into another app",
     resetTitle: "Reset Configuration",
     resetHelp: "Restore default preferences and hotkeys",
     loading: "Loading settings...",
@@ -111,6 +113,8 @@ export const en = {
   },
   feedback: {
     reveal: "Show in folder",
+    openInEditor: "Open in editor",
+    dismiss: "Dismiss",
   },
   hub: {
     tagline: "Fast Screen Capture for macOS & Windows",

@@ -1,19 +1,29 @@
 <script lang="ts">
   import { onMount } from "svelte";
+  import { convertFileSrc } from "@tauri-apps/api/core";
   import { listen } from "@tauri-apps/api/event";
-  import { FolderOpen } from "@lucide/svelte";
-  import { hideFeedback, revealPath } from "$lib/api";
+  import { FolderOpen, X } from "@lucide/svelte";
+  import { hideFeedback, openInEditor, revealPath, startPreviewDrag } from "$lib/api";
   import { i18n, initLang } from "$lib/i18n";
 
   /** A save stays longer so there is time to reach "Show in folder". */
   const DISMISS_MS = 2200;
   const DISMISS_WITH_PATH_MS = 5000;
+  const DISMISS_THUMBNAIL_MS = 6000;
+  const DRAG_THRESHOLD_PX = 4;
 
-  type Feedback = { message: string; kind: "ok" | "err"; path: string | null };
+  type Feedback = {
+    message: string;
+    kind: "ok" | "err";
+    path: string | null;
+    preview?: string | null;
+  };
 
   const t = $derived($i18n);
   let feedback = $state<Feedback | null>(null);
   let timer: ReturnType<typeof setTimeout> | undefined;
+  let pressedAt: { x: number; y: number } | null = null;
+  let dragging = false;
 
   function dismiss() {
     feedback = null;
@@ -26,8 +36,19 @@
 
   function scheduleDismiss() {
     clearTimeout(timer);
+    if (!feedback || dragging) return;
+    const delay = feedback.preview
+      ? DISMISS_THUMBNAIL_MS
+      : feedback.path
+        ? DISMISS_WITH_PATH_MS
+        : DISMISS_MS;
+    timer = setTimeout(dismiss, delay);
+  }
+
+  function showError(err: unknown) {
     if (!feedback) return;
-    timer = setTimeout(dismiss, feedback.path ? DISMISS_WITH_PATH_MS : DISMISS_MS);
+    feedback = { ...feedback, message: String(err), kind: "err", path: null };
+    scheduleDismiss();
   }
 
   async function reveal() {
@@ -36,8 +57,34 @@
       await revealPath(feedback.path);
       dismiss();
     } catch (err) {
-      feedback = { message: String(err), kind: "err", path: null };
-      scheduleDismiss();
+      showError(err);
+    }
+  }
+
+  function onPreviewPointerDown(e: PointerEvent) {
+    pressedAt = e.button === 0 ? { x: e.clientX, y: e.clientY } : null;
+  }
+
+  function onPreviewPointerMove(e: PointerEvent) {
+    if (!pressedAt) return;
+    if (Math.hypot(e.clientX - pressedAt.x, e.clientY - pressedAt.y) < DRAG_THRESHOLD_PX) return;
+    pressedAt = null;
+    dragging = true;
+    pauseDismiss();
+    startPreviewDrag().catch((err) => {
+      dragging = false;
+      showError(err);
+    });
+  }
+
+  async function openPreview() {
+    pressedAt = null;
+    if (!feedback?.preview || dragging) return;
+    try {
+      await openInEditor(feedback.preview);
+      dismiss();
+    } catch (err) {
+      showError(err);
     }
   }
 
@@ -45,16 +92,59 @@
     void initLang();
     const un = listen<Feedback>("feedback-show", (event) => {
       feedback = event.payload;
+      dragging = false;
+      pressedAt = null;
+      scheduleDismiss();
+    });
+    const unDrag = listen("feedback-drag-ended", () => {
+      dragging = false;
       scheduleDismiss();
     });
     return () => {
       clearTimeout(timer);
       void un.then((fn) => fn());
+      void unDrag.then((fn) => fn());
     };
   });
 </script>
 
-{#if feedback}
+{#if feedback?.preview}
+  <div
+    class="thumbnail thumbnail-{feedback.kind}"
+    role="status"
+    onpointerenter={pauseDismiss}
+    onpointerleave={scheduleDismiss}
+  >
+    <button
+      type="button"
+      class="preview"
+      aria-label={t.feedback.openInEditor}
+      title={t.feedback.openInEditor}
+      onpointerdown={onPreviewPointerDown}
+      onpointermove={onPreviewPointerMove}
+      onclick={openPreview}
+    >
+      <img src={convertFileSrc(feedback.preview)} alt="" draggable="false" />
+    </button>
+    <button type="button" class="close" aria-label={t.feedback.dismiss} onclick={dismiss}>
+      <X size={14} />
+    </button>
+    <div class="thumbnail-row">
+      <span class="message">{feedback.message}</span>
+      {#if feedback.path}
+        <button
+          type="button"
+          class="reveal icon-only"
+          aria-label={t.feedback.reveal}
+          title={t.feedback.reveal}
+          onclick={reveal}
+        >
+          <FolderOpen size={14} />
+        </button>
+      {/if}
+    </div>
+  </div>
+{:else if feedback}
   <div
     class="feedback feedback-{feedback.kind}"
     role="status"
@@ -123,5 +213,74 @@
 
   .reveal:hover {
     background: rgba(255, 255, 255, 0.24);
+  }
+
+  .reveal.icon-only {
+    padding: 6px;
+  }
+
+  .thumbnail {
+    position: fixed;
+    inset: 6px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    background: rgba(15, 16, 21, 0.94);
+    color: #ffffff;
+    font-size: 12px;
+    font-weight: 500;
+    user-select: none;
+  }
+
+  .preview {
+    flex: 1;
+    min-height: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    cursor: grab;
+  }
+
+  .preview img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    pointer-events: none;
+  }
+
+  .close {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    display: inline-flex;
+    padding: 4px;
+    border: 0;
+    border-radius: 999px;
+    background: rgba(15, 16, 21, 0.72);
+    color: inherit;
+    cursor: pointer;
+    opacity: 0;
+  }
+
+  .thumbnail:hover .close,
+  .close:focus-visible {
+    opacity: 1;
+  }
+
+  .thumbnail-row {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    height: 44px;
+    padding: 0 8px 0 12px;
+  }
+
+  .thumbnail-err .thumbnail-row {
+    background: #b91c1c;
   }
 </style>

@@ -84,6 +84,8 @@ pub struct AppConfig {
     pub launch_at_login: bool,
     pub hotkey: HotkeyPreset,
     pub play_sounds: bool,
+    /// After a capture, show a preview instead of the plain confirmation.
+    pub show_thumbnail: bool,
     pub pen_smoothing: PenSmoothing,
 }
 
@@ -97,6 +99,7 @@ impl Default for AppConfig {
                 launch_at_login: false,
                 hotkey: HotkeyPreset::default(),
                 play_sounds: true,
+                show_thumbnail: true,
                 pen_smoothing: PenSmoothing::default(),
             },
             &|k| std::env::var(k).ok(),
@@ -204,6 +207,7 @@ mod tests {
         let cfg: AppConfig = serde_json::from_str(r#"{"play_sounds":false}"#).unwrap();
         assert_eq!(cfg.pen_smoothing, PenSmoothing::Medium);
         assert!(!cfg.play_sounds);
+        assert!(cfg.show_thumbnail, "configs from before the thumbnail keep it on");
     }
 
     #[test]
@@ -240,6 +244,7 @@ mod tests {
             launch_at_login: true,
             hotkey: HotkeyPreset::PrtScMac, // roundtrip test uses PrtScMac
             play_sounds: true,
+            show_thumbnail: true,
             pen_smoothing: PenSmoothing::default(),
         };
         save(&p, &want).unwrap();
@@ -370,6 +375,7 @@ mod tests {
             launch_at_login: false,
             hotkey: HotkeyPreset::default(),
             play_sounds: true,
+            show_thumbnail: true,
             pen_smoothing: PenSmoothing::default(),
         };
         let cfg = apply_env_overrides(base, &|key| match key {
@@ -388,6 +394,7 @@ mod tests {
             launch_at_login: false,
             hotkey: HotkeyPreset::PrtScMac,
             play_sounds: true,
+            show_thumbnail: true,
             pen_smoothing: PenSmoothing::default(),
         };
         let getenv = |k: &str| match k {
@@ -410,6 +417,7 @@ mod tests {
             launch_at_login: false,
             hotkey: HotkeyPreset::DoubleOption,
             play_sounds: true,
+            show_thumbnail: true,
             pen_smoothing: PenSmoothing::default(),
         };
         let getenv = |k: &str| match k {
@@ -447,6 +455,7 @@ mod tests {
             launch_at_login: true,
             hotkey: HotkeyPreset::DoubleShift,
             play_sounds: false,
+            show_thumbnail: true,
             pen_smoothing: PenSmoothing::default(),
         };
         let cfg = apply_env_overrides(base.clone(), &|_| None);

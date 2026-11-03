@@ -20,6 +20,7 @@ Fast screen capture and annotation for **macOS** and **Windows**. Built with **T
 ## Features
 
 - **Capture overlay** with an adjustable crop, then Copy, Save, Edit, or OCR.
+- **Floating thumbnail** on macOS: a preview after each capture. Click to edit, drag it into another app, or turn it off in Settings.
 - **Capture previous region** on macOS: `Ctrl+Shift+2` or the tray menu selects the last region again, so Enter copies it.
 - **Annotation tools:** Select, Text, Arrow, Ellipse, Rectangle, Pen, Pen Arrow, Highlight, Blur, Redact, Crop, Numbered Step, Eraser, Eyedropper.
 - **Overlay OCR** via on-device native OCR (Apple Vision on macOS, Windows Media OCR on Windows — 100% offline, no cloud).

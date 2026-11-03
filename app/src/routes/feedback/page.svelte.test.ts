@@ -6,7 +6,10 @@ const h = vi.hoisted(() => ({
   listeners: new Map<string, (e: { payload: unknown }) => void>(),
 }));
 
-vi.mock("@tauri-apps/api/core", () => ({ invoke: h.invoke }));
+vi.mock("@tauri-apps/api/core", () => ({
+  invoke: h.invoke,
+  convertFileSrc: (p: string) => `asset://localhost/${encodeURIComponent(p)}`,
+}));
 vi.mock("@tauri-apps/api/event", () => ({
   listen: (event: string, cb: (e: { payload: unknown }) => void) => {
     h.listeners.set(event, cb);
@@ -17,14 +20,94 @@ vi.mock("@tauri-apps/api/event", () => ({
 import FeedbackPage from "./+page.svelte";
 import { en } from "$lib/i18n/en";
 
-function show(payload: { message: string; kind: string; path: string | null }) {
+function show(payload: { message: string; kind: string; path: string | null; preview?: string | null }) {
   h.listeners.get("feedback-show")!({ payload });
+}
+
+async function showThumbnail(path: string | null = null) {
+  render(FeedbackPage);
+  await waitFor(() => expect(h.listeners.has("feedback-show")).toBe(true));
+  show({ message: en.toasts.copied, kind: "ok", path, preview: "/tmp/eisen/preview/a.png" });
+  return screen.findByRole("button", { name: en.feedback.openInEditor });
 }
 
 beforeEach(() => {
   h.invoke.mockReset();
   h.invoke.mockResolvedValue(undefined);
   h.listeners.clear();
+});
+
+describe("floating thumbnail", () => {
+  it("shows the kept image", async () => {
+    const preview = await showThumbnail();
+    expect(preview.querySelector("img")?.getAttribute("src")).toContain(
+      encodeURIComponent("/tmp/eisen/preview/a.png"),
+    );
+    expect(screen.getByText(en.toasts.copied)).toBeTruthy();
+  });
+
+  it("opens the editor on click, then hides", async () => {
+    await fireEvent.click(await showThumbnail());
+    await waitFor(() =>
+      expect(h.invoke).toHaveBeenCalledWith("cmd_open_in_editor", { path: "/tmp/eisen/preview/a.png" }),
+    );
+    await waitFor(() => expect(h.invoke).toHaveBeenCalledWith("cmd_hide_feedback"));
+  });
+
+  it("stays open when the editor cannot open", async () => {
+    const preview = await showThumbnail();
+    h.invoke.mockRejectedValueOnce("a capture is in progress");
+    await fireEvent.click(preview);
+    expect(await screen.findByText("a capture is in progress")).toBeTruthy();
+    expect(h.invoke).not.toHaveBeenCalledWith("cmd_hide_feedback");
+  });
+
+  it("dismisses from the close control", async () => {
+    await showThumbnail();
+    await fireEvent.click(screen.getByRole("button", { name: en.feedback.dismiss }));
+    await waitFor(() => expect(h.invoke).toHaveBeenCalledWith("cmd_hide_feedback"));
+    expect(h.invoke).not.toHaveBeenCalledWith("cmd_open_in_editor", expect.anything());
+  });
+
+  it("still offers Show in folder for a saved capture", async () => {
+    await showThumbnail("/tmp/a.png");
+    await fireEvent.click(screen.getByRole("button", { name: en.feedback.reveal }));
+    await waitFor(() =>
+      expect(h.invoke).toHaveBeenCalledWith("cmd_reveal_path", { path: "/tmp/a.png" }),
+    );
+  });
+
+  it("starts a drag past the threshold, not on a small wobble", async () => {
+    const preview = await showThumbnail();
+    await fireEvent.pointerDown(preview, { button: 0, clientX: 10, clientY: 10 });
+    await fireEvent.pointerMove(preview, { clientX: 12, clientY: 11 });
+    expect(h.invoke).not.toHaveBeenCalledWith("cmd_start_preview_drag");
+    await fireEvent.pointerMove(preview, { clientX: 20, clientY: 10 });
+    expect(h.invoke).toHaveBeenCalledWith("cmd_start_preview_drag");
+    expect(h.invoke.mock.calls.filter(([cmd]) => cmd === "cmd_start_preview_drag")).toHaveLength(1);
+  });
+
+  it("does not dismiss while hovered or dragged, and resumes after the drag", async () => {
+    const preview = await showThumbnail();
+    vi.useFakeTimers();
+    try {
+      await fireEvent.pointerEnter(preview.parentElement!);
+      vi.advanceTimersByTime(60_000);
+      expect(h.invoke).not.toHaveBeenCalledWith("cmd_hide_feedback");
+
+      await fireEvent.pointerDown(preview, { button: 0, clientX: 10, clientY: 10 });
+      await fireEvent.pointerMove(preview, { clientX: 30, clientY: 10 });
+      await fireEvent.pointerLeave(preview.parentElement!);
+      vi.advanceTimersByTime(60_000);
+      expect(h.invoke).not.toHaveBeenCalledWith("cmd_hide_feedback");
+
+      h.listeners.get("feedback-drag-ended")!({ payload: null });
+      vi.advanceTimersByTime(60_000);
+      expect(h.invoke).toHaveBeenCalledWith("cmd_hide_feedback");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });
 
 describe("feedback window", () => {

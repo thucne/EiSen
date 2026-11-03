@@ -64,6 +64,7 @@ export const vi: Dict = {
     choose: "Chọn…",
     launchAtLogin: "Tự động khởi động",
     playSounds: "Âm thanh thông báo",
+    showThumbnail: "Ảnh xem trước nổi",
     penSmoothing: "Độ mượt nét vẽ",
     penSmoothingHelp: "Giảm rung tay cho bút và bút highlight. Áp dụng cho nét vẽ mới",
     penSmoothingOff: "Tắt",
@@ -83,6 +84,7 @@ export const vi: Dict = {
     hotkeyHelp: "Phím tắt toàn cục để chụp màn hình",
     launchHelp: "Tự động mở EiSen trên khay hệ thống khi khởi động máy",
     playSoundsHelp: "Phát âm thanh khi chụp màn hình, copy và lưu ảnh",
+    showThumbnailHelp: "Hiện ảnh xem trước sau mỗi lần chụp. Bấm để sửa, hoặc kéo sang app khác",
     resetTitle: "Đặt lại cấu hình",
     resetHelp: "Khôi phục tuỳ chọn và phím tắt mặc định",
     loading: "Đang tải cài đặt...",
@@ -113,6 +115,8 @@ export const vi: Dict = {
   },
   feedback: {
     reveal: "Hiện trong thư mục",
+    openInEditor: "Mở trong trình sửa",
+    dismiss: "Đóng",
   },
   hub: {
     tagline: "Chụp màn hình nhanh cho Mac & Windows",

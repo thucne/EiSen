@@ -19,6 +19,7 @@ export interface AppConfig {
   launch_at_login: boolean;
   hotkey: HotkeyPreset;
   play_sounds: boolean;
+  show_thumbnail: boolean;
   pen_smoothing: PenSmoothing;
 }
 
@@ -57,6 +58,10 @@ export async function showFeedback(
 
 export function hideFeedback(): Promise<void> {
   return invoke("cmd_hide_feedback");
+}
+
+export function startPreviewDrag(): Promise<void> {
+  return invoke("cmd_start_preview_drag");
 }
 
 export function revealPath(path: string): Promise<void> {

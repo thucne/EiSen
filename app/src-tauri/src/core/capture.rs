@@ -145,6 +145,10 @@ pub struct CaptureOrchestrator {
     /// Editor window was visible and has been hidden for an in-flight capture.
     editor_suspended: AtomicBool,
     last_region: Mutex<Option<LastRegion>>,
+    /// Copy of the latest result for the floating thumbnail. The capture it
+    /// came from is deleted by the next `start`, and a drop target may still
+    /// be reading this one.
+    preview: Mutex<Option<PathBuf>>,
 }
 
 impl CaptureOrchestrator {
@@ -159,6 +163,7 @@ impl CaptureOrchestrator {
             editor_pin: Mutex::new(None),
             editor_suspended: AtomicBool::new(false),
             last_region: Mutex::new(None),
+            preview: Mutex::new(None),
         }
     }
 
@@ -200,6 +205,32 @@ impl CaptureOrchestrator {
 
     pub fn active_geometry(&self) -> Option<DisplayGeometry> {
         self.provider.active_geometry()
+    }
+
+    pub fn preview(&self) -> Option<PathBuf> {
+        self.preview.lock().unwrap_or_else(|e| e.into_inner()).clone()
+    }
+
+    /// Keep `bytes` as the thumbnail image, replacing the previous one. It is
+    /// named like a saved capture because a drag hands this file to other apps.
+    pub fn keep_preview(&self, bytes: &[u8]) -> Result<(), String> {
+        let dir = preview_dir();
+        std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+        let path = crate::domain::naming::unique_path(&dir, &crate::domain::naming::default_filename());
+        std::fs::write(&path, bytes).map_err(|e| e.to_string())?;
+        restrict_permissions(&path);
+        let old = self.preview.lock().unwrap_or_else(|e| e.into_inner()).replace(path);
+        if let Some(old) = old {
+            let _ = std::fs::remove_file(old);
+        }
+        Ok(())
+    }
+
+    pub fn clear_preview(&self) {
+        let old = self.preview.lock().unwrap_or_else(|e| e.into_inner()).take();
+        if let Some(old) = old {
+            let _ = std::fs::remove_file(old);
+        }
     }
 
     pub fn start(&self) -> Result<CaptureHandle, CaptureError> {
@@ -569,6 +600,7 @@ fn begin_capture_on(
     if let Some(feedback) = app.get_webview_window("feedback") {
         let _ = feedback.hide();
     }
+    orchestrator.clear_preview();
     let mut editor_hold = EditorHold {
         app: app.clone(),
         orchestrator: (*orchestrator).clone(),
@@ -803,6 +835,10 @@ pub(crate) fn temp_capture_path(kind: &str) -> PathBuf {
 
 static TEMP_SEQ: AtomicU64 = AtomicU64::new(0);
 
+fn preview_dir() -> PathBuf {
+    crate::domain::path_guard::session_temp_dir().join("preview")
+}
+
 pub(crate) fn sweep_eisen_pngs(dir: &Path) {
     if let Ok(entries) = std::fs::read_dir(dir) {
         for entry in entries.flatten() {
@@ -820,6 +856,7 @@ pub(crate) fn sweep_eisen_pngs(dir: &Path) {
 /// removes matching names in `$TMPDIR` itself so upgrades from builds that
 /// wrote session PNGs next to the eisen directory do not leave leftovers.
 pub fn cleanup_stale_temp_files() {
+    let _ = std::fs::remove_dir_all(preview_dir());
     sweep_eisen_pngs(&crate::domain::path_guard::session_temp_dir());
     sweep_eisen_pngs(&std::env::temp_dir());
 }
@@ -927,6 +964,27 @@ mod tests {
             width: 50.0,
             height: 40.0,
         }
+    }
+
+    #[test]
+    fn preview_outlives_the_capture_it_came_from_until_cleared() {
+        let o = CaptureOrchestrator::new(StubProvider::new());
+        o.start().unwrap();
+        let session = o.finish(region()).unwrap();
+        let bytes = std::fs::read(&session.path).unwrap();
+        o.keep_preview(&bytes).unwrap();
+        let first = o.preview().unwrap();
+        o.start().unwrap();
+        assert!(!session.path.exists(), "start deletes the previous capture");
+        assert!(first.is_file(), "the preview must survive that cleanup");
+
+        o.keep_preview(&bytes).unwrap();
+        let second = o.preview().unwrap();
+        assert!(!first.exists(), "a new preview replaces the old file");
+        o.clear_preview();
+        assert!(!second.exists());
+        assert_eq!(o.preview(), None);
+        o.cancel();
     }
 
     #[test]

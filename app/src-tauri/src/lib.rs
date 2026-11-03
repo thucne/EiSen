@@ -333,6 +333,7 @@ async fn cmd_copy_editor(
     let app_for_copy = app.clone();
     tauri::async_runtime::spawn_blocking(move || {
         let bytes = std::fs::read(&path).map_err(|e| format!("failed to read capture image: {e}"))?;
+        keep_preview(&app_for_copy, &bytes);
         output::copy_image(&app_for_copy, &bytes).map_err(|e| e.to_string())
     })
     .await
@@ -349,8 +350,10 @@ async fn cmd_save_editor(
 ) -> Result<SaveResult, String> {
     let path = editor_pin_path(orchestrator.inner())?;
     let dir = app_config(&app).save_dir;
+    let app_for_preview = app.clone();
     let saved = tauri::async_runtime::spawn_blocking(move || {
         let bytes = std::fs::read(&path).map_err(|e| format!("failed to read capture image: {e}"))?;
+        keep_preview(&app_for_preview, &bytes);
         output::save_image(&dir, &naming::default_filename(), &bytes).map_err(|e| e.to_string())
     })
     .await
@@ -371,6 +374,7 @@ async fn cmd_copy_and_save_editor(
     let app_for_copy = app.clone();
     let saved = tauri::async_runtime::spawn_blocking(move || {
         let bytes = std::fs::read(&path).map_err(|e| format!("failed to read capture image: {e}"))?;
+        keep_preview(&app_for_copy, &bytes);
         output::copy_image(&app_for_copy, &bytes).map_err(|e| e.to_string())?;
         output::save_image(&dir, &naming::default_filename(), &bytes).map_err(|e| e.to_string())
     })
@@ -616,6 +620,7 @@ async fn cmd_copy(
     let app_for_copy = app.clone();
     tauri::async_runtime::spawn_blocking(move || {
         let bytes = std::fs::read(&path).map_err(|e| format!("failed to read capture image: {e}"))?;
+        keep_preview(&app_for_copy, &bytes);
         output::copy_image(&app_for_copy, &bytes).map_err(|e| e.to_string())
     })
     .await
@@ -652,8 +657,10 @@ async fn cmd_save(
         .last()
         .ok_or_else(|| "no capture in progress; commit a region first".to_string())?;
     let dir = app_config(&app).save_dir;
+    let app_for_preview = app.clone();
     let saved = tauri::async_runtime::spawn_blocking(move || {
         let bytes = std::fs::read(&path).map_err(|e| format!("failed to read capture image: {e}"))?;
+        keep_preview(&app_for_preview, &bytes);
         output::save_image(&dir, &naming::default_filename(), &bytes).map_err(|e| e.to_string())
     })
     .await
@@ -678,6 +685,7 @@ async fn cmd_copy_and_save(
     let app_for_copy = app.clone();
     let saved = tauri::async_runtime::spawn_blocking(move || {
         let bytes = std::fs::read(&path).map_err(|e| format!("failed to read capture image: {e}"))?;
+        keep_preview(&app_for_copy, &bytes);
         output::copy_image(&app_for_copy, &bytes).map_err(|e| e.to_string())?;
         output::save_image(&dir, &naming::default_filename(), &bytes).map_err(|e| e.to_string())
     })
@@ -693,6 +701,7 @@ async fn cmd_copy_and_save(
 async fn cmd_copy_bytes(app: tauri::AppHandle, bytes: Vec<u8>) -> Result<(), String> {
     let app_for_copy = app.clone();
     tauri::async_runtime::spawn_blocking(move || {
+        keep_preview(&app_for_copy, &bytes);
         output::copy_image(&app_for_copy, &bytes).map_err(|e| e.to_string())
     })
     .await
@@ -705,7 +714,9 @@ async fn cmd_copy_bytes(app: tauri::AppHandle, bytes: Vec<u8>) -> Result<(), Str
 #[tauri::command]
 async fn cmd_save_bytes(app: tauri::AppHandle, bytes: Vec<u8>) -> Result<SaveResult, String> {
     let dir = app_config(&app).save_dir;
+    let app_for_preview = app.clone();
     let saved = tauri::async_runtime::spawn_blocking(move || {
+        keep_preview(&app_for_preview, &bytes);
         output::save_image(&dir, &naming::default_filename(), &bytes).map_err(|e| e.to_string())
     })
     .await
@@ -724,6 +735,7 @@ async fn cmd_copy_and_save_bytes(
     let dir = app_config(&app).save_dir;
     let app_for_copy = app.clone();
     let saved = tauri::async_runtime::spawn_blocking(move || {
+        keep_preview(&app_for_copy, &bytes);
         output::copy_image(&app_for_copy, &bytes).map_err(|e| e.to_string())?;
         output::save_image(&dir, &naming::default_filename(), &bytes).map_err(|e| e.to_string())
     })
@@ -859,11 +871,77 @@ fn feedback_position(mon_x: f64, mon_y: f64, mon_width: f64, width: f64, inset: 
     (mon_x + (mon_width - width) / 2.0, mon_y + inset)
 }
 
+const THUMBNAIL_MAX_IMAGE: (f64, f64) = (280.0, 180.0);
+const THUMBNAIL_MIN_IMAGE: (f64, f64) = (220.0, 72.0);
+/// Message row under the image, plus the card's 6 px inset on each side.
+const THUMBNAIL_CHROME: (f64, f64) = (12.0, 56.0);
+const THUMBNAIL_SCREEN_MARGIN: f64 = 14.0;
+
+/// Window size for a thumbnail of a `width` × `height` px image.
+fn thumbnail_window_size(width: f64, height: f64) -> (f64, f64) {
+    let (max_w, max_h) = THUMBNAIL_MAX_IMAGE;
+    let (min_w, min_h) = THUMBNAIL_MIN_IMAGE;
+    let fit = (max_w / width.max(1.0)).min(max_h / height.max(1.0)).min(1.0);
+    (
+        (width * fit).max(min_w) + THUMBNAIL_CHROME.0,
+        (height * fit).max(min_h) + THUMBNAIL_CHROME.1,
+    )
+}
+
+/// Top-left of the thumbnail window: the bottom-right corner of the work area.
+fn thumbnail_position(area: (f64, f64, f64, f64), size: (f64, f64), margin: f64) -> (f64, f64) {
+    let (x, y, width, height) = area;
+    (x + width - size.0 - margin, y + height - size.1 - margin)
+}
+
+/// The floating thumbnail is macOS-only until Windows has verification evidence.
+fn thumbnail_enabled(app: &tauri::AppHandle) -> bool {
+    cfg!(target_os = "macos") && app_config(app).show_thumbnail
+}
+
+/// Keep an exported image for the thumbnail. Failing only costs the preview:
+/// the plain confirmation still appears.
+fn keep_preview(app: &tauri::AppHandle, bytes: &[u8]) {
+    if !thumbnail_enabled(app) {
+        return;
+    }
+    if let Err(e) = app.state::<Arc<CaptureOrchestrator>>().keep_preview(bytes) {
+        eprintln!("[eisen] thumbnail preview failed: {e}");
+    }
+}
+
 #[derive(Clone, serde::Serialize)]
 struct FeedbackPayload {
     message: String,
     kind: String,
     path: Option<String>,
+    preview: Option<String>,
+}
+
+fn place_thumbnail_window(
+    app: &tauri::AppHandle,
+    window: &tauri::WebviewWindow,
+    image: &std::path::Path,
+) {
+    let Some(mon) = captured_monitor(app).ok().flatten() else {
+        return;
+    };
+    let (width, height) = capture::png_dimensions(image).unwrap_or((1, 1));
+    let size = thumbnail_window_size(width as f64, height as f64);
+    let scale = mon.scale_factor();
+    let work = mon.work_area();
+    let (x, y) = thumbnail_position(
+        (
+            work.position.x as f64 / scale,
+            work.position.y as f64 / scale,
+            work.size.width as f64 / scale,
+            work.size.height as f64 / scale,
+        ),
+        size,
+        THUMBNAIL_SCREEN_MARGIN,
+    );
+    let _ = window.set_size(tauri::LogicalSize::new(size.0, size.1));
+    let _ = window.set_position(tauri::LogicalPosition::new(x, y));
 }
 
 fn place_feedback_window(app: &tauri::AppHandle, window: &tauri::WebviewWindow) {
@@ -908,9 +986,21 @@ fn cmd_show_feedback(
     let window = app
         .get_webview_window("feedback")
         .ok_or_else(|| "feedback window is unavailable".to_string())?;
-    place_feedback_window(&app, &window);
+    let preview = if kind == "ok" {
+        app.state::<Arc<CaptureOrchestrator>>().preview()
+    } else {
+        None
+    };
+    match &preview {
+        Some(image) => place_thumbnail_window(&app, &window, image),
+        None => {
+            let _ = window.set_size(tauri::LogicalSize::new(FEEDBACK_WIDTH, FEEDBACK_HEIGHT));
+            place_feedback_window(&app, &window);
+        }
+    }
+    let preview = preview.map(|image| image.to_string_lossy().into_owned());
     window
-        .emit("feedback-show", FeedbackPayload { message, kind, path })
+        .emit("feedback-show", FeedbackPayload { message, kind, path, preview })
         .map_err(|e| e.to_string())?;
     #[cfg(target_os = "macos")]
     platform::mac_adapter::show_without_activation(&window);
@@ -923,6 +1013,35 @@ fn cmd_show_feedback(
 fn cmd_hide_feedback(app: tauri::AppHandle) {
     if let Some(window) = app.get_webview_window("feedback") {
         let _ = window.hide();
+    }
+    app.state::<Arc<CaptureOrchestrator>>().clear_preview();
+}
+
+/// Start dragging the thumbnail's image out to another app.
+#[tauri::command]
+fn cmd_start_preview_drag(app: tauri::AppHandle) -> Result<(), String> {
+    #[cfg(target_os = "macos")]
+    {
+        let image = app
+            .state::<Arc<CaptureOrchestrator>>()
+            .preview()
+            .ok_or_else(|| "no thumbnail to drag".to_string())?;
+        let window = app
+            .get_webview_window("feedback")
+            .ok_or_else(|| "feedback window is unavailable".to_string())?;
+        let app_for_drag = app.clone();
+        app.run_on_main_thread(move || {
+            if let Err(e) = platform::mac_adapter::start_file_drag(&app_for_drag, &window, &image) {
+                eprintln!("[eisen] thumbnail drag failed: {e}");
+                let _ = window.emit("feedback-drag-ended", ());
+            }
+        })
+        .map_err(|e| e.to_string())
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        let _ = app;
+        Err("dragging a thumbnail is only supported on macOS".to_string())
     }
 }
 
@@ -1148,6 +1267,7 @@ builder
             cmd_play_sound,
             cmd_show_feedback,
             cmd_hide_feedback,
+            cmd_start_preview_drag,
             cmd_reveal_path
         ])
         .run(tauri::generate_context!())
@@ -1157,6 +1277,25 @@ builder
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn thumbnail_window_fits_the_image_without_upscaling() {
+        // A wide image is limited by the maximum width.
+        assert_eq!(thumbnail_window_size(2800.0, 1000.0), (292.0, 156.0));
+        // A tall image is limited by the maximum height, and the row keeps its width.
+        assert_eq!(thumbnail_window_size(500.0, 1800.0), (232.0, 236.0));
+        // A small image keeps its size, within the minimum card.
+        assert_eq!(thumbnail_window_size(240.0, 100.0), (252.0, 156.0));
+        assert_eq!(thumbnail_window_size(20.0, 10.0), (232.0, 128.0));
+    }
+
+    #[test]
+    fn thumbnail_sits_in_the_bottom_right_of_the_work_area() {
+        assert_eq!(
+            thumbnail_position((1440.0, 25.0, 1920.0, 1055.0), (292.0, 156.0), 14.0),
+            (3054.0, 910.0)
+        );
+    }
 
     #[test]
     fn feedback_window_centers_on_its_monitor_near_the_top() {
