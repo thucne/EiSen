@@ -31,9 +31,9 @@ export const en = {
     downloadMac: "Download for Mac",
     downloadWin: "Get from Microsoft Store",
     windowsFallback: "Need a direct download? Use the unsigned .exe fallback",
-    switchToWin: "On Windows? Get EiSen 0.2 from the Microsoft Store",
+    switchToWin: "On Windows? Get EiSen from the Microsoft Store",
     switchToMac: "On a Mac? Download EiSen 1.0",
-    windowsNote: "Windows is on version 0.2. Redact, the floating thumbnail, and capture previous region are Mac only until they are verified on Windows.",
+    windowsNote: "EiSen 1.0 is rolling out gradually in the Microsoft Store, so you may still get 0.2 for a while. The floating thumbnail and capture previous region are Mac only.",
     windowsWarning: "The Microsoft Store version is the recommended Windows install and receives Store-managed updates. The direct .exe fallback is unsigned, so SmartScreen may show Unknown publisher or Windows protected your PC, and managed devices may block it. Verify the SHA-256 sidecar on GitHub Releases before running.",
     githubCta: "View source",
     requirements: "Version 1.0.0 • macOS 11 or later • Apple Silicon",
@@ -144,7 +144,7 @@ export const en = {
     items: [
       {
         q: "Does EiSen support both macOS and Windows?",
-        a: "Yes, but they are on different versions. EiSen 1.0 is for macOS 11 or later, with an Apple Silicon download. Windows 10 and 11 (64-bit) stay on version 0.2 through the Microsoft Store until the new features are verified there, so Redact, Crop, the floating thumbnail, and capture previous region are Mac only for now.",
+        a: "Yes. EiSen 1.0 is for macOS 11 or later, with an Apple Silicon download, and for 64-bit Windows 10 and 11 through the Microsoft Store. It is rolling out gradually on Windows, so you may still get 0.2 for a while. The floating thumbnail and capture previous region are Mac only.",
       },
       {
         q: "Why is EiSen Mac first?",
@@ -196,8 +196,8 @@ export const en = {
     buttonWin: "Get from Microsoft Store",
     buttonWinDirect: "Use unsigned direct .exe fallback",
     detailsMac: "Version 1.0.0 • macOS 11 or later • Apple Silicon",
-    detailsWin: "Version 0.2.5 direct installer • Windows 10/11 (64-bit) • The Store manages its own version",
-    windowsSummary: "On Windows? EiSen 0.2 is in the Microsoft Store",
+    detailsWin: "Microsoft Store: version 1.0, rolling out gradually • Direct installer: version 0.2.5 • Windows 10/11 (64-bit)",
+    windowsSummary: "On Windows? EiSen is in the Microsoft Store",
     windowsWarningTitle: "Windows direct-download note",
     windowsWarning: "The Microsoft Store version is the recommended Windows install and receives Store-managed updates. The direct NSIS .exe fallback is unsigned, so SmartScreen may show Unknown publisher or Windows protected your PC, and managed devices may block it. Verify the SHA-256 sidecar on GitHub Releases before running.",
     viewGithub: "All releases on GitHub",
@@ -217,11 +217,11 @@ export const en = {
     subtitle: "EiSen gives you PrintScreen capture with an automatic Ctrl + Shift + 5 fallback, step numbering, blur, and native on-device Windows OCR — distributed through the Microsoft Store.",
     downloadCta: "Get from Microsoft Store",
     directDownloadCta: "Download direct .exe (fallback)",
-    downloadSub: "v0.2.5 • Windows 10 / 11 (64-bit) • Microsoft Store • Direct unsigned NSIS fallback",
+    downloadSub: "v1.0 in the Microsoft Store, rolling out gradually • Windows 10 / 11 (64-bit) • Direct unsigned NSIS fallback: v0.2.5",
     installWarningTitle: "Windows direct-download note",
     installWarning: "The Microsoft Store version is the recommended Windows install and receives Store-managed updates. The direct NSIS .exe fallback is unsigned, so Windows SmartScreen may show Unknown publisher or Windows protected your PC, and managed devices may block it. Verify the SHA-256 sidecar on GitHub Releases before running.",
     whyTitle: "Why use EiSen on Windows",
-    whySubtitle: "Version 0.2 on Windows: capture, annotate, and OCR, all on your own computer.",
+    whySubtitle: "Capture, annotate, and OCR, all on your own computer.",
     cards: [
       {
         icon: "⚡",

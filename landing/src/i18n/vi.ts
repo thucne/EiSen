@@ -31,9 +31,9 @@ export const vi = {
     downloadMac: "Tải cho Mac",
     downloadWin: "Tải từ Microsoft Store",
     windowsFallback: "Cần tải trực tiếp? Dùng bản .exe dự phòng chưa ký số",
-    switchToWin: "Dùng Windows? Tải EiSen 0.2 từ Microsoft Store",
+    switchToWin: "Dùng Windows? Tải EiSen từ Microsoft Store",
     switchToMac: "Dùng Mac? Tải EiSen 1.0",
-    windowsNote: "Windows đang ở phiên bản 0.2. Che đặc, ảnh xem trước nổi và chụp lại vùng trước hiện chỉ có trên Mac, cho tới khi được kiểm chứng trên Windows.",
+    windowsNote: "EiSen 1.0 đang được phát hành dần trên Microsoft Store, nên có thể bạn vẫn nhận bản 0.2 thêm một thời gian. Ảnh xem trước nổi và chụp lại vùng trước chỉ có trên Mac.",
     windowsWarning: "Bản Microsoft Store là lựa chọn cài đặt chính cho Windows và được Store tự quản lý cập nhật. Bản .exe trực tiếp chỉ là fallback chưa ký số; SmartScreen có thể báo Unknown publisher hoặc Windows protected your PC, và máy công ty có thể chặn. Hãy kiểm tra sidecar SHA-256 trên GitHub Releases trước khi chạy.",
     githubCta: "Xem mã nguồn",
     requirements: "Phiên bản 1.0.0 • macOS 11 trở lên • Apple Silicon",
@@ -144,7 +144,7 @@ export const vi = {
     items: [
       {
         q: "EiSen hỗ trợ những hệ điều hành nào?",
-        a: "Cả macOS và Windows, nhưng khác phiên bản. EiSen 1.0 dành cho macOS 11 trở lên, bản tải về cho Apple Silicon. Windows 10 và 11 (64-bit) vẫn ở phiên bản 0.2 trên Microsoft Store cho tới khi các tính năng mới được kiểm chứng, nên Che đặc, Cắt ảnh, ảnh xem trước nổi và chụp lại vùng trước hiện chỉ có trên Mac.",
+        a: "Có. EiSen 1.0 dành cho macOS 11 trở lên, bản tải về cho Apple Silicon, và cho Windows 10 và 11 (64-bit) qua Microsoft Store. Trên Windows, bản này đang được phát hành dần, nên có thể bạn vẫn nhận bản 0.2 thêm một thời gian. Ảnh xem trước nổi và chụp lại vùng trước chỉ có trên Mac.",
       },
       {
         q: "Vì sao EiSen ưu tiên Mac?",
@@ -196,8 +196,8 @@ export const vi = {
     buttonWin: "Tải từ Microsoft Store",
     buttonWinDirect: "Dùng bản .exe trực tiếp chưa ký số",
     detailsMac: "Phiên bản 1.0.0 • macOS 11 trở lên • Apple Silicon",
-    detailsWin: "Bộ cài trực tiếp phiên bản 0.2.5 • Windows 10/11 (64-bit) • Store tự quản lý phiên bản",
-    windowsSummary: "Dùng Windows? EiSen 0.2 có trên Microsoft Store",
+    detailsWin: "Microsoft Store: phiên bản 1.0, đang phát hành dần • Bộ cài trực tiếp: phiên bản 0.2.5 • Windows 10/11 (64-bit)",
+    windowsSummary: "Dùng Windows? EiSen có trên Microsoft Store",
     windowsWarningTitle: "Lưu ý bản tải trực tiếp cho Windows",
     windowsWarning: "Bản Microsoft Store là lựa chọn cài đặt chính cho Windows và được Store tự quản lý cập nhật. Bản NSIS .exe trực tiếp chỉ là fallback chưa ký số; SmartScreen có thể hiển thị Unknown publisher hoặc Windows protected your PC, máy công ty có thể chặn. Hãy kiểm tra sidecar SHA-256 trên GitHub Releases trước khi chạy.",
     viewGithub: "Tất cả bản phát hành trên GitHub",
@@ -217,11 +217,11 @@ export const vi = {
     subtitle: "EiSen cho bạn chụp bằng phím PrtScn với Ctrl + Shift + 5 dự phòng tự động, đánh số bước hướng dẫn, làm mờ bảo mật và nhận diện chữ Windows OCR trên máy — được phân phối qua Microsoft Store.",
     downloadCta: "Tải từ Microsoft Store",
     directDownloadCta: "Tải bản .exe trực tiếp (fallback)",
-    downloadSub: "v0.2.5 • Windows 10 / 11 (64-bit) • Microsoft Store • Bản NSIS .exe trực tiếp chưa ký số",
+    downloadSub: "v1.0 trên Microsoft Store, đang phát hành dần • Windows 10 / 11 (64-bit) • Bản NSIS .exe trực tiếp chưa ký số: v0.2.5",
     installWarningTitle: "Lưu ý bản tải trực tiếp cho Windows",
     installWarning: "Bản Microsoft Store là lựa chọn cài đặt chính cho Windows và được Store tự quản lý cập nhật. Bản NSIS .exe trực tiếp chỉ là fallback chưa ký số; Windows SmartScreen có thể hiển thị Unknown publisher hoặc Windows protected your PC, máy công ty có thể chặn. Hãy kiểm tra sidecar SHA-256 trên GitHub Releases trước khi chạy.",
     whyTitle: "Vì sao nên dùng EiSen trên Windows",
-    whySubtitle: "Phiên bản 0.2 trên Windows: chụp, chú thích và OCR, tất cả ngay trên máy của bạn.",
+    whySubtitle: "Chụp, chú thích và OCR, tất cả ngay trên máy của bạn.",
     cards: [
       {
         icon: "⚡",
