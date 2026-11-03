@@ -3,6 +3,7 @@ import Layout from '../../layouts/Layout.astro';
 import WindowsIcon from '../../components/WindowsIcon.astro';
 import AppleIcon from '../../components/AppleIcon.astro';
 import GithubIcon from '../../components/GithubIcon.astro';
+import MacFirstNote from '../../components/MacFirstNote.astro';
 import { exeDownloadPath, githubUrl, microsoftStoreUrl } from '../../i18n/utils';
 import { vi } from '../../i18n/vi';
 
@@ -12,48 +13,11 @@ const description = t.meta.description;
 const canonicalUrl = 'https://eisen.a302.link/vi/windows';
 
 const comparisonRows = [
-  {
-    feature: 'Chi phí & Bản quyền',
-    eisen: '100% Miễn phí trọn đời (MIT Open Source)',
-    snipping: 'Miễn phí (Tích hợp sẵn)',
-    sharex: 'Miễn phí (Donation / Phức tạp)',
-  },
-  {
-    feature: 'Dung lượng gói cài & bộ nhớ',
-    eisen: 'Kích thước gói Store thay đổi; RAM tùy tác vụ',
-    snipping: 'Tích hợp hệ thống',
-    sharex: 'Thay đổi theo cấu hình và runtime tùy chọn',
-  },
-  {
-    feature: 'Bảo mật & Quyền riêng tư',
-    eisen: '100% Ngoại tuyến (Không cloud, không theo dõi)',
-    snipping: 'Có gửi dữ liệu chẩn đoán của Windows',
-    sharex: 'Dễ vô tình upload ảnh lên web công khai',
-  },
-  {
-    feature: 'Nhận diện chữ OCR trên máy',
-    eisen: 'Windows.Media.Ocr native (WinRT offline)',
-    snipping: 'Cơ bản (Chỉ có trên Windows 11)',
-    sharex: 'Cần cấu hình Tesseract / API bên ngoài',
-  },
-  {
-    feature: 'Chạy trên khay hệ thống (System Tray)',
-    eisen: 'Chạy nền trong System Tray',
-    snipping: 'Dạng cửa sổ ứng dụng riêng',
-    sharex: 'Có, nhưng menu hơn 100 mục rối mắt',
-  },
-  {
-    feature: 'Trải nghiệm công cụ chú thích',
-    eisen: 'Bộ công cụ kính mờ hiện đại & bước số tự tăng',
-    snipping: 'Chỉ có vẽ bút dạ và cắt cơ bản',
-    sharex: 'Giao diện chỉnh sửa phức tạp, khó dùng',
-  },
-  {
-    feature: 'Quyền hạn khi cài đặt',
-    eisen: 'Bộ cài Per-User (Không cần quyền Admin)',
-    snipping: 'Hệ thống',
-    sharex: 'Tùy thuộc phiên bản',
-  },
+  { feature: 'Giá', eisen: 'Miễn phí', snipping: 'Có sẵn trong Windows', sharex: 'Miễn phí' },
+  { feature: 'Mã nguồn', eisen: 'Mở (MIT)', snipping: 'Đóng', sharex: 'Mở' },
+  { feature: 'Tải lên và chia sẻ', eisen: 'Không có: ảnh ở lại trên máy bạn', snipping: 'Không có sẵn', sharex: 'Nhiều đích tải lên' },
+  { feature: 'OCR trên máy', eisen: 'Windows.Media.Ocr gốc', snipping: 'Text actions trên Windows 11', sharex: 'Có công cụ OCR' },
+  { feature: 'Quay màn hình', eisen: 'Không', snipping: 'Có trên Windows 11', sharex: 'Có, kể cả GIF' },
 ];
 
 const faqs = [
@@ -86,6 +50,10 @@ const faqs = [
   description={description}
   canonicalUrl={canonicalUrl}
 >
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
+    <MacFirstNote locale="vi" />
+  </div>
+
   <!-- Hero Section -->
   <section class="relative pt-12 pb-16 sm:pt-16 sm:pb-24 overflow-hidden">
     <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -98,7 +66,7 @@ const faqs = [
 
         <h1 class="text-3xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight text-white leading-[1.15] sm:leading-[1.1]">
           {t.titleStart}{' '}
-          <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-blue-400 to-indigo-400">
+          <span class="text-zinc-50">
             {t.titleHighlight}
           </span>{' '}
           {t.titleEnd}

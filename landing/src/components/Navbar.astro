@@ -1,6 +1,6 @@
 ---
 import type { Locale } from '../i18n/utils';
-import { getDictionary, getLocalizedPath, appVersion, dmgDownloadPath, microsoftStoreUrl } from '../i18n/utils';
+import { getDictionary, getLocalizedPath, dmgDownloadPath, githubUrl, microsoftStoreUrl } from '../i18n/utils';
 import AppleIcon from './AppleIcon.astro';
 import WindowsIcon from './WindowsIcon.astro';
 import GithubIcon from './GithubIcon.astro';
@@ -16,59 +16,53 @@ const currentPath = Astro.url.pathname;
 const targetLocale: Locale = locale === 'en' ? 'vi' : 'en';
 const switchPath = getLocalizedPath(currentPath, targetLocale);
 
+const homePath = locale === 'vi' ? '/vi/' : '/';
 const windowsPath = locale === 'vi' ? '/vi/windows' : '/windows';
+const changelogPath = locale === 'vi' ? '/vi/changelog' : '/changelog';
 ---
 
-<header class="sticky top-0 z-50 w-full backdrop-blur-xl bg-[#0f1015]/80 border-b border-white/10 transition-colors">
-  <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-14 sm:h-16 flex items-center justify-between">
-    <!-- Logo & Brand with Official Logo Asset -->
-    <a href={locale === 'vi' ? '/vi/' : '/'} class="flex items-center gap-2 group focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded-lg p-1 shrink-0">
+<header class="sticky top-0 z-50 w-full bg-[#0f1015] border-b border-white/10">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-14 sm:h-16 flex items-center justify-between gap-4">
+    <a href={homePath} class="rounded-lg shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-300">
       <img
         src="/brand/eisen-horizontal-reversed.svg"
-        alt="EiSen Logo"
-        class="h-7 sm:h-9 w-auto object-contain group-hover:scale-105 transition-transform duration-200"
+        alt="EiSen"
+        class="h-7 sm:h-8 w-auto object-contain"
         width="144"
         height="54"
       />
-      <span class="hidden sm:inline-block text-[10px] uppercase font-mono font-semibold px-1.5 py-0.5 rounded bg-white/10 text-indigo-300 border border-white/10">v{appVersion}</span>
     </a>
 
-    <!-- Navigation links -->
-    <nav class="hidden md:flex items-center gap-6 lg:gap-8 text-sm font-medium text-slate-300">
-      <a href="#features" class="hover:text-white transition-colors">{t.nav.features}</a>
-      <a href="#setup" class="hover:text-white transition-colors">{t.nav.shortcuts}</a>
-      <a href="#comparison" class="hover:text-white transition-colors">{t.nav.comparison}</a>
-      <a href="#faq" class="hover:text-white transition-colors">{t.nav.faq}</a>
-      <a
-        href={windowsPath}
-        class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-cyan-500/15 border border-cyan-500/30 text-cyan-300 hover:text-white hover:bg-cyan-500/25 transition-all text-xs font-semibold"
-      >
-        <WindowsIcon class="w-3 h-3" size={12} />
-        <span>{t.nav.windows}</span>
-      </a>
-      <a href="/story" class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-indigo-500/15 border border-indigo-500/30 text-indigo-300 hover:text-white hover:bg-indigo-500/25 transition-all text-xs font-semibold">
-        <span>✨</span>
-        <span>Story Demo</span>
-      </a>
-      <a href="https://github.com/thucne/EiSen" target="_blank" rel="noopener noreferrer" class="hover:text-white transition-colors flex items-center gap-1.5">
+    <nav class="hidden lg:flex items-center gap-7 text-sm text-zinc-300 whitespace-nowrap">
+      <a href={`${homePath}#features`} class="hover:text-white transition-colors">{t.nav.features}</a>
+      <a href={`${homePath}#comparison`} class="hover:text-white transition-colors">{t.nav.comparison}</a>
+      <a href={changelogPath} class="hover:text-white transition-colors">{t.nav.changelog}</a>
+      <a href={`${homePath}#faq`} class="hover:text-white transition-colors">{t.nav.faq}</a>
+      <a href={windowsPath} class="hover:text-white transition-colors">{t.nav.windows}</a>
+      <a href={githubUrl} target="_blank" rel="noopener noreferrer" class="hover:text-white transition-colors flex items-center gap-1.5">
         <GithubIcon class="w-4 h-4" size={16} />
         <span>{t.nav.github}</span>
       </a>
     </nav>
 
-    <!-- Right Controls: Language Switcher & Download CTA -->
-    <div class="flex items-center gap-1.5 sm:gap-3 shrink-0">
-      <!-- Language Switcher -->
+    <div class="flex items-center gap-2 sm:gap-3 shrink-0">
       <a
         href={switchPath}
-        class="inline-flex items-center gap-1 sm:gap-1.5 px-2 py-1 sm:px-2.5 sm:py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-medium text-slate-300 hover:text-white transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+        class="px-2 py-1.5 rounded-lg text-xs font-medium tracking-wide text-zinc-300 hover:text-white transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-300"
         title={locale === 'en' ? 'Chuyển sang Tiếng Việt' : 'Switch to English'}
       >
-        <span class="text-xs sm:text-sm">🌐</span>
-        <span class="uppercase tracking-wider font-semibold text-[11px] sm:text-xs">{locale === 'en' ? 'VI' : 'EN'}</span>
+        {locale === 'en' ? 'VI' : 'EN'}
       </a>
 
-      <!-- Download Button with Smart OS Adaptation -->
+      <button
+        type="button"
+        data-copy-link
+        data-copied-label={t.nav.copied}
+        class="only-phone px-3 py-1.5 rounded-lg bg-zinc-100 text-zinc-900 text-sm font-semibold whitespace-nowrap"
+      >
+        <span data-copy-label>{t.nav.copyLink}</span>
+      </button>
+
       <a
         id="navbar-download-btn"
         href={dmgDownloadPath}
@@ -76,10 +70,10 @@ const windowsPath = locale === 'vi' ? '/vi/windows' : '/windows';
         data-win-url={microsoftStoreUrl}
         data-mac-label={t.nav.downloadMac}
         data-win-label={t.nav.downloadWin}
-        class="inline-flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-xl bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 text-white text-xs sm:text-sm font-semibold shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 whitespace-nowrap"
+        class="not-phone inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg bg-zinc-100 hover:bg-white text-zinc-900 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-100 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0f1015] whitespace-nowrap"
       >
-        <span id="navbar-apple-icon"><AppleIcon class="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" size={16} /></span>
-        <span id="navbar-win-icon" class="hidden"><WindowsIcon class="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" size={16} /></span>
+        <span id="navbar-apple-icon"><AppleIcon class="w-4 h-4 shrink-0" size={16} /></span>
+        <span id="navbar-win-icon" class="hidden"><WindowsIcon class="w-4 h-4 shrink-0" size={16} /></span>
         <span id="navbar-download-text">{t.nav.download}</span>
       </a>
     </div>
@@ -102,7 +96,7 @@ const windowsPath = locale === 'vi' ? '/vi/windows' : '/windows';
         if (appleIcon) appleIcon.classList.add('hidden');
         if (winIcon) winIcon.classList.remove('hidden');
         const text = document.getElementById('navbar-download-text');
-        if (text) text.textContent = btn?.dataset.winLabel || 'Windows (Microsoft Store)';
+        if (text) text.textContent = btn?.dataset.winLabel || 'Microsoft Store';
       }
     } catch {}
   })();

@@ -1,0 +1,14 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Changelog from '../../components/Changelog.astro';
+import { vi } from '../../i18n/vi';
+---
+
+<Layout
+  locale="vi"
+  title={vi.changelog.metaTitle}
+  description={vi.changelog.metaDescription}
+  canonicalUrl="https://eisen.a302.link/vi/changelog"
+>
+  <Changelog locale="vi" />
+</Layout>

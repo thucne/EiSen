@@ -11,73 +11,29 @@ const t = getDictionary(locale);
 const s = t.setup;
 ---
 
-<section id="setup" class="py-14 sm:py-20 bg-white/[0.02] border-y border-white/10 relative">
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-    <div class="text-center max-w-3xl mx-auto mb-10 sm:mb-16 space-y-3 sm:space-y-4">
-      <div class="text-xs font-bold tracking-widest text-indigo-400 uppercase font-mono">
-        {s.eyebrow}
-      </div>
-      <h2 class="text-3xl sm:text-5xl font-extrabold tracking-tight text-white">
-        {s.title}
-      </h2>
-      <p class="text-base sm:text-lg text-slate-300">
-        {s.subtitle}
-      </p>
-    </div>
+<section id="setup" class="py-16 sm:py-24 border-t border-white/10 scroll-mt-16">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+    <h2 class="text-3xl sm:text-5xl font-bold tracking-tight text-zinc-50">{s.title}</h2>
 
-    <!-- 3 Steps Grid -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-5 sm:gap-8">
-      <!-- Step 1 -->
-      <div class="relative p-5 sm:p-6 rounded-2xl bg-[#161822] border border-white/10 flex flex-col">
-        <div class="w-10 h-10 rounded-full bg-indigo-500/20 text-indigo-400 font-mono font-bold text-lg flex items-center justify-center mb-4 sm:mb-5 border border-indigo-500/40">
-          1
-        </div>
-        <h3 class="text-lg font-bold text-white mb-2">{s.step1Title}</h3>
-        <p class="text-sm text-slate-300 leading-relaxed flex-grow">
-          {s.step1Desc}
-        </p>
-        <div class="mt-5 sm:mt-6 pt-4 border-t border-white/5 text-xs text-slate-400 font-mono flex items-center gap-2">
-          <span>📁</span>
-          <span>macOS: /Applications/EiSen.app • Windows: Microsoft Store (NSIS fallback)</span>
-        </div>
-      </div>
-
-      <!-- Step 2 -->
-      <div class="relative p-5 sm:p-6 rounded-2xl bg-[#161822] border border-indigo-500/40 shadow-lg shadow-indigo-500/10 flex flex-col">
-        <div class="w-10 h-10 rounded-full bg-indigo-500 text-white font-mono font-bold text-lg flex items-center justify-center mb-4 sm:mb-5 shadow-md shadow-indigo-500/30">
-          2
-        </div>
-        <h3 class="text-lg font-bold text-white mb-2">{s.step2Title}</h3>
-        <p class="text-sm text-slate-300 leading-relaxed flex-grow">
-          {s.step2Desc}
-        </p>
-        <div class="mt-5 sm:mt-6 pt-4 border-t border-white/5 text-xs text-indigo-300 font-mono flex items-center gap-2">
-          <span>⚙️</span>
-          <span>macOS: Privacy &amp; Security → Screen Recording</span>
-        </div>
-      </div>
-
-      <!-- Step 3 -->
-      <div class="relative p-5 sm:p-6 rounded-2xl bg-[#161822] border border-white/10 flex flex-col">
-        <div class="w-10 h-10 rounded-full bg-emerald-500/20 text-emerald-400 font-mono font-bold text-lg flex items-center justify-center mb-4 sm:mb-5 border border-emerald-500/40">
-          3
-        </div>
-        <h3 class="text-lg font-bold text-white mb-2">{s.step3Title}</h3>
-        <p class="text-sm text-slate-300 leading-relaxed flex-grow">
-          {s.step3Desc}
-        </p>
-        <div class="mt-6 pt-4 border-t border-white/5 text-xs text-emerald-300 font-mono flex items-center gap-2">
-          <span>⚡</span>
-          <span>macOS: Default: ⌥⌥ (Double Option) • Windows: PrtScn (fallback: Ctrl + Shift + 5)</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Tip Banner -->
-    <div class="mt-10 p-4 rounded-xl bg-indigo-950/40 border border-indigo-500/20 text-center max-w-2xl mx-auto">
-      <p class="text-xs sm:text-sm text-indigo-200">
-        💡 {s.note}
-      </p>
-    </div>
+    <ol class="mt-10 sm:mt-14 grid md:grid-cols-3 gap-8 md:gap-10">
+      <li>
+        <span class="font-mono text-sm text-zinc-500">1</span>
+        <h3 class="mt-2 text-lg font-semibold text-zinc-50">{s.step1Title}</h3>
+        <p class="mt-2 text-zinc-400 leading-relaxed">{s.step1Desc}</p>
+        <p class="mt-3 font-mono text-xs text-zinc-500">macOS: /Applications/EiSen.app</p>
+      </li>
+      <li>
+        <span class="font-mono text-sm text-zinc-500">2</span>
+        <h3 class="mt-2 text-lg font-semibold text-zinc-50">{s.step2Title}</h3>
+        <p class="mt-2 text-zinc-400 leading-relaxed">{s.step2Desc}</p>
+        <p class="mt-3 font-mono text-xs text-zinc-500">macOS: Privacy &amp; Security → Screen Recording</p>
+      </li>
+      <li>
+        <span class="font-mono text-sm text-zinc-500">3</span>
+        <h3 class="mt-2 text-lg font-semibold text-zinc-50">{s.step3Title}</h3>
+        <p class="mt-2 text-zinc-400 leading-relaxed">{s.step3Desc}</p>
+        <p class="mt-3 font-mono text-xs text-zinc-500">macOS: Default: ⌥⌥ (Double Option)</p>
+      </li>
+    </ol>
   </div>
 </section>

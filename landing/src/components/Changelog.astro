@@ -1,0 +1,47 @@
+---
+import type { Locale } from '../i18n/utils';
+import { getDictionary, releasesUrl } from '../i18n/utils';
+import { changelog } from '../i18n/changelog';
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+const c = getDictionary(locale).changelog;
+const dateFormat = new Intl.DateTimeFormat(locale === 'vi' ? 'vi-VN' : 'en-US', { dateStyle: 'long', timeZone: 'UTC' });
+---
+
+<section class="py-12 sm:py-20">
+  <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+    <h1 class="text-4xl sm:text-5xl font-bold tracking-tight text-zinc-50">{c.title}</h1>
+    <p class="mt-4 text-lg text-zinc-400">{c.subtitle}</p>
+
+    <div class="mt-12 divide-y divide-white/10 border-t border-white/10">
+      {changelog.map((entry) => (
+        <article class="py-8 sm:py-10">
+          <div class="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+            <h2 class="font-mono text-2xl font-semibold text-zinc-50">{entry.version}</h2>
+            <time datetime={entry.date} class="text-sm text-zinc-400">{dateFormat.format(new Date(entry.date))}</time>
+            <span class="text-sm text-zinc-400">{entry.platform}</span>
+          </div>
+          <ul class="mt-4 space-y-2 list-disc pl-5 marker:text-zinc-600 text-zinc-300 leading-relaxed">
+            {entry[locale].map((item) => <li>{item}</li>)}
+          </ul>
+          <a
+            href={`${releasesUrl}/tag/v${entry.version}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="mt-4 inline-block text-sm text-zinc-300 underline underline-offset-4 decoration-zinc-600 hover:text-white"
+          >
+            {c.releaseNotes} →
+          </a>
+        </article>
+      ))}
+    </div>
+
+    <a href={releasesUrl} target="_blank" rel="noopener noreferrer" class="inline-block text-sm text-zinc-300 underline underline-offset-4 decoration-zinc-600 hover:text-white">
+      {c.older} →
+    </a>
+  </div>
+</section>

@@ -1,0 +1,41 @@
+---
+import type { Locale } from '../i18n/utils';
+import { getDictionary, githubUrl, releasesUrl } from '../i18n/utils';
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+const p = getDictionary(locale).proof;
+
+const items = [
+  { ...p.latency, href: `${githubUrl}/blob/main/docs/capture-latency-baseline.md` },
+  { ...p.size, href: `${releasesUrl}/tag/v1.0.0` },
+  { ...p.network, href: `${githubUrl}/blob/main/PRIVACY.md` },
+  { ...p.license, href: githubUrl },
+];
+---
+
+<section aria-labelledby="proof-title" class="border-y border-white/10">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+    <h2 id="proof-title" class="sr-only">{p.title}</h2>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 divide-y sm:divide-y-0 divide-white/10">
+      {items.map((item) => (
+        <div class="py-6 sm:py-8 sm:pr-6 lg:pr-8">
+          <p class="font-mono text-3xl font-semibold tracking-tight text-zinc-50">{item.value}</p>
+          <p class="mt-1 text-sm font-medium text-zinc-200">{item.label}</p>
+          <p class="mt-2 text-sm text-zinc-400 leading-relaxed">{item.sub}</p>
+          <a
+            href={item.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="mt-2 inline-block text-sm text-zinc-300 underline underline-offset-4 decoration-zinc-600 hover:text-white"
+          >
+            {item.link} →
+          </a>
+        </div>
+      ))}
+    </div>
+  </div>
+</section>

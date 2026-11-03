@@ -9,79 +9,48 @@ interface Props {
 const { locale } = Astro.props;
 const t = getDictionary(locale);
 const c = t.comparison;
+
+const cellClass = 'block sm:table-cell py-1 sm:py-4 sm:px-4 text-sm text-zinc-400 align-top before:content-[attr(data-label)] before:block before:text-xs before:text-zinc-500 sm:before:content-none';
 ---
 
-<section id="comparison" class="py-14 sm:py-24 relative">
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-    <div class="text-center max-w-3xl mx-auto mb-10 sm:mb-16 space-y-3 sm:space-y-4">
-      <div class="text-xs font-bold tracking-widest text-indigo-400 uppercase font-mono">
-        {c.eyebrow}
-      </div>
-      <h2 class="text-3xl sm:text-5xl font-extrabold tracking-tight text-white">
-        {c.title}
-      </h2>
-      <p class="text-base sm:text-lg text-slate-300">
-        {c.subtitle}
-      </p>
+<section id="comparison" class="py-16 sm:py-24 border-t border-white/10 scroll-mt-16">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="max-w-3xl">
+      <h2 class="text-3xl sm:text-5xl font-bold tracking-tight text-zinc-50">{c.title}</h2>
+      <p class="mt-4 text-lg text-zinc-400 leading-relaxed">{c.subtitle}</p>
     </div>
 
-    <!-- Table Container -->
-    <div class="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-none">
-      <div class="min-w-[960px] overflow-hidden rounded-2xl border border-white/10 bg-[#161822]/90 shadow-2xl backdrop-blur-xl">
-        <table class="w-full table-fixed divide-y divide-white/10 text-left">
-          <colgroup>
-            <col class="w-[24%]" />
-            <col class="w-[29%]" />
-            <col class="w-[23%]" />
-            <col class="w-[24%]" />
-          </colgroup>
-          <thead>
-            <tr class="bg-white/[0.03]">
-              <th scope="col" class="py-4 px-4 sm:py-5 sm:px-6 text-xs sm:text-sm font-semibold text-slate-300">
-                {c.feature}
-              </th>
-              <th scope="col" class="py-4 px-4 sm:py-5 sm:px-6 text-sm sm:text-base font-bold text-indigo-400 bg-indigo-500/10 border-x border-indigo-500/20">
-                <div class="flex flex-wrap items-center gap-2">
-                  <span>{c.eisen}</span>
-                  <span class="text-[9px] sm:text-[10px] uppercase font-mono px-1.5 sm:px-2 py-0.5 rounded bg-indigo-500/30 text-indigo-200">Recommended</span>
-                </div>
-              </th>
-              <th scope="col" class="py-4 px-4 sm:py-5 sm:px-6 text-xs sm:text-sm font-medium text-slate-400">
-                {c.macosDefault}
-              </th>
-              <th scope="col" class="py-4 px-4 sm:py-5 sm:px-6 text-xs sm:text-sm font-medium text-slate-400">
-                {c.paidTools}
-              </th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-white/5 text-xs sm:text-sm font-normal">
-            {c.rows.map((row, idx) => (
-              <tr class={idx % 2 === 0 ? 'bg-transparent' : 'bg-white/[0.01]'}>
-                <td class="py-3.5 px-4 sm:py-4 sm:px-6 font-medium text-slate-200 break-words">
-                  {row.name}
-                </td>
-                <td class="py-3.5 px-4 sm:py-4 sm:px-6 font-semibold text-emerald-400 bg-indigo-500/5 border-x border-indigo-500/20 break-words">
-                  {row.eisen}
-                </td>
-                <td class="py-3.5 px-4 sm:py-4 sm:px-6 text-slate-400 break-words">
-                  {row.macos}
-                </td>
-                <td class="py-3.5 px-4 sm:py-4 sm:px-6 text-slate-400 break-words">
-                  {row.paid}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
+    <!-- A table from sm up; on phones each row becomes a labeled two-column grid -->
+    <table class="mt-10 sm:mt-14 w-full text-left sm:table-fixed block sm:table">
+      <thead class="hidden sm:table-header-group">
+        <tr class="border-b border-white/15">
+          <th scope="col" class="py-3 pr-4 text-sm font-medium text-zinc-400 w-[22%]">{c.feature}</th>
+          <th scope="col" class="py-3 px-4 text-sm font-semibold text-zinc-50 w-[16%]">{c.eisen}</th>
+          <th scope="col" class="py-3 px-4 text-sm font-medium text-zinc-400 w-[14%]">{c.macosDefault}</th>
+          <th scope="col" class="py-3 px-4 text-sm font-medium text-zinc-400 w-[24%]">{c.cleanshot}</th>
+          <th scope="col" class="py-3 px-4 text-sm font-medium text-zinc-400 w-[24%]">{c.shottr}</th>
+        </tr>
+      </thead>
+      <tbody class="block sm:table-row-group divide-y divide-white/10">
+        {c.rows.map((row) => (
+          <tr class="grid grid-cols-2 gap-x-4 sm:table-row py-4 sm:py-0">
+            <th scope="row" class="col-span-2 sm:table-cell pb-2 sm:py-4 sm:pr-4 text-sm font-medium text-zinc-200 align-top">{row.name}</th>
+            <td data-label={c.eisen} class:list={[cellClass, '!text-zinc-50 font-medium sm:bg-white/[0.04]']}>{row.eisen}</td>
+            <td data-label={c.macosDefault} class={cellClass}>{row.macos}</td>
+            <td data-label={c.cleanshot} class={cellClass}>{row.cleanshot}</td>
+            <td data-label={c.shottr} class={cellClass}>{row.shottr}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
 
-    <!-- In-depth link for SEO & user research -->
-    <div class="mt-6 text-center">
-      <a href="/cleanshot-alternative" class="inline-flex items-center gap-1.5 text-xs sm:text-sm text-indigo-400 hover:text-indigo-300 font-medium transition-colors">
-        <span>Detailed breakdown: Why switch from CleanShot X to EiSen?</span>
-        <span>→</span>
-      </a>
-    </div>
+    <p class="mt-8 text-sm text-zinc-400 leading-relaxed">
+      {c.sourcesLabel}
+      <a href="https://cleanshot.com/pricing" target="_blank" rel="noopener noreferrer" class="underline underline-offset-4 decoration-zinc-600 hover:text-white">CleanShot X</a>,
+      <a href="https://shottr.cc/purchase.html" target="_blank" rel="noopener noreferrer" class="underline underline-offset-4 decoration-zinc-600 hover:text-white">Shottr</a>.
+    </p>
+    <a href="/cleanshot-alternative" class="mt-3 inline-block text-sm text-zinc-300 underline underline-offset-4 decoration-zinc-600 hover:text-white">
+      {c.detailLink} →
+    </a>
   </div>
 </section>

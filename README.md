@@ -2,6 +2,8 @@
 
 Fast screen capture and annotation for **macOS** and **Windows**. Built with **Tauri v2**, **Rust**, and **SvelteKit**. Fully local — no telemetry, no network calls for capture or OCR.
 
+> **Mac first.** I built EiSen for my Mac, because I couldn't find a free screenshot app that was good enough. A Mac is also all I have to test on, so the Windows version is built and packaged automatically, and I haven't been able to try it on a real Windows PC. It may have bugs; please [open an issue](https://github.com/thucne/EiSen/issues) if you find one.
+
 ---
 
 ## Install & use

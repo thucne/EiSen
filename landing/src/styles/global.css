@@ -78,6 +78,14 @@ body {
   overflow-x: hidden;
 }
 
+/* Phones can't run the installers, so download buttons give way to copying the link. */
+html:not([data-device='phone']) .only-phone {
+  display: none !important;
+}
+html[data-device='phone'] .not-phone {
+  display: none !important;
+}
+
 /* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 8px;

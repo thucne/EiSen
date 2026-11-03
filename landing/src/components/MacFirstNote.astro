@@ -1,0 +1,18 @@
+---
+import type { Locale } from '../i18n/utils';
+import { getDictionary, githubUrl } from '../i18n/utils';
+
+interface Props {
+  locale: Locale;
+  class?: string;
+}
+
+const { locale, class: className } = Astro.props;
+const n = getDictionary(locale).macFirstNote;
+---
+
+<aside class:list={['rounded-lg border border-white/15 bg-white/[0.03] p-4 text-sm text-zinc-300 leading-relaxed', className]}>
+  <p class="font-semibold text-zinc-100">{n.title}</p>
+  <p class="mt-1">{n.body}</p>
+  <a href={`${githubUrl}/issues`} target="_blank" rel="noopener noreferrer" class="mt-2 inline-block underline underline-offset-4 decoration-zinc-600 hover:text-white">{n.issueLink} →</a>
+</aside>

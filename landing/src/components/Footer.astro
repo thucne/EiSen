@@ -11,42 +11,33 @@ const t = getDictionary(locale);
 const f = t.footer;
 
 const githubRepo = 'https://github.com/thucne/EiSen';
+const homePath = locale === 'vi' ? '/vi/' : '/';
 ---
 
-<footer class="border-t border-white/10 bg-[#0c0d12] py-10 sm:py-14 text-slate-400 text-sm">
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 sm:gap-8 mb-8 sm:mb-12">
-      <!-- Brand & Tagline -->
-      <div class="md:col-span-2 space-y-4">
-        <div class="flex items-center gap-3">
-          <img src="/brand/eisen-horizontal-reversed.svg" alt="EiSen Logo" class="h-8 w-auto object-contain" width="130" height="48" />
-        </div>
-        <p class="text-sm text-slate-300 max-w-md">
-          {f.tagline}
-        </p>
-        <p class="text-xs text-slate-400 max-w-md leading-relaxed border-l-2 border-emerald-500/50 pl-3">
-          🛡️ {f.privacyCommitment}
-        </p>
+<footer class="border-t border-white/10 py-10 sm:py-14 text-zinc-400 text-sm">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-8 mb-8 sm:mb-12">
+      <div class="col-span-2 space-y-3">
+        <img src="/brand/eisen-horizontal-reversed.svg" alt="EiSen" class="h-8 w-auto object-contain" width="130" height="48" />
+        <p class="text-zinc-300 max-w-md">{f.tagline}</p>
+        <p class="text-zinc-400 max-w-md leading-relaxed">{f.privacyCommitment}</p>
       </div>
 
-      <!-- Links Column 1: Product -->
       <div>
-        <h4 class="text-xs font-bold uppercase tracking-wider text-white font-mono mb-4">Product</h4>
-        <ul class="space-y-2 text-xs">
-          <li><a href="#features" class="hover:text-white transition-colors">{t.nav.features}</a></li>
-          <li><a href="#setup" class="hover:text-white transition-colors">{t.nav.shortcuts}</a></li>
-          <li><a href="#comparison" class="hover:text-white transition-colors">{t.nav.comparison}</a></li>
-          <li><a href={locale === 'vi' ? '/vi/windows' : '/windows'} class="hover:text-cyan-300 text-cyan-400 transition-colors font-medium">🪟 EiSen for Windows</a></li>
-          <li><a href="/cleanshot-alternative" class="hover:text-indigo-300 text-indigo-400 transition-colors font-medium">CleanShot X Alternative</a></li>
-          <li><a href="#download" class="hover:text-white transition-colors">{t.nav.download}</a></li>
-          <li><a href="/story" class="hover:text-indigo-300 text-indigo-400 transition-colors flex items-center gap-1 font-semibold"><span>🎬</span><span>Story Demo (9:16)</span></a></li>
+        <h4 class="font-medium text-zinc-100 mb-3">{f.productTitle}</h4>
+        <ul class="space-y-2">
+          <li><a href={`${homePath}#features`} class="hover:text-white transition-colors">{t.nav.features}</a></li>
+          <li><a href={`${homePath}#setup`} class="hover:text-white transition-colors">{t.nav.shortcuts}</a></li>
+          <li><a href={`${homePath}#comparison`} class="hover:text-white transition-colors">{t.nav.comparison}</a></li>
+          <li><a href={locale === 'vi' ? '/vi/changelog' : '/changelog'} class="hover:text-white transition-colors">{t.nav.changelog}</a></li>
+          <li><a href={locale === 'vi' ? '/vi/windows' : '/windows'} class="hover:text-white transition-colors">{f.windowsLink}</a></li>
+          <li><a href="/cleanshot-alternative" class="hover:text-white transition-colors">{f.alternativeLink}</a></li>
         </ul>
       </div>
 
-      <!-- Links Column 2: Open Source -->
       <div>
-        <h4 class="text-xs font-bold uppercase tracking-wider text-white font-mono mb-4">{f.linksTitle}</h4>
-        <ul class="space-y-2 text-xs">
+        <h4 class="font-medium text-zinc-100 mb-3">{f.linksTitle}</h4>
+        <ul class="space-y-2">
           <li><a href={githubRepo} target="_blank" rel="noopener noreferrer" class="hover:text-white transition-colors">{f.sourceCode}</a></li>
           <li><a href={`${githubRepo}/releases`} target="_blank" rel="noopener noreferrer" class="hover:text-white transition-colors">{f.releases}</a></li>
           <li><a href={`${githubRepo}/blob/main/PRIVACY.md`} target="_blank" rel="noopener noreferrer" class="hover:text-white transition-colors">{f.privacyDoc}</a></li>
@@ -55,16 +46,12 @@ const githubRepo = 'https://github.com/thucne/EiSen';
       </div>
     </div>
 
-    <!-- Bottom line -->
-    <div class="pt-8 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-400 gap-4">
+    <div class="pt-6 border-t border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
       <div>
-        © {new Date().getFullYear()} EiSen. Released under the <a href={`${githubRepo}/blob/main/LICENSE`} target="_blank" rel="noopener noreferrer" class="underline hover:text-slate-300">MIT License</a>.
+        © {new Date().getFullYear()} EiSen. {f.licensePrefix} <a href={`${githubRepo}/blob/main/LICENSE`} target="_blank" rel="noopener noreferrer" class="underline underline-offset-4 decoration-zinc-600 hover:text-white">{f.mitLicense}</a>.
       </div>
-      <div class="flex items-center gap-1">
-        <span>{f.author}</span>
-        <a href="https://github.com/thucne" target="_blank" rel="noopener noreferrer" class="text-indigo-400 hover:text-indigo-300 font-medium">@thucne</a>
-        <span>•</span>
-        <span class="font-mono text-slate-400">eisen.a302.link</span>
+      <div>
+        {f.author} <a href="https://github.com/thucne" target="_blank" rel="noopener noreferrer" class="text-zinc-200 hover:text-white">@thucne</a>
       </div>
     </div>
   </div>
