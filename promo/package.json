@@ -1,0 +1,24 @@
+{
+  "name": "eisen-promo",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "audio": "node scripts/gen-audio.mjs",
+    "studio": "remotion studio src/index.ts",
+    "render:en": "npm run audio && remotion render src/index.ts EiSenPromoEn out/eisen-promo-en.mp4 --codec=h264 --pixel-format=yuv420p --color-space=bt709 --audio-codec=aac --audio-bitrate=192k --crf=18",
+    "render:vi": "npm run audio && remotion render src/index.ts EiSenPromoVi out/eisen-promo-vi.mp4 --codec=h264 --pixel-format=yuv420p --color-space=bt709 --audio-codec=aac --audio-bitrate=192k --crf=18",
+    "render:story-en": "npm run audio && remotion render src/index.ts EiSenStoryEn out/eisen-promo-story-en.mp4 --codec=h264 --pixel-format=yuv420p --color-space=bt709 --audio-codec=aac --audio-bitrate=192k --crf=18",
+    "render:story-vi": "npm run audio && remotion render src/index.ts EiSenStoryVi out/eisen-promo-story-vi.mp4 --codec=h264 --pixel-format=yuv420p --color-space=bt709 --audio-codec=aac --audio-bitrate=192k --crf=18"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.286",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "remotion": "4.0.286"
+  },
+  "devDependencies": {
+    "@types/react": "18.3.12",
+    "typescript": "5.7.2"
+  }
+}
