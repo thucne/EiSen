@@ -2,6 +2,7 @@
 # Exit 0 iff app/package.json, app/src-tauri/Cargo.toml, and
 # app/src-tauri/tauri.conf.json share the same version. An optional first
 # argument (e.g. v0.1.1) must match that semver after stripping a leading v.
+# The MSIX manifest and packaging defaults must carry the same version plus .0.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -41,6 +42,18 @@ if pkg != cargo or pkg != tauri:
     print(f"  app/src-tauri/Cargo.toml      {cargo}", file=sys.stderr)
     print(f"  app/src-tauri/tauri.conf.json {tauri}", file=sys.stderr)
     sys.exit(1)
+
+msix_sources = {
+    "app/msix/Package.appxmanifest": r'<Identity\b[^>]*\bVersion="([^"]+)"',
+    ".github/workflows/store-msix.yml": r"(?m)^\s*default:\s*(\d+\.\d+\.\d+\.\d+)\s*$",
+    "scripts/build-msix.ps1": r"\[string\]\$Version\s*=\s*'([^']+)'",
+}
+for rel, pattern in msix_sources.items():
+    found = re.search(pattern, (root / rel).read_text())
+    if not found or found.group(1) != f"{pkg}.0":
+        have = found.group(1) if found else "no version found"
+        print(f"{rel}: expected {pkg}.0, have {have}", file=sys.stderr)
+        sys.exit(1)
 
 tag = os.environ.get("EISEN_CHECK_VERSION_TAG")
 if tag:
