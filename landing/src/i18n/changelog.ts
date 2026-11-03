@@ -13,12 +13,12 @@ export const changelog: ChangelogEntry[] = [
     date: '2026-11-03',
     platform: 'Windows',
     en: [
-      'In the Microsoft Store, rolling out gradually, built from the same code as the Mac release.',
+      'In the Microsoft Store, built from the same code as the Mac release.',
       'Adds Redact and Crop in the editor. The floating thumbnail and capture previous region are Mac only.',
       "Built and packaged automatically, and it hasn't been run on a real Windows PC yet, so it may have bugs.",
     ],
     vi: [
-      'Có trên Microsoft Store, đang phát hành dần, build từ cùng mã nguồn với bản Mac.',
+      'Có trên Microsoft Store, build từ cùng mã nguồn với bản Mac.',
       'Thêm Che đặc và Cắt ảnh trong trình sửa. Ảnh xem trước nổi và chụp lại vùng trước chỉ có trên Mac.',
       'Được build và đóng gói tự động, chưa được chạy thử trên máy Windows thật, nên có thể còn lỗi.',
     ],

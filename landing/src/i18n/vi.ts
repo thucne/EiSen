@@ -33,7 +33,7 @@ export const vi = {
     windowsFallback: "Cần tải trực tiếp? Dùng bản .exe dự phòng chưa ký số",
     switchToWin: "Dùng Windows? Tải EiSen từ Microsoft Store",
     switchToMac: "Dùng Mac? Tải EiSen 1.0",
-    windowsNote: "EiSen 1.0 đang được phát hành dần trên Microsoft Store, nên có thể bạn vẫn nhận bản 0.2 thêm một thời gian. Ảnh xem trước nổi và chụp lại vùng trước chỉ có trên Mac.",
+    windowsNote: "EiSen 1.0 đã có trên Microsoft Store. Ảnh xem trước nổi và chụp lại vùng trước chỉ có trên Mac.",
     windowsWarning: "Bản Microsoft Store là lựa chọn cài đặt chính cho Windows và được Store tự quản lý cập nhật. Bản .exe trực tiếp chỉ là fallback chưa ký số; SmartScreen có thể báo Unknown publisher hoặc Windows protected your PC, và máy công ty có thể chặn. Hãy kiểm tra sidecar SHA-256 trên GitHub Releases trước khi chạy.",
     githubCta: "Xem mã nguồn",
     requirements: "Phiên bản 1.0.0 • macOS 11 trở lên • Apple Silicon",
@@ -101,7 +101,7 @@ export const vi = {
     },
     moreTitle: "Và còn có",
     more: [
-      { title: "Cắt ảnh trong trình sửa", description: "Không phá ảnh gốc, có tay kéo. Hiện chỉ có trên macOS." },
+      { title: "Cắt ảnh trong trình sửa", description: "Không phá ảnh gốc, có tay kéo." },
       { title: "Mũi tên, hình khối, bút và tô sáng", description: "Kèm ghi chú chữ, hoàn tác và làm lại." },
       { title: "Đánh số bước", description: "Tự tăng dần, tiện cho tài liệu hướng dẫn và báo lỗi." },
       { title: "Làm mờ", description: "Cho những gì chỉ cần lùi về phía sau." },
@@ -144,7 +144,7 @@ export const vi = {
     items: [
       {
         q: "EiSen hỗ trợ những hệ điều hành nào?",
-        a: "Có. EiSen 1.0 dành cho macOS 11 trở lên, bản tải về cho Apple Silicon, và cho Windows 10 và 11 (64-bit) qua Microsoft Store. Trên Windows, bản này đang được phát hành dần, nên có thể bạn vẫn nhận bản 0.2 thêm một thời gian. Ảnh xem trước nổi và chụp lại vùng trước chỉ có trên Mac.",
+        a: "Có. EiSen 1.0 dành cho macOS 11 trở lên, bản tải về cho Apple Silicon, và cho Windows 10 và 11 (64-bit) qua Microsoft Store. Ảnh xem trước nổi và chụp lại vùng trước chỉ có trên Mac.",
       },
       {
         q: "Vì sao EiSen ưu tiên Mac?",
@@ -183,7 +183,7 @@ export const vi = {
   },
   changelog: {
     metaTitle: "Nhật Ký Thay Đổi EiSen — Có Gì Mới Trong Từng Phiên Bản",
-    metaDescription: "Những thay đổi trong từng phiên bản EiSen cho macOS và Windows, bắt đầu từ bản 1.0 cho macOS.",
+    metaDescription: "Những thay đổi trong từng phiên bản EiSen cho macOS và Windows, bắt đầu từ bản 1.0.",
     title: "Nhật ký thay đổi",
     subtitle: "Những gì thay đổi trong từng phiên bản. Ghi chú đầy đủ và mã kiểm tra nằm trên GitHub.",
     releaseNotes: "Ghi chú phát hành",
@@ -196,7 +196,7 @@ export const vi = {
     buttonWin: "Tải từ Microsoft Store",
     buttonWinDirect: "Dùng bản .exe trực tiếp chưa ký số",
     detailsMac: "Phiên bản 1.0.0 • macOS 11 trở lên • Apple Silicon",
-    detailsWin: "Microsoft Store: phiên bản 1.0, đang phát hành dần • Bộ cài trực tiếp: phiên bản 0.2.5 • Windows 10/11 (64-bit)",
+    detailsWin: "Microsoft Store: phiên bản 1.0 • Bộ cài trực tiếp: phiên bản 0.2.5 • Windows 10/11 (64-bit)",
     windowsSummary: "Dùng Windows? EiSen có trên Microsoft Store",
     windowsWarningTitle: "Lưu ý bản tải trực tiếp cho Windows",
     windowsWarning: "Bản Microsoft Store là lựa chọn cài đặt chính cho Windows và được Store tự quản lý cập nhật. Bản NSIS .exe trực tiếp chỉ là fallback chưa ký số; SmartScreen có thể hiển thị Unknown publisher hoặc Windows protected your PC, máy công ty có thể chặn. Hãy kiểm tra sidecar SHA-256 trên GitHub Releases trước khi chạy.",
@@ -217,7 +217,7 @@ export const vi = {
     subtitle: "EiSen cho bạn chụp bằng phím PrtScn với Ctrl + Shift + 5 dự phòng tự động, đánh số bước hướng dẫn, làm mờ bảo mật và nhận diện chữ Windows OCR trên máy — được phân phối qua Microsoft Store.",
     downloadCta: "Tải từ Microsoft Store",
     directDownloadCta: "Tải bản .exe trực tiếp (fallback)",
-    downloadSub: "v1.0 trên Microsoft Store, đang phát hành dần • Windows 10 / 11 (64-bit) • Bản NSIS .exe trực tiếp chưa ký số: v0.2.5",
+    downloadSub: "v1.0 trên Microsoft Store • Windows 10 / 11 (64-bit) • Bản NSIS .exe trực tiếp chưa ký số: v0.2.5",
     installWarningTitle: "Lưu ý bản tải trực tiếp cho Windows",
     installWarning: "Bản Microsoft Store là lựa chọn cài đặt chính cho Windows và được Store tự quản lý cập nhật. Bản NSIS .exe trực tiếp chỉ là fallback chưa ký số; Windows SmartScreen có thể hiển thị Unknown publisher hoặc Windows protected your PC, máy công ty có thể chặn. Hãy kiểm tra sidecar SHA-256 trên GitHub Releases trước khi chạy.",
     whyTitle: "Vì sao nên dùng EiSen trên Windows",
@@ -245,8 +245,8 @@ export const vi = {
       },
       {
         icon: "🎯",
-        title: "Đánh Số Bước & Làm Mờ",
-        desc: "Tạo tài liệu hướng dẫn và báo cáo bug đẹp mắt với con dấu bước tự tăng ① ② ③ và tính năng làm mờ Gaussian chuẩn xác.",
+        title: "Đánh Số Bước, Làm Mờ & Che Đặc",
+        desc: "Tạo tài liệu hướng dẫn và báo cáo bug đẹp mắt với con dấu bước tự tăng ① ② ③, làm mờ Gaussian và khối Che đặc cho thông tin bí mật.",
       },
       {
         icon: "🎨",
