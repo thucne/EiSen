@@ -51,7 +51,7 @@ export const vi = {
       value: "~120 ms",
       label: "từ lúc kích hoạt tới khi màn hình đóng băng",
       sub: "Trung vị trên M3 Pro chạy macOS 27, chưa tính lúc nhấn phím.",
-      link: "Xem cách đo",
+      link: "Đọc ghi chú phát hành",
     },
     size: {
       value: "4,56 MB",

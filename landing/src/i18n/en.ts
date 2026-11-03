@@ -51,7 +51,7 @@ export const en = {
       value: "~120 ms",
       label: "from trigger to frozen screen",
       sub: "Median on an M3 Pro with macOS 27, not counting the key press.",
-      link: "Read the method",
+      link: "Read the release notes",
     },
     size: {
       value: "4.56 MB",

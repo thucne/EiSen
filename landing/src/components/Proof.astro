@@ -10,7 +10,7 @@ const { locale } = Astro.props;
 const p = getDictionary(locale).proof;
 
 const items = [
-  { ...p.latency, href: `${githubUrl}/blob/main/docs/capture-latency-baseline.md` },
+  { ...p.latency, href: `${releasesUrl}/tag/v1.0.0` },
   { ...p.size, href: `${releasesUrl}/tag/v1.0.0` },
   { ...p.network, href: `${githubUrl}/blob/main/PRIVACY.md` },
   { ...p.license, href: githubUrl },
