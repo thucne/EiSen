@@ -518,8 +518,8 @@ mod screen_capture_kit {
         }
         let mut rgba = Vec::with_capacity(width * height * 4);
         for row in bytes.chunks_exact(stride.max(1)).take(height) {
-            for px in row[..width * 4].chunks_exact(4) {
-                rgba.extend_from_slice(&[px[2], px[1], px[0], 255]);
+            for [b, g, r, _] in row[..width * 4].as_chunks::<4>().0 {
+                rgba.extend_from_slice(&[*r, *g, *b, 255]);
             }
         }
         Ok(rgba)
