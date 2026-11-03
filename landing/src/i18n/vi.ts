@@ -1,10 +1,10 @@
 export const vi = {
   meta: {
     title: "EiSen — Ứng Dụng Chụp Màn Hình & Chú Thích Miễn Phí | Mac & Windows | 100% Offline & Open Source",
-    description: "Công cụ chụp màn hình và chú thích ảnh siêu tốc, hoàn toàn ngoại tuyến cho macOS và Windows. Cắt ảnh Retina, đánh số bước, làm mờ bảo mật, nhận diện chữ OCR trên máy (Apple Vision & Windows Media OCR).",
+    description: "Công cụ chụp màn hình và chú thích ảnh siêu tốc, hoàn toàn ngoại tuyến cho macOS và Windows. Cắt ảnh Retina, đánh số bước, làm mờ, nhận diện chữ OCR trên máy (Apple Vision & Windows Media OCR).",
     keywords: "chụp màn hình mac windows miễn phí, screenshot mac free, ứng dụng chụp màn hình windows 11, phần mềm chụp ảnh màn hình thay thế snipping tool, thay thế cleanshot x, thay thế sharex, mac screenshot ocr, windows ocr screenshot",
     ogTitle: "EiSen — Chụp Màn Hình & Chú Thích Miễn Phí Cho Mac & Windows | 100% Ngoại Tuyến",
-    ogDescription: "Công cụ chụp màn hình nhỏ gọn cho macOS và Windows với chú thích bước số, làm mờ dữ liệu và nhận diện chữ OCR native trên máy. 100% miễn phí, không telemetry.",
+    ogDescription: "Công cụ chụp màn hình nhỏ gọn cho macOS và Windows với chú thích bước số, làm mờ và nhận diện chữ OCR native trên máy. 100% miễn phí, không telemetry.",
   },
   nav: {
     features: "Tính năng",
@@ -24,7 +24,7 @@ export const vi = {
     titleStart: "Công Cụ",
     titleHighlight: "Chụp Màn Hình Miễn Phí",
     titleEnd: "Tốt Nhất Cho Mac & Windows.",
-    description: "Tiện ích chụp ảnh màn hình và chú thích siêu tốc, gọn nhẹ. Cắt ảnh chuẩn xác từng pixel, đánh số bước hướng dẫn, làm mờ dữ liệu nhạy cảm và trích xuất chữ OCR ngay trên máy. Không quảng cáo, không phí thuê bao.",
+    description: "Tiện ích chụp ảnh màn hình và chú thích siêu tốc, gọn nhẹ. Cắt ảnh chuẩn xác từng pixel, đánh số bước hướng dẫn, làm mờ và trích xuất chữ OCR ngay trên máy. Không quảng cáo, không phí thuê bao.",
     downloadCta: "Tải Miễn Phí",
     downloadMac: "Tải Cho macOS",
     downloadWin: "Tải từ Microsoft Store",
@@ -66,7 +66,7 @@ export const vi = {
     eyebrow: "Tối Ưu Cho Năng Suất Làm Việc",
     title: "Mọi công cụ bạn cần để chụp, chú thích và truyền tải ý tưởng.",
     subtitle: "Không Electron, không gói tháng, không tài khoản. Chụp, chú thích, sao chép — tất cả ngay trên máy của bạn.",
-    whatsNew: "Mới trong 0.2.8: Nét bút và bút highlight mượt hơn. Rung tay được lọc và đường vẽ thành đường cong. Chọn Tắt, Vừa hoặc Cao trong Cài đặt → Độ mượt nét vẽ.",
+    whatsNew: "Mới trong 1.0 cho macOS: Che đặc và Cắt trong trình sửa, chụp lại vùng trước bằng Ctrl+Shift+2, ảnh xem trước nổi có thể bấm hoặc kéo, và chụp nhanh hơn từ macOS 14. Windows sẽ có sau khi được kiểm chứng trên Windows.",
     crop: {
       tag: "Trình Chụp Vùng",
       title: "Crop Thông Minh & Nhận Diện Đa Màn Hình",
@@ -160,7 +160,7 @@ export const vi = {
       },
       {
         q: "EiSen có thực sự là ứng dụng thay thế miễn phí cho CleanShot X và ShareX không?",
-        a: "Chính xác! EiSen mang lại trải nghiệm chụp màn hình cao cấp: hỗ trợ kính lúp phóng to từng pixel, đánh số thứ tự (step markers), làm mờ thông tin nhạy cảm và nhận diện chữ OCR tức thì — hoàn toàn miễn phí trọn đời, mã nguồn mở, không quảng cáo và không phải trả phí thuê bao hàng tháng.",
+        a: "Chính xác! EiSen mang lại trải nghiệm chụp màn hình cao cấp: hỗ trợ kính lúp phóng to từng pixel, đánh số thứ tự (step markers), làm mờ và nhận diện chữ OCR tức thì — hoàn toàn miễn phí trọn đời, mã nguồn mở, không quảng cáo và không phải trả phí thuê bao hàng tháng.",
       },
       {
         q: "Tính năng OCR trên Windows hoạt động thế nào khi không có mạng?",
@@ -216,8 +216,8 @@ export const vi = {
     cards: [
       {
         icon: "⚡",
-        title: "Tốc Độ Dưới 5ms Viết Bằng Rust",
-        desc: "Không giật lag, không đơ màn hình. Xây dựng trên Rust và Tauri v2, EiSen đóng băng màn hình và chụp đa màn hình tức thì không chút độ trễ.",
+        title: "Chụp Nhanh, Viết Bằng Rust",
+        desc: "Xây dựng trên Rust và Tauri v2, EiSen đóng băng màn hình dưới con trỏ và mở lớp chọn vùng ngay.",
       },
       {
         icon: "🔤",
@@ -236,7 +236,7 @@ export const vi = {
       },
       {
         icon: "🎯",
-        title: "Đánh Số Bước & Làm Mờ Bảo Mật",
+        title: "Đánh Số Bước & Làm Mờ",
         desc: "Tạo tài liệu hướng dẫn và báo cáo bug đẹp mắt với con dấu bước tự tăng ① ② ③ và tính năng làm mờ Gaussian chuẩn xác.",
       },
       {

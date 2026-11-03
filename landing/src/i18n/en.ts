@@ -1,10 +1,10 @@
 export const en = {
   meta: {
     title: "EiSen — Best Free Screen Capture & Annotation App | Mac & Windows | 100% Offline & Open Source",
-    description: "Fast, 100% offline screen capture and annotation tool for macOS and Windows. High-DPI crop, step markers, privacy blur, and on-device OCR (Apple Vision & Windows Media OCR). Zero telemetry, no subscriptions.",
+    description: "Fast, 100% offline screen capture and annotation tool for macOS and Windows. High-DPI crop, step markers, blur, and on-device OCR (Apple Vision & Windows Media OCR). Zero telemetry, no subscriptions.",
     keywords: "free screen capture app, free screenshot tool mac windows, cleanshot x free alternative, sharex lightweight alternative, snipping tool alternative, offline ocr screenshot, windows media ocr, apple vision ocr, free annotation tool",
     ogTitle: "EiSen — Free Screen Capture & Annotation for Mac & Windows | 100% Offline",
-    ogDescription: "Fast, 100% on-device screen capture app for macOS and Windows with step annotations, privacy blur, and native offline OCR. Zero telemetry.",
+    ogDescription: "Fast, 100% on-device screen capture app for macOS and Windows with step annotations, blur, and native offline OCR. Zero telemetry.",
   },
   nav: {
     features: "Features",
@@ -24,7 +24,7 @@ export const en = {
     titleStart: "The Best",
     titleHighlight: "Free Screen Capture",
     titleEnd: "App for Mac & Windows.",
-    description: "The lightweight, 100% free screenshot and annotation tool. Crop with sub-pixel precision, annotate with step markers and privacy blur, and extract text instantly with on-device OCR. Zero telemetry, zero subscriptions.",
+    description: "The lightweight, 100% free screenshot and annotation tool. Crop with sub-pixel precision, annotate with step markers and blur, and extract text instantly with on-device OCR. Zero telemetry, zero subscriptions.",
     downloadCta: "Download Free",
     downloadMac: "Download for macOS",
     downloadWin: "Get from Microsoft Store",
@@ -66,7 +66,7 @@ export const en = {
     eyebrow: "Engineered for Productivity",
     title: "Everything you need to capture, annotate, and communicate.",
     subtitle: "No Electron, no subscriptions, no account. Capture, annotate, and copy — all on your local device.",
-    whatsNew: "New in 0.2.8: Pen and highlighter strokes are smoother. Hand tremor is filtered and lines render as curves. Pick Off, Medium, or High under Settings → Pen smoothing.",
+    whatsNew: "New in 1.0 for macOS: Redact and Crop in the editor, capture the previous region with Ctrl+Shift+2, a floating thumbnail you can click or drag, and faster capture on macOS 14 and later. Windows gets these after they are verified there.",
     crop: {
       tag: "Capture Engine",
       title: "Smart Crop & Instant Multi-Monitor Selection",
@@ -160,7 +160,7 @@ export const en = {
       },
       {
         q: "Is EiSen really a 100% free alternative to CleanShot X, Shottr, and ShareX?",
-        a: "Yes! EiSen was created specifically as a free, open-source, privacy-first alternative. It provides clean menu bar/system tray captures, pixel-level magnification, numbered step annotations, redaction blur, and instant offline OCR without paying $29+, buying monthly subscriptions, or configuring 100 overwhelming menus.",
+        a: "Yes! EiSen was created specifically as a free, open-source, privacy-first alternative. It provides clean menu bar/system tray captures, pixel-level magnification, numbered step annotations, blur, and instant offline OCR without paying $29+, buying monthly subscriptions, or configuring 100 overwhelming menus.",
       },
       {
         q: "How does OCR work on Windows without cloud APIs?",
@@ -198,14 +198,14 @@ export const en = {
   windowsPage: {
     meta: {
       title: "EiSen for Windows — Best Free Screenshot & OCR Tool | Windows 10/11",
-      description: "Fast, 100% offline Windows screen capture tool. High-DPI crop, step markers, privacy blur, and offline Windows.Media.Ocr text recognition. Zero bloat, lightweight Rust core.",
+      description: "Fast, 100% offline Windows screen capture tool. High-DPI crop, step markers, blur, and offline Windows.Media.Ocr text recognition. Zero bloat, lightweight Rust core.",
       keywords: "windows screenshot tool free, snipping tool alternative, sharex alternative lightweight, windows ocr screenshot, free windows annotation tool, lightshot alternative",
     },
     badge: "Windows 10 & 11 • 64-bit • Native Rust • 100% Offline",
     titleStart: "The Modern",
     titleHighlight: "Screenshot & OCR App",
     titleEnd: "for Windows.",
-    subtitle: "Ditch the slow Snipping Tool and the bloated ShareX menus. EiSen gives you instant PrintScreen capture with an automatic Ctrl + Shift + 5 fallback, step numbering, sensitive data blur, and native on-device Windows OCR — distributed through the Microsoft Store.",
+    subtitle: "Ditch the slow Snipping Tool and the bloated ShareX menus. EiSen gives you instant PrintScreen capture with an automatic Ctrl + Shift + 5 fallback, step numbering, blur, and native on-device Windows OCR — distributed through the Microsoft Store.",
     downloadCta: "Get from Microsoft Store",
     directDownloadCta: "Download direct .exe (fallback)",
     downloadSub: "v0.2.5 • Windows 10 / 11 (64-bit) • Microsoft Store • Direct unsigned NSIS fallback",
@@ -216,8 +216,8 @@ export const en = {
     cards: [
       {
         icon: "⚡",
-        title: "Sub-5ms Capture with Rust",
-        desc: "No lag, no freeze. Built with Rust and Tauri v2, EiSen captures your multi-monitor desktop instantaneously with zero UI hesitation.",
+        title: "Fast Capture with Rust",
+        desc: "No lag, no freeze. Built with Rust and Tauri v2, EiSen freezes the display under your cursor and opens the selection overlay right away.",
       },
       {
         icon: "🔤",
@@ -236,7 +236,7 @@ export const en = {
       },
       {
         icon: "🎯",
-        title: "Numbered Steps & Redaction Blur",
+        title: "Numbered Steps & Blur",
         desc: "Create beautiful bug reports and visual guides with auto-incrementing ① ② ③ step badges and Gaussian blur.",
       },
       {
