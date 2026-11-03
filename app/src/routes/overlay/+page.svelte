@@ -6,7 +6,7 @@
   import { Copy, Download, Edit3, ScanText, X } from "@lucide/svelte";
   import Toast from "$lib/components/Toast.svelte";
   import { i18n, initLang } from "$lib/i18n";
-  import type { SaveResult } from "$lib/api";
+  import { showFeedback, type SaveResult } from "$lib/api";
 
   import {
     computeToolbarPosition,
@@ -138,19 +138,19 @@
       });
       if (target === "copy") {
         await invoke("cmd_copy");
-        showToast(t.toasts.copied, "ok");
         await hideOverlay();
+        void showFeedback(t.toasts.copied);
       } else if (target === "save") {
         const r = await invoke<SaveResult>("cmd_save");
-        showToast(`${t.toasts.saved}: ${basename(r.path)}`, "ok");
         await hideOverlay();
+        void showFeedback(`${t.toasts.saved}: ${basename(r.path)}`, "ok", r.path);
       } else if (target === "ocr") {
         const text = await invoke<string>("cmd_extract_text");
         if (text) {
           await navigator.clipboard.writeText(text);
           void invoke("cmd_play_sound", { effect: "copy" });
-          showToast(t.ocr.copied, "ok");
           await hideOverlay();
+          void showFeedback(t.ocr.copied);
         } else {
           showToast(t.ocr.noText, "err");
           await revealOverlay();

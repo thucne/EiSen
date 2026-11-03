@@ -517,6 +517,10 @@ pub fn begin_capture(app: &tauri::AppHandle) -> Result<String, String> {
         orchestrator.cancel();
     }
     hide_editor_for_capture(app, &orchestrator);
+    // A confirmation still on screen must not land in the new capture.
+    if let Some(feedback) = app.get_webview_window("feedback") {
+        let _ = feedback.hide();
+    }
     let mut editor_hold = EditorHold {
         app: app.clone(),
         orchestrator: (*orchestrator).clone(),

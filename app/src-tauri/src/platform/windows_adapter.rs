@@ -274,3 +274,17 @@ mod tests {
         }
     }
 }
+
+/// Select a saved file in File Explorer. The path comes from a validated IPC
+/// argument and is never passed through a shell. Explorer exits non-zero even
+/// on success, so only a failed spawn counts as an error.
+#[cfg(target_os = "windows")]
+pub fn reveal_in_file_manager(path: &std::path::Path) -> Result<(), String> {
+    use std::os::windows::process::CommandExt;
+
+    std::process::Command::new("explorer")
+        .raw_arg(format!("/select,\"{}\"", path.display()))
+        .spawn()
+        .map(|_| ())
+        .map_err(|e| format!("failed to open File Explorer: {e}"))
+}

@@ -212,6 +212,51 @@ pub fn open_screen_permission_settings() -> Result<(), String> {
     Ok(())
 }
 
+/// Reveal a saved file in Finder. The path comes from a validated IPC argument
+/// and is passed as one argv entry, never through a shell.
+#[cfg(target_os = "macos")]
+pub fn reveal_in_file_manager(path: &Path) -> Result<(), String> {
+    std::process::Command::new("open")
+        .arg("-R")
+        .arg(path)
+        .spawn()
+        .map(|_| ())
+        .map_err(|e| format!("failed to open Finder: {e}"))
+}
+
+/// Keep the feedback window above other apps, full-screen ones included.
+#[cfg(target_os = "macos")]
+pub fn elevate_feedback_window(window: &tauri::WebviewWindow) {
+    use objc2_app_kit::{NSWindow, NSWindowCollectionBehavior};
+
+    if let Ok(ns_win_ptr) = window.ns_window() {
+        let ns_win = ns_win_ptr as *mut NSWindow;
+        unsafe {
+            let win: &NSWindow = &*ns_win;
+            win.setLevel(1000);
+            win.setCollectionBehavior(
+                NSWindowCollectionBehavior::CanJoinAllSpaces
+                    | NSWindowCollectionBehavior::Stationary
+                    | NSWindowCollectionBehavior::FullScreenAuxiliary,
+            );
+        }
+    }
+}
+
+/// Show a window without making it key, so typing stays in the user's app.
+#[cfg(target_os = "macos")]
+pub fn show_without_activation(window: &tauri::WebviewWindow) {
+    use objc2_app_kit::NSWindow;
+
+    if let Ok(ns_win_ptr) = window.ns_window() {
+        let ns_win = ns_win_ptr as *mut NSWindow;
+        unsafe {
+            let win: &NSWindow = &*ns_win;
+            win.orderFrontRegardless();
+        }
+    }
+}
+
 /// Elevate the overlay window above the macOS Menu Bar and Dock (NSScreenSaverWindowLevel)
 /// so dragging selection boxes across the menu bar and dock receives pointer events.
 #[cfg(target_os = "macos")]
@@ -256,11 +301,24 @@ pub fn elevate_overlay_window(window: &tauri::WebviewWindow) {
 extern "C" {}
 
 /// Extract text from an image file using macOS Vision framework (VNRecognizeTextRequest).
+///
+/// The default request reads Latin scripts, Vietnamese included, but returns
+/// nothing for scripts such as Japanese or Korean. Language detection reads
+/// those, yet turns short Vietnamese into Thai, so it only runs as a fallback.
 #[cfg(target_os = "macos")]
 pub fn extract_text_from_image_path(path: &Path) -> Result<String, String> {
+    let text = recognize_text(path, false)?;
+    if !text.trim().is_empty() {
+        return Ok(text);
+    }
+    recognize_text(path, true)
+}
+
+#[cfg(target_os = "macos")]
+fn recognize_text(path: &Path, detect_language: bool) -> Result<String, String> {
     use objc2::rc::{autoreleasepool, Retained};
     use objc2::runtime::{AnyClass, AnyObject, Bool};
-    use objc2::{class, msg_send};
+    use objc2::{class, msg_send, sel};
     use std::ffi::{CStr, CString};
 
     let path_str = path.to_str().ok_or_else(|| "invalid image path".to_string())?;
@@ -288,6 +346,16 @@ pub fn extract_text_from_image_path(path: &Path) -> Result<String, String> {
         // 0 = VNRequestTextRecognitionLevelAccurate
         let _: () = msg_send![&*req, setRecognitionLevel: 0isize];
         let _: () = msg_send![&*req, setUsesLanguageCorrection: Bool::YES];
+
+        if detect_language {
+            // Language detection needs macOS 13; older systems have no fallback.
+            let detects: Bool =
+                msg_send![&*req, respondsToSelector: sel!(setAutomaticallyDetectsLanguage:)];
+            if !detects.as_bool() {
+                return Ok(String::new());
+            }
+            let _: () = msg_send![&*req, setAutomaticallyDetectsLanguage: Bool::YES];
+        }
 
         let req_array: *mut AnyObject = msg_send![cls_nsarray, arrayWithObject: &*req];
         let handler_alloc: *mut AnyObject = msg_send![cls_handler, alloc];
@@ -621,3 +689,26 @@ mod tests {
 
 
 
+
+#[cfg(all(test, target_os = "macos"))]
+mod ocr_tests {
+    use super::extract_text_from_image_path;
+    use std::path::Path;
+
+    fn ocr_fixture(name: &str) -> String {
+        let path = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("tests/fixtures")
+            .join(name);
+        extract_text_from_image_path(&path).expect("OCR should run on the fixture")
+    }
+
+    #[test]
+    fn keeps_short_vietnamese_on_the_default_request() {
+        assert_eq!(ocr_fixture("ocr-vi-short.png"), "Đã lưu ảnh");
+    }
+
+    #[test]
+    fn falls_back_to_language_detection_for_japanese() {
+        assert!(ocr_fixture("ocr-ja.png").contains("東京"));
+    }
+}

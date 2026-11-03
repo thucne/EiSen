@@ -40,6 +40,30 @@ export interface SaveResult {
 }
 
 /**
+ * Confirm a finished action in the feedback window. A failure here never
+ * fails the action it reports on, so it is only logged.
+ */
+export async function showFeedback(
+  message: string,
+  kind: "ok" | "err" = "ok",
+  path: string | null = null,
+): Promise<void> {
+  try {
+    await invoke("cmd_show_feedback", { message, kind, path });
+  } catch (err) {
+    console.error("cmd_show_feedback failed:", err);
+  }
+}
+
+export function hideFeedback(): Promise<void> {
+  return invoke("cmd_hide_feedback");
+}
+
+export function revealPath(path: string): Promise<void> {
+  return invoke("cmd_reveal_path", { path });
+}
+
+/**
  * Begin a new capture session and display the overlay.
  */
 export function beginCapture(): Promise<string> {

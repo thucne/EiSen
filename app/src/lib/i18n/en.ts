@@ -102,6 +102,10 @@ export const en = {
     canvasLabel: "editor canvas",
     deleteHint: "Delete — click to remove",
     keptOpen: "This edit stays open. Copy or save it before replacing it.",
+    discardWarning: "Unsaved annotations. Close again to discard them.",
+  },
+  feedback: {
+    reveal: "Show in folder",
   },
   hub: {
     tagline: "Fast Screen Capture for macOS & Windows",

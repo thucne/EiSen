@@ -148,7 +148,7 @@ describe("overlay IPC contract", () => {
 });
 
 describe("overlay feedback", () => {
-  it("shows a success toast after copy", async () => {
+  it("confirms a copy in the feedback window once the overlay is hidden", async () => {
     h.invoke.mockImplementation((cmd: string) =>
       cmd === "cmd_commit_region"
         ? Promise.resolve(fullscreenSession())
@@ -159,8 +159,14 @@ describe("overlay feedback", () => {
     emit("fullscreen-ready");
     await tick();
     fireEvent.click(toolbarBtn(`${en.overlay.copyToClipboard} (Enter / DblClick)`));
-    expect(await screen.findByText(en.toasts.copied)).toBeTruthy();
-    await waitFor(() => expect(h.hide).toHaveBeenCalled());
+    await waitFor(() =>
+      expect(h.invoke).toHaveBeenCalledWith("cmd_show_feedback", {
+        message: en.toasts.copied,
+        kind: "ok",
+        path: null,
+      }),
+    );
+    expect(h.hide).toHaveBeenCalled();
     expect(h.show).not.toHaveBeenCalled();
   });
 
@@ -213,9 +219,15 @@ describe("overlay feedback", () => {
     emit("fullscreen-ready");
     await tick();
     fireEvent.click(toolbarBtn(`${en.actions.extractText} (O)`));
-    expect(await screen.findByText(en.ocr.copied)).toBeTruthy();
+    await waitFor(() =>
+      expect(h.invoke).toHaveBeenCalledWith("cmd_show_feedback", {
+        message: en.ocr.copied,
+        kind: "ok",
+        path: null,
+      }),
+    );
     expect(navigator.clipboard.writeText).toHaveBeenCalledWith("hello world");
-    await waitFor(() => expect(h.hide).toHaveBeenCalled());
+    expect(h.hide).toHaveBeenCalled();
   });
 });
 

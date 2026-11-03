@@ -47,6 +47,7 @@
     sizeOptionsFor,
   } from "$lib/editor/keyboardShortcuts";
   import { createSessionLoader, watchFocusReload } from "$lib/editor/session";
+  import { createCloseGuard } from "$lib/editor/closeGuard";
   import {
     HANDLE_R,
     cornerHandles,
@@ -243,6 +244,13 @@
       refreshPenSmoothing();
       return loadSession();
     });
+    const unClose = getCurrentWindow().onCloseRequested((event) => {
+      if (exportedAndClosing) return;
+      const unsaved = get(elements).length > 0 || get(editingId) != null;
+      if (closeGuard.allowClose(unsaved)) return;
+      event.preventDefault();
+      showToast(get(i18n).editor.discardWarning, "err");
+    });
     const unReplace = listen("editor-replace-request", () => {
       if (get(elements).length > 0 || get(editingId) != null) {
         showToast(get(i18n).editor.keptOpen, "ok");
@@ -255,6 +263,7 @@
     });
     return () => {
       void un.then((fn) => fn());
+      void unClose.then((fn) => fn());
       void unReplace.then((fn) => fn());
     };
   });
@@ -525,10 +534,10 @@
     }
   }
 
-  /** Toast dwell before hiding the editor. Long enough to read a short
-   *  confirmation, short enough not to feel like lag. */
-  const EXIT_DWELL_MS = 250;
+  const closeGuard = createCloseGuard();
+  let exportedAndClosing = false;
 
+  /** Every close path goes through the guard in `onCloseRequested`. */
   function closeEditor() {
     void getCurrentWindow().close();
   }
@@ -537,8 +546,11 @@
     toast = { message, kind };
   }
 
-  function exitSoon() {
-    setTimeout(() => closeEditor(), EXIT_DWELL_MS);
+  /** The result has left the editor, so nothing is lost by closing it. */
+  function finishExport(message: string, path: string | null = null) {
+    void api.showFeedback(message, "ok", path);
+    exportedAndClosing = true;
+    closeEditor();
   }
 
   function basename(path: string): string {
@@ -563,31 +575,25 @@
       if ($elements.length === 0) {
         if (kind === "copy") {
           await api.copyEditor();
-          showToast(t.toasts.copied, "ok");
-          exitSoon();
+          finishExport(t.toasts.copied);
         } else if (kind === "save") {
           const r = await api.saveEditor();
-          showToast(`${t.toasts.saved}: ${basename(r.path)}`, "ok");
-          exitSoon();
+          finishExport(`${t.toasts.saved}: ${basename(r.path)}`, r.path);
         } else if (kind === "copyAndSave") {
           const r = await api.copyAndSaveEditor();
-          showToast(`${t.toasts.copiedAndSaved}: ${basename(r.path)}`, "ok");
-          exitSoon();
+          finishExport(`${t.toasts.copiedAndSaved}: ${basename(r.path)}`, r.path);
         }
       } else {
         const bytes = await exportRenderedBytes();
         if (kind === "copy") {
           await api.copyBytes(bytes);
-          showToast(t.toasts.copied, "ok");
-          exitSoon();
+          finishExport(t.toasts.copied);
         } else if (kind === "save") {
           const r = await api.saveBytes(bytes);
-          showToast(`${t.toasts.saved}: ${basename(r.path)}`, "ok");
-          exitSoon();
+          finishExport(`${t.toasts.saved}: ${basename(r.path)}`, r.path);
         } else if (kind === "copyAndSave") {
           const r = await api.copyAndSaveBytes(bytes);
-          showToast(`${t.toasts.copiedAndSaved}: ${basename(r.path)}`, "ok");
-          exitSoon();
+          finishExport(`${t.toasts.copiedAndSaved}: ${basename(r.path)}`, r.path);
         }
       }
     } catch (err) {

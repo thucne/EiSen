@@ -443,6 +443,28 @@ fn apply_window_glass(window: &tauri::WebviewWindow) -> tauri::Result<()> {
     )
 }
 
+/// The monitor the last capture was taken from.
+fn captured_monitor(app: &tauri::AppHandle) -> tauri::Result<Option<tauri::Monitor>> {
+    let monitors = app.available_monitors()?;
+    #[cfg(target_os = "macos")]
+    let active_idx = crate::platform::mac_adapter::active_display_index().unwrap_or(0);
+    #[cfg(target_os = "windows")]
+    let active_idx = {
+        let target = crate::platform::windows_adapter::active_display_geometry()
+            .ok_or_else(|| std::io::Error::other("captured Windows monitor geometry is unavailable"))?;
+        let geometries = monitors
+            .iter()
+            .map(crate::core::capture::display_geometry_from_tauri)
+            .collect::<Vec<_>>();
+        crate::core::capture::matching_monitor_index(target, &geometries)
+            .ok_or_else(|| std::io::Error::other("captured Windows monitor could not be matched to a Tauri monitor"))?
+    };
+    #[cfg(not(any(target_os = "macos", target_os = "windows")))]
+    let active_idx = 0;
+
+    Ok(monitors.get(active_idx).cloned())
+}
+
 /// Create (once) and reveal the editor window, sized to the current capture
 /// region plus the toolbar, centered on the screen.
 ///
@@ -470,28 +492,7 @@ fn show_editor(app: &tauri::AppHandle, orchestrator: &CaptureOrchestrator) -> ta
     let _ = window.set_title(app_config(app).lang.editor_title());
     let _ = apply_window_glass(&window);
     if let Some((_, rect, _)) = orchestrator.last() {
-        let monitor = {
-            let monitors = app.available_monitors()?;
-            #[cfg(target_os = "macos")]
-            let active_idx = crate::platform::mac_adapter::active_display_index().unwrap_or(0);
-            #[cfg(target_os = "windows")]
-            let active_idx = {
-                let target = crate::platform::windows_adapter::active_display_geometry()
-                    .ok_or_else(|| std::io::Error::other("captured Windows monitor geometry is unavailable"))?;
-                let geometries = monitors
-                    .iter()
-                    .map(crate::core::capture::display_geometry_from_tauri)
-                    .collect::<Vec<_>>();
-                crate::core::capture::matching_monitor_index(target, &geometries)
-                    .ok_or_else(|| std::io::Error::other("captured Windows monitor could not be matched to a Tauri monitor"))?
-            };
-            #[cfg(not(any(target_os = "macos", target_os = "windows")))]
-            let active_idx = 0;
-
-            monitors.get(active_idx).cloned()
-        };
-
-        if let Some(mon) = monitor {
+        if let Some(mon) = captured_monitor(app)? {
             let scale = mon.scale_factor();
             let size = mon.size();
             let pos = mon.position();
@@ -848,6 +849,98 @@ fn cmd_open_screen_settings() -> Result<(), String> {
     platform::mac_adapter::open_screen_permission_settings()
 }
 
+const FEEDBACK_WIDTH: f64 = 460.0;
+const FEEDBACK_HEIGHT: f64 = 64.0;
+const FEEDBACK_TOP_INSET: f64 = 44.0;
+
+/// Top-left of the feedback window: centered on the monitor, near its top edge.
+/// All arguments share one unit, logical or physical.
+fn feedback_position(mon_x: f64, mon_y: f64, mon_width: f64, width: f64, inset: f64) -> (f64, f64) {
+    (mon_x + (mon_width - width) / 2.0, mon_y + inset)
+}
+
+#[derive(Clone, serde::Serialize)]
+struct FeedbackPayload {
+    message: String,
+    kind: String,
+    path: Option<String>,
+}
+
+fn place_feedback_window(app: &tauri::AppHandle, window: &tauri::WebviewWindow) {
+    let Some(mon) = captured_monitor(app).ok().flatten() else {
+        return;
+    };
+    let scale = mon.scale_factor();
+    let size = mon.size();
+    let pos = mon.position();
+    #[cfg(target_os = "windows")]
+    {
+        let (x, y) = feedback_position(
+            pos.x as f64,
+            pos.y as f64,
+            size.width as f64,
+            FEEDBACK_WIDTH * scale,
+            FEEDBACK_TOP_INSET * scale,
+        );
+        let _ = window.set_position(tauri::PhysicalPosition::new(x, y));
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        let (x, y) = feedback_position(
+            pos.x as f64 / scale,
+            pos.y as f64 / scale,
+            size.width as f64 / scale,
+            FEEDBACK_WIDTH,
+            FEEDBACK_TOP_INSET,
+        );
+        let _ = window.set_position(tauri::LogicalPosition::new(x, y));
+    }
+}
+
+/// Confirm a finished action after its overlay or editor window has gone away.
+#[tauri::command]
+fn cmd_show_feedback(
+    app: tauri::AppHandle,
+    message: String,
+    kind: String,
+    path: Option<String>,
+) -> Result<(), String> {
+    let window = app
+        .get_webview_window("feedback")
+        .ok_or_else(|| "feedback window is unavailable".to_string())?;
+    place_feedback_window(&app, &window);
+    window
+        .emit("feedback-show", FeedbackPayload { message, kind, path })
+        .map_err(|e| e.to_string())?;
+    #[cfg(target_os = "macos")]
+    platform::mac_adapter::show_without_activation(&window);
+    #[cfg(not(target_os = "macos"))]
+    window.show().map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
+fn cmd_hide_feedback(app: tauri::AppHandle) {
+    if let Some(window) = app.get_webview_window("feedback") {
+        let _ = window.hide();
+    }
+}
+
+/// Show a saved capture in Finder or File Explorer.
+#[tauri::command]
+fn cmd_reveal_path(app: tauri::AppHandle, path: String) -> Result<(), String> {
+    let path = std::path::Path::new(&path);
+    // IPC trust boundary: route through the shared allowlist like every
+    // path-taking command (module invariant in domain/path_guard.rs).
+    crate::domain::path_guard::ensure_allowed(path, &build_validator_roots(&app))?;
+    #[cfg(target_os = "macos")]
+    return platform::mac_adapter::reveal_in_file_manager(path);
+    #[cfg(target_os = "windows")]
+    return platform::windows_adapter::reveal_in_file_manager(path);
+    #[cfg(not(any(target_os = "macos", target_os = "windows")))]
+    Err("reveal is supported on macOS and Windows only".to_string())
+}
+
 /// Return the application semantic version (from Cargo.toml at compile time).
 #[tauri::command]
 fn cmd_get_app_version() -> &'static str {
@@ -939,6 +1032,28 @@ builder
                     ));
                 }
             }
+            // Created up front so the first confirmation appears without a load delay.
+            match WebviewWindowBuilder::new(app, "feedback", WebviewUrl::App("feedback".into()))
+                .title("EiSen")
+                .decorations(false)
+                .transparent(true)
+                .always_on_top(true)
+                .skip_taskbar(true)
+                .shadow(false)
+                .resizable(false)
+                .focused(false)
+                .focusable(false)
+                .accept_first_mouse(true)
+                .visible(false)
+                .inner_size(FEEDBACK_WIDTH, FEEDBACK_HEIGHT)
+                .build()
+            {
+                Ok(_feedback) => {
+                    #[cfg(target_os = "macos")]
+                    platform::mac_adapter::elevate_feedback_window(&_feedback);
+                }
+                Err(e) => eprintln!("[eisen] feedback window failed: {e}"),
+            }
             if let Err(e) = tray::setup(app.handle(), cfg.lang) {
                 eprintln!("[eisen] tray setup failed: {e}");
             }
@@ -984,7 +1099,8 @@ builder
                     let _ = window.hide();
                     api.prevent_close();
                 }
-                tauri::WindowEvent::CloseRequested { .. } if window.label() == "editor" => {
+                // Not CloseRequested: the editor can veto a close to protect unsaved marks.
+                tauri::WindowEvent::Destroyed if window.label() == "editor" => {
                     window
                         .state::<Arc<CaptureOrchestrator>>()
                         .clear_editor_pin();
@@ -1021,7 +1137,10 @@ builder
             cmd_screen_permission,
             cmd_open_screen_settings,
             cmd_get_app_version,
-            cmd_play_sound
+            cmd_play_sound,
+            cmd_show_feedback,
+            cmd_hide_feedback,
+            cmd_reveal_path
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
@@ -1030,6 +1149,14 @@ builder
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn feedback_window_centers_on_its_monitor_near_the_top() {
+        assert_eq!(
+            feedback_position(1440.0, -100.0, 1920.0, 460.0, 44.0),
+            (2170.0, -56.0)
+        );
+    }
 
     /// Writable scratch dir OUTSIDE the implicit temp root (under the cargo
     /// target dir), so negative cases genuinely fail the allowlist — same

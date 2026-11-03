@@ -104,6 +104,10 @@ export const vi: Dict = {
     canvasLabel: "khung vẽ trình sửa",
     deleteHint: "Xóa — bấm để gỡ",
     keptOpen: "Bản sửa này vẫn mở. Hãy sao chép hoặc lưu trước khi thay bằng ảnh mới.",
+    discardWarning: "Chú thích chưa được lưu. Đóng lần nữa để bỏ.",
+  },
+  feedback: {
+    reveal: "Hiện trong thư mục",
   },
   hub: {
     tagline: "Chụp màn hình nhanh cho Mac & Windows",
