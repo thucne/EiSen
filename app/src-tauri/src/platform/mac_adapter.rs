@@ -435,18 +435,64 @@ impl ActiveMonitor {
     }
 }
 
-/// Drop key-window status so the previous app is active again. Overlay
-/// `hide()` leaves EiSen Accessory-active with an invisible key window.
-/// Must run on the main thread.
+/// Process to hand focus back to once the overlay or editor is gone; 0 when
+/// EiSen itself was frontmost, so one of its own windows keeps the focus.
 #[cfg(target_os = "macos")]
-pub fn deactivate_app() {
-    use objc2::MainThreadMarker;
-    use objc2_app_kit::NSApplication;
+static PREVIOUS_APP_PID: std::sync::atomic::AtomicI32 = std::sync::atomic::AtomicI32::new(0);
+
+#[cfg(any(target_os = "macos", test))]
+fn previous_app_pid(frontmost: Option<i32>, own: i32) -> i32 {
+    frontmost.filter(|pid| *pid != own).unwrap_or(0)
+}
+
+/// Remember the app the user is in. Call before the overlay takes focus.
+#[cfg(target_os = "macos")]
+pub fn remember_previous_app() {
+    use objc2_app_kit::{NSRunningApplication, NSWorkspace};
+
+    let frontmost = NSWorkspace::sharedWorkspace()
+        .frontmostApplication()
+        .map(|app| app.processIdentifier());
+    let own = NSRunningApplication::currentApplication().processIdentifier();
+    PREVIOUS_APP_PID.store(
+        previous_app_pid(frontmost, own),
+        std::sync::atomic::Ordering::SeqCst,
+    );
+}
+
+/// Give focus back to the remembered app. Overlay `hide()` leaves EiSen
+/// Accessory-active with an invisible key window, and `deactivate` alone leaves
+/// that app's windows inactive until the user clicks. Falls back to `deactivate`
+/// when the app has quit or EiSen was frontmost. Must run on the main thread.
+#[cfg(target_os = "macos")]
+pub fn restore_previous_app() {
+    use objc2::rc::Retained;
+    use objc2::runtime::{AnyObject, Bool};
+    use objc2::{msg_send, sel, MainThreadMarker};
+    use objc2_app_kit::{NSApplication, NSApplicationActivationOptions, NSRunningApplication};
 
     let Some(mtm) = MainThreadMarker::new() else {
         return;
     };
-    NSApplication::sharedApplication(mtm).deactivate();
+    let ns_app: Retained<NSApplication> = NSApplication::sharedApplication(mtm);
+    let pid = PREVIOUS_APP_PID.load(std::sync::atomic::Ordering::SeqCst);
+    let previous = (pid != 0)
+        .then(|| NSRunningApplication::runningApplicationWithProcessIdentifier(pid))
+        .flatten();
+    let Some(previous) = previous else {
+        ns_app.deactivate();
+        return;
+    };
+    unsafe {
+        // macOS 14 only honors an activation the active app has yielded.
+        let ns_app_obj: &AnyObject = &ns_app;
+        let can_yield: Bool =
+            msg_send![ns_app_obj, respondsToSelector: sel!(yieldActivationToApplication:)];
+        if can_yield.as_bool() {
+            let _: () = msg_send![ns_app_obj, yieldActivationToApplication: &*previous];
+        }
+    }
+    previous.activateWithOptions(NSApplicationActivationOptions::empty());
 }
 
 /// All live NSEvent gesture-monitor token pairs. `Retained<AnyObject>` is
@@ -689,6 +735,22 @@ mod tests {
 
 
 
+
+#[cfg(test)]
+mod focus_tests {
+    use super::previous_app_pid;
+
+    #[test]
+    fn remembers_another_app() {
+        assert_eq!(previous_app_pid(Some(42), 7), 42);
+    }
+
+    #[test]
+    fn keeps_focus_inside_eisen_when_it_was_frontmost() {
+        assert_eq!(previous_app_pid(Some(7), 7), 0);
+        assert_eq!(previous_app_pid(None, 7), 0);
+    }
+}
 
 #[cfg(all(test, target_os = "macos"))]
 mod ocr_tests {

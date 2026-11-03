@@ -516,6 +516,8 @@ pub fn begin_capture(app: &tauri::AppHandle) -> Result<String, String> {
     if orchestrator.is_busy() && !overlay.is_visible().unwrap_or(false) {
         orchestrator.cancel();
     }
+    #[cfg(target_os = "macos")]
+    crate::platform::mac_adapter::remember_previous_app();
     hide_editor_for_capture(app, &orchestrator);
     // A confirmation still on screen must not land in the new capture.
     if let Some(feedback) = app.get_webview_window("feedback") {

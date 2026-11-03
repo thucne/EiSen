@@ -86,15 +86,15 @@ fn cmd_cancel_capture(
     Ok(())
 }
 
-/// After overlay hide, drop Accessory key-window status so the previous app
-/// is active again. Double-tap Option is a global NSEvent monitor and would
+/// After overlay hide, drop Accessory key-window status and reactivate the
+/// previous app. Double-tap Option is a global NSEvent monitor and would
 /// otherwise stay deaf until the user clicked another app.
 fn resign_overlay_activation(app: &tauri::AppHandle) {
     #[cfg(target_os = "macos")]
     {
         let app = app.clone();
         let _ = app.run_on_main_thread(move || {
-            crate::platform::mac_adapter::deactivate_app();
+            crate::platform::mac_adapter::restore_previous_app();
         });
     }
     #[cfg(not(target_os = "macos"))]
@@ -1104,6 +1104,14 @@ builder
                     window
                         .state::<Arc<CaptureOrchestrator>>()
                         .clear_editor_pin();
+                    // An open hub keeps the focus inside EiSen.
+                    let hub_visible = window
+                        .app_handle()
+                        .get_webview_window("main")
+                        .is_some_and(|main| main.is_visible().unwrap_or(false));
+                    if !hub_visible {
+                        resign_overlay_activation(window.app_handle());
+                    }
                 }
                 _ => {}
             }
