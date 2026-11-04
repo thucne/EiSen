@@ -1,0 +1,14 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Changelog from '../components/Changelog.astro';
+import { en } from '../i18n/en';
+---
+
+<Layout
+  locale="en"
+  title={en.changelog.metaTitle}
+  description={en.changelog.metaDescription}
+  canonicalUrl="https://eisen.a302.link/changelog"
+>
+  <Changelog locale="en" />
+</Layout>

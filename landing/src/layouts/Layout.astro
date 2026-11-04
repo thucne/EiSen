@@ -24,21 +24,41 @@ const { locale, title, description, canonicalUrl } = Astro.props;
     <link rel="alternate icon" type="image/png" href="/favicon.png" />
     <meta name="theme-color" content="#0f1015" />
     <SeoHead locale={locale} title={title} description={description} canonicalUrl={canonicalUrl} />
+    <!-- Set before first paint so phones never flash a DMG button they can't use. -->
+    <script is:inline>
+      (() => {
+        const ua = navigator.userAgent;
+        const isPhone = /iphone|ipad|ipod|android/i.test(ua) || (/macintosh/i.test(ua) && navigator.maxTouchPoints > 1);
+        if (isPhone) document.documentElement.dataset.device = 'phone';
+      })();
+    </script>
   </head>
-  <body class="min-h-screen bg-[#0f1015] text-slate-100 selection:bg-indigo-500 selection:text-white relative">
-    <!-- Ambient Background Lighting -->
-    <div class="fixed inset-0 pointer-events-none overflow-hidden z-0">
-      <div class="absolute -top-40 left-1/2 -translate-x-1/2 w-[700px] h-[500px] bg-indigo-600/15 blur-[140px] rounded-full"></div>
-      <div class="absolute top-[800px] -left-40 w-[500px] h-[500px] bg-purple-600/10 blur-[130px] rounded-full"></div>
-      <div class="absolute top-[1800px] -right-40 w-[600px] h-[600px] bg-cyan-600/10 blur-[140px] rounded-full"></div>
-    </div>
-
-    <div class="relative z-10 flex flex-col min-h-screen">
+  <body class="min-h-screen bg-[#0f1015] text-zinc-100 selection:bg-[#ff6b3d] selection:text-zinc-950 relative" data-share-url={locale === 'vi' ? 'https://eisen.a302.link/vi/' : 'https://eisen.a302.link/'}>
+    <div class="flex flex-col min-h-screen">
       <Navbar locale={locale} />
       <main class="flex-grow">
         <slot />
       </main>
       <Footer locale={locale} />
     </div>
+
+    <script is:inline>
+      document.addEventListener('click', async (event) => {
+        const button = event.target instanceof Element ? event.target.closest('[data-copy-link]') : null;
+        if (!button) return;
+        const url = document.body.dataset.shareUrl;
+        const label = button.querySelector('[data-copy-label]');
+        try {
+          await navigator.clipboard.writeText(url);
+          if (label) label.textContent = button.dataset.copiedLabel;
+        } catch {
+          if (navigator.share) {
+            await navigator.share({ url }).catch(() => {});
+          } else if (label) {
+            label.textContent = url;
+          }
+        }
+      });
+    </script>
   </body>
 </html>

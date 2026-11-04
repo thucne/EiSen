@@ -3,6 +3,7 @@ import type { Locale } from '../i18n/utils';
 import { getDictionary, dmgDownloadPath, exeDownloadPath, microsoftStoreUrl, releasesUrl } from '../i18n/utils';
 import AppleIcon from './AppleIcon.astro';
 import WindowsIcon from './WindowsIcon.astro';
+import MacFirstNote from './MacFirstNote.astro';
 
 interface Props {
   locale: Locale;
@@ -16,119 +17,80 @@ const dmgUrl = dmgDownloadPath;
 const exeUrl = exeDownloadPath;
 ---
 
-<section id="download" class="py-24 relative overflow-hidden">
-  <!-- Glowing background gradient -->
-  <div class="absolute inset-0 pointer-events-none flex items-center justify-center">
-    <div class="w-[600px] h-[350px] bg-gradient-to-r from-indigo-600/20 via-purple-600/20 to-cyan-600/20 blur-[130px] rounded-full"></div>
-  </div>
+<section id="download" class="py-16 sm:py-24 border-t border-white/10 scroll-mt-16">
+  <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+    <img src="/brand/eisen-mark-reversed.svg" alt="" class="h-12 w-auto" width="48" height="48" />
+    <h2 class="mt-5 text-3xl sm:text-5xl font-bold tracking-tight text-zinc-50">{d.title}</h2>
+    <p class="mt-3 text-lg text-zinc-400">{d.subtitle}</p>
 
-  <div class="relative max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-    <div class="p-6 sm:p-14 rounded-3xl bg-[#161822]/80 border border-white/15 shadow-2xl backdrop-blur-2xl">
-      <!-- Icon & Wordmark -->
-      <div class="flex flex-col items-center gap-3 mb-6">
-        <div class="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 p-[2px] shadow-xl shadow-indigo-500/30">
-          <div class="w-full h-full bg-[#12141d] rounded-[14px] flex items-center justify-center p-2.5 sm:p-3">
-            <img src="/brand/eisen-mark-reversed.svg" alt="EiSen" class="w-full h-full object-contain" width="40" height="40" />
-          </div>
-        </div>
-        <img src="/brand/eisen-wordmark-reversed.svg" alt="EiSen" class="h-5 sm:h-6 w-auto object-contain" width="120" height="40" />
-      </div>
+    <button
+      type="button"
+      data-copy-link
+      data-copied-label={d.copied}
+      class="only-phone mt-7 w-full px-6 py-3.5 rounded-xl bg-zinc-100 text-zinc-900 font-semibold"
+    >
+      <span data-copy-label>{d.copyLink}</span>
+    </button>
 
-      <h2 class="text-3xl sm:text-5xl font-extrabold tracking-tight text-white mb-4">
-        {d.title}
-      </h2>
-      <p class="text-base sm:text-lg text-slate-300 max-w-2xl mx-auto mb-8">
-        {d.subtitle}
-      </p>
+    <div class="not-phone mt-7">
+      <a
+        id="cta-mac-btn"
+        href={dmgUrl}
+        class="inline-flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-xl bg-zinc-100 hover:bg-white text-zinc-900 font-semibold transition-colors"
+      >
+        <AppleIcon class="w-5 h-5 shrink-0" size={20} />
+        <span>{d.buttonMac}</span>
+      </a>
+      <p class="mt-3 text-sm text-zinc-400">{d.detailsMac}</p>
+    </div>
 
-      <!-- Action Buttons for macOS and Windows -->
-      <div class="max-w-2xl mx-auto">
-        <!-- Primary Platform Downloads -->
-        <div class="flex flex-col sm:flex-row items-stretch justify-center gap-3 sm:gap-4">
-          <!-- macOS Download Button -->
-          <a
-            id="cta-mac-btn"
-            href={dmgUrl}
-            class="flex-1 min-h-[56px] inline-flex items-center justify-center gap-3 px-6 sm:px-8 py-3.5 sm:py-4 rounded-2xl bg-gradient-to-r from-indigo-500 via-indigo-600 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-bold text-sm sm:text-base shadow-xl shadow-indigo-500/30 hover:shadow-indigo-500/50 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 text-center"
-          >
-            <AppleIcon class="w-5 h-5 shrink-0" size={20} />
-            <span class="whitespace-normal sm:whitespace-nowrap">{d.buttonMac}</span>
-          </a>
+    <details id="cta-windows" class="mt-8 border-t border-white/10 pt-5 group">
+      <summary class="cursor-pointer text-sm text-zinc-300 hover:text-white list-none flex items-center gap-2">
+        <WindowsIcon class="w-4 h-4 shrink-0" size={16} />
+        <span class="underline underline-offset-4 decoration-zinc-600">{d.windowsSummary}</span>
+      </summary>
 
-          <!-- Windows Microsoft Store Button -->
+      <div class="mt-4 space-y-3">
+        <MacFirstNote locale={locale} />
+        <div class="flex flex-col sm:flex-row gap-3">
           <a
             id="cta-win-store-btn"
             href={microsoftStoreUrl}
             target="_blank"
             rel="noopener noreferrer"
-            class="flex-1 min-h-[56px] inline-flex items-center justify-center gap-3 px-6 sm:px-8 py-3.5 sm:py-4 rounded-2xl bg-gradient-to-r from-cyan-600 via-blue-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white font-bold text-sm sm:text-base shadow-xl shadow-cyan-500/25 hover:shadow-cyan-500/40 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 text-center"
+            class="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl border border-white/20 hover:border-white/40 text-zinc-100 font-medium text-sm transition-colors"
           >
-            <WindowsIcon class="w-5 h-5 shrink-0" size={20} />
-            <span class="whitespace-normal sm:whitespace-nowrap">{d.buttonWin}</span>
+            <WindowsIcon class="w-4 h-4 shrink-0" size={16} />
+            <span>{d.buttonWin}</span>
           </a>
-        </div>
-
-        <!-- Secondary Options: Windows Direct Fallback & GitHub Releases -->
-        <div class="flex flex-col sm:flex-row items-center justify-center gap-3 mt-3 sm:mt-4">
-          <!-- Direct Windows fallback -->
           <a
             id="cta-win-direct-btn"
             href={exeUrl}
-            class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 sm:py-3 rounded-xl bg-amber-400/10 hover:bg-amber-400/15 border border-amber-400/30 text-amber-200 hover:text-white font-medium text-xs sm:text-sm transition-all duration-200"
+            class="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl border border-amber-400/30 hover:border-amber-400/60 text-amber-200 font-medium text-sm transition-colors"
           >
-            <WindowsIcon class="w-4 h-4 shrink-0 text-amber-300" size={16} />
             <span>{d.buttonWinDirect}</span>
           </a>
-
-          <!-- GitHub Releases Button -->
-          <a
-            href={releasesUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 sm:py-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/15 text-slate-300 hover:text-white font-medium text-xs sm:text-sm transition-all duration-200"
-          >
-            <span>{d.viewGithub}</span>
-            <span>→</span>
-          </a>
+        </div>
+        <p class="text-sm text-zinc-400">{d.detailsWin}</p>
+        <div role="note" class="rounded-lg border border-amber-400/30 bg-amber-400/10 p-3 text-sm text-amber-100">
+          <p class="font-semibold text-amber-200">{d.windowsWarningTitle}</p>
+          <p class="mt-1 leading-relaxed">{d.windowsWarning}</p>
         </div>
       </div>
+    </details>
 
-      <div class="mt-8 pt-6 border-t border-white/10 grid grid-cols-1 sm:grid-cols-2 gap-3 text-left max-w-xl mx-auto text-xs text-slate-400 font-mono">
-        <div class="p-3 rounded-xl bg-white/5 border border-white/5">
-          <p class="font-semibold text-slate-300 flex items-center gap-1.5 mb-1">
-            <AppleIcon class="w-3.5 h-3.5" size={14} />
-            <span>macOS</span>
-          </p>
-          <p>{d.detailsMac}</p>
-        </div>
-        <div class="p-3 rounded-xl bg-white/5 border border-white/5">
-          <p class="font-semibold text-slate-300 flex items-center gap-1.5 mb-1">
-            <WindowsIcon class="w-3.5 h-3.5 text-cyan-400" size={14} />
-            <span>Windows</span>
-          </p>
-          <p>{d.detailsWin}</p>
-        </div>
-      </div>
-
-      <div role="note" class="mt-4 mx-auto max-w-2xl rounded-xl border border-amber-400/30 bg-amber-400/10 p-4 text-left text-sm text-amber-100">
-        <p class="font-semibold text-amber-200">{d.windowsWarningTitle}</p>
-        <p class="mt-1 leading-relaxed">{d.windowsWarning}</p>
-      </div>
-    </div>
+    <a href={releasesUrl} target="_blank" rel="noopener noreferrer" class="mt-5 inline-block text-sm text-zinc-300 underline underline-offset-4 decoration-zinc-600 hover:text-white">
+      {d.viewGithub} →
+    </a>
   </div>
 </section>
 
 <script is:inline>
   (() => {
     try {
-      const isWin = navigator.userAgent.toLowerCase().includes('windows');
-      if (isWin) {
-        // Swap visual prominence if on Windows
-        const macBtn = document.getElementById('cta-mac-btn');
-        const winBtn = document.getElementById('cta-win-store-btn');
-        if (macBtn && winBtn && winBtn.parentNode) {
-          winBtn.parentNode.insertBefore(winBtn, macBtn);
-        }
+      if (navigator.userAgent.toLowerCase().includes('windows')) {
+        const windows = document.getElementById('cta-windows');
+        if (windows) windows.open = true;
       }
     } catch {}
   })();

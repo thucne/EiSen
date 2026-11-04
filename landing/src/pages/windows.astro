@@ -3,6 +3,7 @@ import Layout from '../layouts/Layout.astro';
 import WindowsIcon from '../components/WindowsIcon.astro';
 import AppleIcon from '../components/AppleIcon.astro';
 import GithubIcon from '../components/GithubIcon.astro';
+import MacFirstNote from '../components/MacFirstNote.astro';
 import { exeDownloadPath, dmgDownloadPath, githubUrl, microsoftStoreUrl, releasesUrl } from '../i18n/utils';
 import { en } from '../i18n/en';
 
@@ -12,54 +13,17 @@ const description = t.meta.description;
 const canonicalUrl = 'https://eisen.a302.link/windows';
 
 const comparisonRows = [
-  {
-    feature: 'Price & Licensing',
-    eisen: '100% Free & Open Source (MIT)',
-    snipping: 'Free (Built-in Windows)',
-    sharex: 'Free (Donation / Complex)',
-  },
-  {
-    feature: 'Package Size & Memory Use',
-    eisen: 'Store package size varies; memory use depends on workload',
-    snipping: 'System Built-in',
-    sharex: 'Varies by configuration and optional runtimes',
-  },
-  {
-    feature: 'Privacy & Cloud Uploads',
-    eisen: '100% Offline (Zero cloud, zero telemetry)',
-    snipping: 'Windows diagnostic telemetry',
-    sharex: 'Risk of accidental public cloud uploads',
-  },
-  {
-    feature: 'On-Device Text OCR',
-    eisen: 'Native Windows.Media.Ocr (WinRT offline)',
-    snipping: 'Basic (Windows 11 only)',
-    sharex: 'Requires external Tesseract / API setup',
-  },
-  {
-    feature: 'System Tray Resident',
-    eisen: 'Runs quietly from the System Tray',
-    snipping: 'Separate window app',
-    sharex: 'Yes, with 100+ menu options',
-  },
-  {
-    feature: 'Annotation Experience',
-    eisen: 'Modern glassmorphic vector suite & steps',
-    snipping: 'Basic markup & crop only',
-    sharex: 'Complex, crowded editor UI',
-  },
-  {
-    feature: 'Installation Permissions',
-    eisen: 'Current-user installer (No Admin required)',
-    snipping: 'System',
-    sharex: 'Varies',
-  },
+  { feature: 'Price', eisen: 'Free', snipping: 'Included with Windows', sharex: 'Free' },
+  { feature: 'Source code', eisen: 'Open (MIT)', snipping: 'Closed', sharex: 'Open' },
+  { feature: 'Uploads and sharing', eisen: 'None: captures stay on your computer', snipping: 'None built in', sharex: 'A wide range of upload destinations' },
+  { feature: 'On-device text OCR', eisen: 'Native Windows.Media.Ocr', snipping: 'Text actions on Windows 11', sharex: 'OCR tool included' },
+  { feature: 'Screen recording', eisen: 'No', snipping: 'Yes on Windows 11', sharex: 'Yes, including GIF' },
 ];
 
 const faqs = [
   {
     q: 'Which versions of Windows are supported?',
-    a: 'EiSen supports 64-bit Windows 10 (version 1809 or newer) and all versions of Windows 11. It uses modern WinRT APIs and native Rust bindings for maximum performance.',
+    a: 'EiSen 1.0 in the Microsoft Store supports 64-bit Windows 10 (version 2004 or newer) and Windows 11. It uses modern WinRT APIs and native Rust bindings for maximum performance.',
   },
   {
     q: 'Does EiSen require Administrator privileges to install?',
@@ -86,6 +50,10 @@ const faqs = [
   description={description}
   canonicalUrl={canonicalUrl}
 >
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
+    <MacFirstNote locale="en" />
+  </div>
+
   <!-- Hero Section -->
   <section class="relative pt-12 pb-16 sm:pt-16 sm:pb-24 overflow-hidden">
     <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -98,7 +66,7 @@ const faqs = [
 
         <h1 class="text-3xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight text-white leading-[1.15] sm:leading-[1.1]">
           {t.titleStart}{' '}
-          <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-blue-400 to-indigo-400">
+          <span class="text-zinc-50">
             {t.titleHighlight}
           </span>{' '}
           {t.titleEnd}

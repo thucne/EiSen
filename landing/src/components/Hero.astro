@@ -4,6 +4,7 @@ import { getDictionary, dmgDownloadPath, exeDownloadPath, githubUrl, microsoftSt
 import AppleIcon from './AppleIcon.astro';
 import WindowsIcon from './WindowsIcon.astro';
 import GithubIcon from './GithubIcon.astro';
+import MacFirstNote from './MacFirstNote.astro';
 
 interface Props {
   locale: Locale;
@@ -15,299 +16,174 @@ const t = getDictionary(locale);
 const dmgUrl = dmgDownloadPath;
 const exeUrl = exeDownloadPath;
 const winStoreUrl = microsoftStoreUrl;
+const dmgBadge = locale === 'vi' ? '4,56 MB' : '4.56 MB';
+
+const tools = [
+  { label: 'Arrow', path: 'M5 19L19 5m0 0H9m10 0v10' },
+  { label: 'Rectangle', path: 'M4 6h16v12H4z' },
+  { label: 'Pen', path: 'M4 20l4-1L19 8a2 2 0 00-3-3L5 16l-1 4z' },
+  { label: 'Crop', path: 'M7 3v14h14M3 7h14v14' },
+];
 ---
 
-<section class="relative pt-8 pb-16 sm:pt-12 sm:pb-20 lg:pt-20 lg:pb-28 overflow-hidden">
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-    <!-- Hero Text Content -->
-    <div class="text-center max-w-4xl mx-auto space-y-5 sm:space-y-6">
-      <!-- Exclusivity Badge -->
-      <div class="inline-flex items-center gap-2 px-3 py-1 sm:px-3.5 sm:py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/30 backdrop-blur-md text-indigo-300 text-xs sm:text-sm font-medium animate-fade-in shadow-inner shadow-indigo-500/10">
-        <span class="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-        <span>{t.hero.badge}</span>
-      </div>
-
-      <!-- Main H1 Headline -->
-      <h1 class="text-3xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight text-white leading-[1.15] sm:leading-[1.1]">
-        {t.hero.titleStart}{' '}
-        <span class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-400 to-cyan-400">
-          {t.hero.titleHighlight}
-        </span>{' '}
-        {t.hero.titleEnd}
+<section class="pt-8 pb-12 sm:pt-14 sm:pb-20 lg:pt-20 lg:pb-24">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 grid lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] lg:grid-rows-[auto_1fr] gap-x-14 gap-y-7">
+    <div class="lg:self-end">
+      <h1
+        id="hero-title"
+        data-win-text={t.hero.titleWin}
+        class="text-4xl sm:text-6xl lg:text-[3.5rem] xl:text-6xl font-bold tracking-tight text-zinc-50 leading-[1.08]"
+      >
+        {t.hero.title}
       </h1>
-
-      <!-- Subtitle Description -->
-      <p class="text-base sm:text-xl text-slate-300 max-w-2xl mx-auto font-normal leading-relaxed">
-        {t.hero.description}
+      <p id="hero-subtitle" data-win-text={t.hero.subtitleWin} class="mt-4 text-xl sm:text-2xl text-zinc-200 leading-snug">
+        {t.hero.subtitle}
       </p>
-
-      <!-- CTAs & Action Buttons -->
-      <div class="pt-3 sm:pt-4 flex flex-col items-center justify-center gap-3">
-        <div class="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 w-full sm:w-auto">
-          <!-- Primary Smart Download Button -->
-          <a
-            id="hero-download-btn"
-            href={dmgUrl}
-            data-mac-url={dmgUrl}
-            data-win-url={winStoreUrl}
-            data-win-direct-url={exeUrl}
-            data-mac-label={t.hero.downloadMac}
-            data-win-label={t.hero.downloadWin}
-            data-mac-badge="DMG (4.56 MB)"
-            data-win-badge={t.hero.windowsStoreBadge}
-            data-switch-to-win={t.hero.switchToWin}
-            data-switch-to-mac={t.hero.switchToMac}
-            class="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 sm:gap-3 px-6 sm:px-8 py-3.5 sm:py-4 rounded-2xl bg-gradient-to-r from-indigo-500 via-indigo-600 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-semibold text-sm sm:text-base shadow-xl shadow-indigo-500/25 hover:shadow-indigo-500/40 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 group focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
-          >
-            <span id="hero-mac-icon"><AppleIcon class="w-5 h-5 shrink-0" size={20} /></span>
-            <span id="hero-win-icon" class="hidden"><WindowsIcon class="w-5 h-5 shrink-0" size={20} /></span>
-            <span id="hero-download-text">{t.hero.downloadMac}</span>
-            <span id="hero-download-badge" class="text-xs px-2 py-0.5 rounded-full bg-white/20 font-mono font-medium">DMG (4.56 MB)</span>
-          </a>
-
-          <!-- GitHub Secondary Button -->
-          <a
-            href={githubUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            class="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-6 py-3.5 sm:py-4 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/15 text-slate-200 hover:text-white font-medium text-sm sm:text-base backdrop-blur-md hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
-          >
-            <GithubIcon class="w-5 h-5 shrink-0" size={20} />
-            <span>{t.hero.githubCta}</span>
-          </a>
-        </div>
-
-        <!-- Windows direct-download disclosure; hidden unless Windows is selected/detected -->
-        <div
-          id="hero-windows-warning"
-          role="note"
-          aria-hidden="true"
-          class="hidden w-full max-w-xl rounded-xl border border-amber-400/30 bg-amber-400/10 p-3 sm:p-3.5 text-left text-xs sm:text-sm text-amber-100"
-        >
-          <p class="flex items-start gap-2 leading-relaxed">
-            <span aria-hidden="true" class="mt-px shrink-0">⚠️</span>
-            <span>{t.hero.windowsWarning}</span>
-          </p>
-        </div>
-
-        <div id="hero-windows-fallback" aria-hidden="true" class="hidden w-full max-w-xl text-center">
-          <a
-            href={exeUrl}
-            class="inline-flex items-center gap-1.5 text-xs text-amber-200/90 hover:text-amber-100 underline underline-offset-4 decoration-amber-300/40 hover:decoration-amber-200 transition-colors"
-          >
-            {t.hero.windowsFallback}
-          </a>
-        </div>
-
-        <!-- Secondary OS Switcher Link -->
-        <div class="pt-1">
-          <a
-            id="hero-os-switch-link"
-            href={exeUrl}
-            class="inline-flex items-center gap-1.5 text-xs text-indigo-300 hover:text-indigo-200 underline underline-offset-4 decoration-indigo-400/40 hover:decoration-indigo-300 transition-colors"
-          >
-            <span id="hero-switch-text">{t.hero.switchToWin}</span>
-          </a>
-        </div>
-      </div>
-
-      <!-- Microcopy info -->
-      <p class="text-xs text-slate-400 font-medium">
-        {t.hero.requirements}
+      <p class="mt-4 text-base sm:text-lg text-zinc-400 leading-relaxed">
+        {t.hero.description}
       </p>
     </div>
 
-    <!-- Interactive Hero Mockup / App Showcase UI -->
-    <div class="mt-10 sm:mt-12 lg:mt-16 max-w-5xl mx-auto">
-      <!-- Mockup OS Tabs Switcher -->
-      <div class="flex items-center justify-center gap-2 mb-3">
-        <div class="inline-flex p-1 rounded-xl bg-white/5 border border-white/10 backdrop-blur-md">
-          <button
-            id="mockup-tab-mac"
-            type="button"
-            class="inline-flex items-center gap-1.5 px-3 py-1 sm:px-4 sm:py-1.5 rounded-lg text-xs font-semibold transition-all bg-indigo-600 text-white shadow-md"
-          >
-            <AppleIcon class="w-3.5 h-3.5" size={14} />
-            <span>macOS UI</span>
-          </button>
-          <button
-            id="mockup-tab-win"
-            type="button"
-            class="inline-flex items-center gap-1.5 px-3 py-1 sm:px-4 sm:py-1.5 rounded-lg text-xs font-semibold transition-all text-slate-400 hover:text-white"
-          >
-            <WindowsIcon class="w-3.5 h-3.5" size={14} />
-            <span>Windows 11 UI</span>
-          </button>
+    <!-- Comes right after the headline on phones, beside the text from lg up -->
+    <figure class="lg:col-start-2 lg:row-start-1 lg:row-span-2 lg:self-center">
+      <div class="rounded-2xl border border-white/10 bg-[#17181c] overflow-hidden shadow-2xl shadow-black/40">
+        <div class="flex items-center gap-1.5 px-4 h-9 border-b border-white/10" aria-hidden="true">
+          <span class="w-2.5 h-2.5 rounded-full bg-zinc-600"></span>
+          <span class="w-2.5 h-2.5 rounded-full bg-zinc-600"></span>
+          <span class="w-2.5 h-2.5 rounded-full bg-zinc-600"></span>
+          <span class="ml-2 text-xs text-zinc-400">EiSen</span>
+        </div>
+
+        <div class="relative aspect-[16/11] bg-[#1f2025] font-mono text-[11px] sm:text-sm text-zinc-300 p-4 sm:p-7 leading-7 sm:leading-9 overflow-hidden" aria-hidden="true">
+          <p class="text-zinc-500"># {t.hero.demoFile}</p>
+          <p>DATABASE_HOST=db.internal</p>
+          <p class="flex items-center gap-2 whitespace-nowrap">
+            <span>API_KEY=</span>
+            <span class="inline-block h-5 sm:h-6 w-32 sm:w-52 rounded-[2px] bg-black"></span>
+          </p>
+          <p>REGION=ap-southeast-1</p>
+          <p>LOG_LEVEL=info</p>
+
+          <!-- Annotation: a numbered step pointing at the redacted value -->
+          <div class="absolute right-[5%] top-[12%] flex items-center gap-2 font-sans">
+            <span class="w-6 h-6 rounded-full bg-[#ff6b3d] text-zinc-950 font-bold text-xs flex items-center justify-center">1</span>
+            <span class="text-[#ff8f6b] font-medium text-xs sm:text-sm">{t.hero.demoStep}</span>
+          </div>
+          <svg class="absolute inset-0 w-full h-full" viewBox="0 0 160 110" fill="none">
+            <path d="M126 24 C 124 32, 116 37, 106 39" stroke="#ff6b3d" stroke-width="1.2" stroke-linecap="round" />
+            <path d="M110.5 35.6 L106 39 L111 41.6" stroke="#ff6b3d" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+
+          <!-- Floating thumbnail -->
+          <div class="absolute right-[4%] bottom-[6%] w-[26%] aspect-[4/3] rounded-lg bg-zinc-200 p-1 shadow-lg shadow-black/60">
+            <div class="h-full w-full rounded bg-[#26272d] p-1.5 space-y-1">
+              <div class="h-1 w-3/4 rounded bg-zinc-500"></div>
+              <div class="h-1 w-1/2 rounded bg-zinc-600"></div>
+              <div class="h-2 w-2/3 rounded-[1px] bg-black"></div>
+              <div class="h-1 w-3/5 rounded bg-zinc-600"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Editor toolbar -->
+        <div aria-hidden="true" class="flex items-center gap-1 px-2 sm:px-3 py-2 border-t border-white/10 text-zinc-300 text-xs overflow-hidden">
+          {tools.map((tool) => (
+            <span class="p-1.5 sm:p-2 rounded-md shrink-0" title={tool.label}>
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d={tool.path} /></svg>
+            </span>
+          ))}
+          <span class="w-7 h-7 sm:w-8 sm:h-8 rounded-md bg-white/10 flex items-center justify-center shrink-0">
+            <span class="w-4 h-3 rounded-[2px] bg-zinc-100"></span>
+          </span>
+          <span class="ml-auto flex items-center gap-1 shrink-0">
+            <span class="px-2 py-1 rounded-md">OCR</span>
+            <span class="px-2.5 py-1 rounded-md bg-zinc-100 text-zinc-900 font-medium">Copy</span>
+          </span>
         </div>
       </div>
+      <figcaption class="mt-3 text-xs text-zinc-500">{t.hero.demoCaption}</figcaption>
+    </figure>
 
-      <div class="relative rounded-2xl p-2 sm:p-4 bg-gradient-to-b from-white/15 to-white/5 border border-white/10 shadow-2xl shadow-black/80 backdrop-blur-2xl">
-        <!-- macOS Window Titlebar Mockup -->
-        <div id="mockup-titlebar-mac" class="flex items-center justify-between pb-2.5 sm:pb-3 px-2 sm:px-3 border-b border-white/5 text-xs text-slate-400 font-mono">
-          <div class="flex items-center gap-1.5 sm:gap-2 min-w-0">
-            <span class="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-[#ff5f56]/80 inline-block shrink-0"></span>
-            <span class="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-[#ffbd2e]/80 inline-block shrink-0"></span>
-            <span class="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-[#27c93f]/80 inline-block shrink-0"></span>
-            <span class="ml-1 sm:ml-2 text-slate-400 font-sans text-[11px] sm:text-xs font-medium truncate">EiSen<span class="hidden sm:inline"> Screen Capture Overlay (macOS)</span></span>
-          </div>
-          <div class="flex items-center gap-2 sm:gap-3 shrink-0">
-            <span class="hidden sm:inline-flex items-center gap-1 text-[11px] bg-white/10 px-2 py-0.5 rounded text-slate-300">
-              <kbd class="font-mono">⌥⌥</kbd> Trigger
-            </span>
-            <span class="text-indigo-400 font-mono text-[10px] sm:text-[11px] whitespace-nowrap"><span class="hidden sm:inline">1920 × 1080 </span>@ 2x Retina</span>
-          </div>
-        </div>
-
-        <!-- Windows 11 Window Titlebar Mockup -->
-        <div id="mockup-titlebar-win" class="hidden flex items-center justify-between pb-2.5 sm:pb-3 px-2 sm:px-3 border-b border-white/5 text-xs text-slate-400 font-sans">
-          <div class="flex items-center gap-2 min-w-0">
-            <WindowsIcon class="w-3.5 h-3.5 text-cyan-400 shrink-0" size={14} />
-            <span class="text-slate-300 text-[11px] sm:text-xs font-medium truncate">EiSen<span class="hidden sm:inline"> Screen Capture Overlay (Windows 11)</span></span>
-          </div>
-          <div class="flex items-center gap-3 shrink-0">
-            <span class="hidden sm:inline-flex items-center gap-1 text-[11px] bg-white/10 px-2 py-0.5 rounded text-slate-300 font-mono">
-              <kbd>PrtScn</kbd> / <kbd>Ctrl + Shift + 5</kbd> Trigger
-            </span>
-            <!-- Windows 11 Min/Max/Close icons -->
-            <div class="flex items-center gap-2 font-mono text-slate-400 text-xs pl-2 border-l border-white/10">
-              <span class="hover:text-white cursor-default">─</span>
-              <span class="hover:text-white cursor-default">□</span>
-              <span class="hover:text-red-400 cursor-default">✕</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Simulated Workspace / Screenshot Area -->
-        <div class="relative mt-3 rounded-xl overflow-hidden bg-[#161822] border border-white/10 min-h-[360px] sm:min-h-[480px] flex items-center justify-center p-2 sm:p-4">
-          <!-- Background Grid / Code Snippet Illusion (macOS version) -->
-          <div id="mockup-code-mac" class="absolute inset-0 opacity-20 font-mono text-[10px] sm:text-[11px] text-indigo-300 p-4 sm:p-6 select-none overflow-hidden leading-relaxed pointer-events-none">
-            <p>// EiSen Core - Native Rust macOS Capture Engine</p>
-            <p>use objc2_app_kit::&#123;NSApplication, NSImage&#125;;</p>
-            <p>pub fn capture_region(display_id: u32, crop: Rect) -&gt; Result&lt;CaptureResult&gt; &#123;</p>
-            <p>&nbsp;&nbsp;let display = find_display_under_cursor(cursor_pos)?;</p>
-            <p>&nbsp;&nbsp;let image = screencapture::capture_rect(crop)?;</p>
-            <p>&nbsp;&nbsp;let text = vision::recognize_text_local(&amp;image)?;</p>
-            <p>&nbsp;&nbsp;Ok(CaptureResult &#123; image, ocr_text: text &#125;)</p>
-            <p>&#125;</p>
-          </div>
-
-          <!-- Background Grid / Code Snippet Illusion (Windows version) -->
-          <div id="mockup-code-win" class="hidden absolute inset-0 opacity-20 font-mono text-[10px] sm:text-[11px] text-cyan-300 p-4 sm:p-6 select-none overflow-hidden leading-relaxed pointer-events-none">
-            <p>// EiSen Core - Native Rust Windows Capture Engine</p>
-            <p>use windows::Media::Ocr::OcrEngine;</p>
-            <p>pub async fn extract_text_from_image(bytes: &amp;[u8]) -&gt; Result&lt;String&gt; &#123;</p>
-            <p>&nbsp;&nbsp;let engine = OcrEngine::TryCreateFromUserProfileLanguages()?;</p>
-            <p>&nbsp;&nbsp;let software_bitmap = decode_stream_to_bitmap(bytes)?;</p>
-            <p>&nbsp;&nbsp;let ocr_result = engine.RecognizeAsync(&amp;software_bitmap)?.await?;</p>
-            <p>&nbsp;&nbsp;Ok(ocr_result.Text()?.to_string())</p>
-            <p>&#125;</p>
-          </div>
-
-          <!-- Highlighted Crop Selection Area -->
-          <div class="relative w-full max-w-2xl rounded-xl border-2 border-indigo-500 bg-indigo-500/5 shadow-[0_0_50px_-10px_rgba(99,102,241,0.4)] p-3.5 sm:p-6 z-10 flex flex-col justify-between min-h-[260px] sm:min-h-[300px]">
-            <!-- Crop Dimension Badge -->
-            <div class="absolute -top-3 left-3 sm:-top-3.5 sm:left-4 px-2 sm:px-2.5 py-0.5 rounded-md bg-indigo-600 text-white font-mono text-[10px] sm:text-[11px] font-semibold shadow-md flex items-center gap-1 sm:gap-1.5">
-              <span>840 × 460</span>
-              <span class="text-indigo-200">|</span>
-              <span id="mockup-scale-label" class="text-[10px] sm:text-xs">Retina</span>
-            </div>
-
-            <!-- Inside Crop: Simulated Annotations -->
-            <div class="space-y-3 sm:space-y-4">
-              <!-- Numbered Step 1 + Arrow -->
-              <div class="flex items-center gap-2.5 sm:gap-3">
-                <span class="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 text-white text-[11px] sm:text-xs font-bold flex items-center justify-center shadow-lg shadow-indigo-500/40 shrink-0">1</span>
-                <span class="text-xs sm:text-sm font-semibold text-white bg-slate-900/80 px-2.5 sm:px-3 py-1 rounded-lg border border-white/10 backdrop-blur-md">
-                  Select screen crop with pixel-level fine tuning
-                </span>
-              </div>
-
-              <!-- Blur / Redaction Box Simulation -->
-              <div class="inline-flex items-center gap-2 p-2 sm:p-2.5 rounded-lg bg-slate-950/80 border border-red-500/30 backdrop-blur-md max-w-full overflow-hidden">
-                <span class="text-[11px] sm:text-xs text-red-400 font-medium shrink-0">🔒 Blurred:</span>
-                <span class="font-mono text-xs text-slate-400 blur-sm select-none truncate">sk_live_99812938472918237</span>
-                <span class="text-[9px] sm:text-[10px] px-1.5 py-0.5 rounded bg-red-500/20 text-red-300 font-semibold uppercase shrink-0">Blur</span>
-              </div>
-
-              <!-- On-Device OCR Popup Simulation (macOS) -->
-              <div id="mockup-ocr-mac" class="inline-flex items-center gap-2.5 sm:gap-3 p-2.5 sm:p-3 rounded-xl bg-[#1e2235]/95 border border-indigo-500/40 shadow-xl backdrop-blur-md max-w-full overflow-hidden">
-                <div class="w-5 h-5 sm:w-6 sm:h-6 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold text-xs shrink-0">
-                  T
-                </div>
-                <div class="text-left min-w-0">
-                  <div class="text-[10px] sm:text-[11px] text-indigo-300 font-semibold flex items-center gap-1.5 flex-wrap">
-                    <span>Apple Vision OCR</span>
-                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-                    <span class="text-[9px] sm:text-[10px] text-emerald-400 font-mono">Copied to Clipboard!</span>
-                  </div>
-                  <p class="text-[11px] sm:text-xs text-slate-200 font-mono truncate">&quot;use objc2_app_kit::&#123;NSApplication, NSImage&#125;;&quot;</p>
-                </div>
-              </div>
-
-              <!-- On-Device OCR Popup Simulation (Windows) -->
-              <div id="mockup-ocr-win" class="hidden inline-flex items-center gap-2.5 sm:gap-3 p-2.5 sm:p-3 rounded-xl bg-[#1e2235]/95 border border-cyan-500/40 shadow-xl backdrop-blur-md max-w-full overflow-hidden">
-                <div class="w-5 h-5 sm:w-6 sm:h-6 rounded-lg bg-cyan-500/20 text-cyan-400 flex items-center justify-center font-bold text-xs shrink-0">
-                  T
-                </div>
-                <div class="text-left min-w-0">
-                  <div class="text-[10px] sm:text-[11px] text-cyan-300 font-semibold flex items-center gap-1.5 flex-wrap">
-                    <span>Windows Media OCR</span>
-                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-                    <span class="text-[9px] sm:text-[10px] text-emerald-400 font-mono">Copied to Clipboard!</span>
-                  </div>
-                  <p class="text-[11px] sm:text-xs text-slate-200 font-mono truncate">&quot;use windows::Media::Ocr::OcrEngine;&quot;</p>
-                </div>
-              </div>
-            </div>
-
-            <!-- Loupe Eyedropper Simulator at bottom right -->
-            <div class="self-end flex items-center gap-2 sm:gap-2.5 bg-black/85 border border-white/20 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl shadow-2xl backdrop-blur-lg">
-              <div class="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-[#6366f1] border border-white/50 shadow-sm shrink-0"></div>
-              <div class="font-mono text-[11px] sm:text-xs">
-                <span class="text-indigo-400 font-bold">#6366F1</span>
-                <span class="text-slate-400 text-[9px] sm:text-[10px] ml-1 sm:ml-1.5">RGB(99, 102, 241)</span>
-              </div>
-            </div>
-
-            <!-- Floating Overlay Action Toolbar (EiSen signature) -->
-            <div class="absolute -bottom-5 sm:-bottom-6 left-1/2 -translate-x-1/2 w-auto max-w-[96%] bg-[#12141d]/95 border border-white/20 rounded-xl sm:rounded-2xl px-2 sm:px-3 py-1 sm:py-2 shadow-2xl shadow-black/90 backdrop-blur-xl flex items-center gap-1 sm:gap-2 overflow-x-auto scrollbar-none">
-              <!-- Select -->
-              <button class="p-1.5 sm:p-2 rounded-lg bg-white/10 text-white hover:bg-white/20 transition-colors shrink-0" title="Select">
-                <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122"/></svg>
-              </button>
-              <!-- Text -->
-              <button class="p-1.5 sm:p-2 rounded-lg text-slate-300 hover:bg-white/10 hover:text-white transition-colors shrink-0" title="Text">
-                <span class="font-bold text-xs sm:text-sm">T</span>
-              </button>
-              <!-- Arrow -->
-              <button class="p-1.5 sm:p-2 rounded-lg text-slate-300 hover:bg-white/10 hover:text-white transition-colors shrink-0" title="Arrow">
-                <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
-              </button>
-              <!-- Step -->
-              <button class="p-1.5 sm:p-2 rounded-lg text-indigo-400 bg-indigo-500/15 font-bold text-[11px] sm:text-xs shrink-0" title="Numbered Step">
-                ①
-              </button>
-              <!-- Blur -->
-              <button class="p-1.5 sm:p-2 rounded-lg text-slate-300 hover:bg-white/10 hover:text-white transition-colors shrink-0" title="Blur Redact">
-                <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
-              </button>
-              <!-- OCR -->
-              <button class="px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-lg bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-semibold text-[11px] sm:text-xs flex items-center gap-1 shadow-md shadow-indigo-500/30 shrink-0" title="On-Device OCR">
-                <svg class="w-3 h-3 sm:w-3.5 sm:h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                <span>OCR</span>
-              </button>
-              <div class="h-4 w-px bg-white/15 mx-0.5 sm:mx-1 shrink-0"></div>
-              <!-- Copy -->
-              <button class="px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-[11px] sm:text-xs font-semibold hover:bg-emerald-500/30 transition-colors shrink-0">
-                Copy
-              </button>
-            </div>
-          </div>
-        </div>
+    <div class="lg:self-start">
+      <!-- Phones can't run a DMG, so they get the link instead -->
+      <div class="only-phone">
+        <button
+          type="button"
+          data-copy-link
+          data-copied-label={t.hero.copied}
+          class="w-full inline-flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-xl bg-zinc-100 text-zinc-900 font-semibold"
+        >
+          <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M10 14a4 4 0 005.7 0l3-3a4 4 0 00-5.7-5.7l-1 1M14 10a4 4 0 00-5.7 0l-3 3a4 4 0 005.7 5.7l1-1" /></svg>
+          <span data-copy-label>{t.hero.copyLink}</span>
+        </button>
+        <p class="mt-3 text-sm text-zinc-400">{t.hero.phoneNote}</p>
       </div>
-      <p class="text-center text-xs text-slate-400 mt-5 font-mono">
-        {t.hero.demoCaption}
-      </p>
+
+      <div class="not-phone flex flex-col sm:flex-row sm:items-center gap-3">
+        <a
+          id="hero-download-btn"
+          href={dmgUrl}
+          data-mac-url={dmgUrl}
+          data-win-url={winStoreUrl}
+          data-win-direct-url={exeUrl}
+          data-mac-label={t.hero.downloadMac}
+          data-win-label={t.hero.downloadWin}
+          data-switch-to-win={t.hero.switchToWin}
+          data-switch-to-mac={t.hero.switchToMac}
+          class="inline-flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-xl bg-zinc-100 hover:bg-white text-zinc-900 font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-100 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0f1015]"
+        >
+          <span id="hero-mac-icon"><AppleIcon class="w-5 h-5 shrink-0" size={20} /></span>
+          <span id="hero-win-icon" class="hidden"><WindowsIcon class="w-5 h-5 shrink-0" size={20} /></span>
+          <span id="hero-download-text">{t.hero.downloadMac}</span>
+          <span id="hero-download-badge" class="text-sm font-normal text-zinc-600">{dmgBadge}</span>
+        </a>
+
+        <a
+          href={githubUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="inline-flex items-center justify-center gap-2.5 px-5 py-3.5 rounded-xl border border-white/15 hover:border-white/30 text-zinc-200 hover:text-white font-medium transition-colors"
+        >
+          <GithubIcon class="w-5 h-5 shrink-0" size={20} />
+          <span>{t.hero.githubCta}</span>
+        </a>
+      </div>
+
+      <p id="hero-requirements" class="not-phone mt-3 text-sm text-zinc-400">{t.hero.requirements}</p>
+
+      <div class="not-phone mt-2">
+        <a
+          id="hero-os-switch-link"
+          href={exeUrl}
+          class="text-sm text-zinc-300 hover:text-white underline underline-offset-4 decoration-zinc-600 transition-colors"
+        >
+          <span id="hero-switch-text">{t.hero.switchToWin}</span>
+        </a>
+      </div>
+
+      <!-- Shown only when Windows is selected or detected -->
+      <div id="hero-windows-note" class="hidden mt-4 space-y-3">
+        <p class="text-sm text-zinc-300 leading-relaxed">{t.hero.windowsNote}</p>
+        <MacFirstNote locale={locale} />
+      </div>
+
+      <div
+        id="hero-windows-warning"
+        role="note"
+        aria-hidden="true"
+        class="hidden mt-4 rounded-lg border border-amber-400/30 bg-amber-400/10 p-3 text-xs sm:text-sm text-amber-100 leading-relaxed"
+      >
+        {t.hero.windowsWarning}
+      </div>
+
+      <div id="hero-windows-fallback" aria-hidden="true" class="hidden mt-3">
+        <a
+          href={exeUrl}
+          class="text-xs text-amber-200/90 hover:text-amber-100 underline underline-offset-4 decoration-amber-300/40 transition-colors"
+        >
+          {t.hero.windowsFallback}
+        </a>
+      </div>
     </div>
   </div>
 </section>
@@ -317,16 +193,21 @@ const winStoreUrl = microsoftStoreUrl;
     try {
       const isWin = navigator.userAgent.toLowerCase().includes('windows');
 
-      // Elements for OS download buttons
       const btn = document.getElementById('hero-download-btn');
       const macIcon = document.getElementById('hero-mac-icon');
       const winIcon = document.getElementById('hero-win-icon');
       const text = document.getElementById('hero-download-text');
       const badge = document.getElementById('hero-download-badge');
+      const requirements = document.getElementById('hero-requirements');
       const switchLink = document.getElementById('hero-os-switch-link');
       const switchText = document.getElementById('hero-switch-text');
+      const windowsNote = document.getElementById('hero-windows-note');
       const windowsWarning = document.getElementById('hero-windows-warning');
       const windowsFallback = document.getElementById('hero-windows-fallback');
+      const title = document.getElementById('hero-title');
+      const subtitle = document.getElementById('hero-subtitle');
+      const macTitle = title?.textContent.trim();
+      const macSubtitle = subtitle?.textContent.trim();
 
       let currentOS = isWin ? 'win' : 'mac';
 
@@ -341,9 +222,13 @@ const winStoreUrl = microsoftStoreUrl;
           if (macIcon) macIcon.classList.add('hidden');
           if (winIcon) winIcon.classList.remove('hidden');
           if (text) text.textContent = btn?.dataset.winLabel || 'Get from Microsoft Store';
-          if (badge) badge.textContent = btn?.dataset.winBadge || 'Microsoft Store';
+          if (badge) badge.classList.add('hidden');
+          if (requirements) requirements.classList.add('hidden');
+          if (title && title.dataset.winText) title.textContent = title.dataset.winText;
+          if (subtitle && subtitle.dataset.winText) subtitle.textContent = subtitle.dataset.winText;
           if (switchLink && btn) switchLink.href = btn.dataset.macUrl || '#';
-          if (switchText) switchText.textContent = btn?.dataset.switchToMac || 'Looking for macOS version? Download .dmg';
+          if (switchText) switchText.textContent = btn?.dataset.switchToMac || 'On a Mac? Download EiSen 1.0';
+          if (windowsNote) windowsNote.classList.remove('hidden');
           if (windowsWarning) {
             windowsWarning.classList.remove('hidden');
             windowsWarning.setAttribute('aria-hidden', 'false');
@@ -352,7 +237,6 @@ const winStoreUrl = microsoftStoreUrl;
             windowsFallback.classList.remove('hidden');
             windowsFallback.setAttribute('aria-hidden', 'false');
           }
-          switchMockup('win');
         } else {
           if (btn && btn.dataset.macUrl) btn.href = btn.dataset.macUrl;
           if (btn) {
@@ -361,10 +245,14 @@ const winStoreUrl = microsoftStoreUrl;
           }
           if (macIcon) macIcon.classList.remove('hidden');
           if (winIcon) winIcon.classList.add('hidden');
-          if (text) text.textContent = btn?.dataset.macLabel || 'Download for macOS';
-          if (badge) badge.textContent = btn?.dataset.macBadge || 'DMG (4.56 MB)';
+          if (text) text.textContent = btn?.dataset.macLabel || 'Download for Mac';
+          if (badge) badge.classList.remove('hidden');
+          if (requirements) requirements.classList.remove('hidden');
+          if (title && macTitle) title.textContent = macTitle;
+          if (subtitle && macSubtitle) subtitle.textContent = macSubtitle;
           if (switchLink && btn) switchLink.href = btn.dataset.winDirectUrl || btn.dataset.winUrl || '#';
-          if (switchText) switchText.textContent = btn?.dataset.switchToWin || 'Need Windows? Get it from Microsoft Store';
+          if (switchText) switchText.textContent = btn?.dataset.switchToWin || 'On Windows? Get EiSen from the Microsoft Store';
+          if (windowsNote) windowsNote.classList.add('hidden');
           if (windowsWarning) {
             windowsWarning.classList.add('hidden');
             windowsWarning.setAttribute('aria-hidden', 'true');
@@ -373,66 +261,14 @@ const winStoreUrl = microsoftStoreUrl;
             windowsFallback.classList.add('hidden');
             windowsFallback.setAttribute('aria-hidden', 'true');
           }
-          switchMockup('mac');
         }
       }
-
-      // Mockup Tab switcher
-      const tabMac = document.getElementById('mockup-tab-mac');
-      const tabWin = document.getElementById('mockup-tab-win');
-      const titleMac = document.getElementById('mockup-titlebar-mac');
-      const titleWin = document.getElementById('mockup-titlebar-win');
-      const codeMac = document.getElementById('mockup-code-mac');
-      const codeWin = document.getElementById('mockup-code-win');
-      const ocrMac = document.getElementById('mockup-ocr-mac');
-      const ocrWin = document.getElementById('mockup-ocr-win');
-      const scaleLabel = document.getElementById('mockup-scale-label');
-
-      function switchMockup(os) {
-        if (os === 'win') {
-          tabMac?.classList.remove('bg-indigo-600', 'text-white', 'shadow-md');
-          tabMac?.classList.add('text-slate-400');
-          tabWin?.classList.add('bg-cyan-600', 'text-white', 'shadow-md');
-          tabWin?.classList.remove('text-slate-400');
-
-          titleMac?.classList.add('hidden');
-          titleWin?.classList.remove('hidden');
-          codeMac?.classList.add('hidden');
-          codeWin?.classList.remove('hidden');
-          ocrMac?.classList.add('hidden');
-          ocrWin?.classList.remove('hidden');
-          if (scaleLabel) scaleLabel.textContent = '100% DPI';
-        } else {
-          tabWin?.classList.remove('bg-cyan-600', 'text-white', 'shadow-md');
-          tabWin?.classList.add('text-slate-400');
-          tabMac?.classList.add('bg-indigo-600', 'text-white', 'shadow-md');
-          tabMac?.classList.remove('text-slate-400');
-
-          titleWin?.classList.add('hidden');
-          titleMac?.classList.remove('hidden');
-          codeWin?.classList.add('hidden');
-          codeMac?.classList.remove('hidden');
-          ocrWin?.classList.add('hidden');
-          ocrMac?.classList.remove('hidden');
-          if (scaleLabel) scaleLabel.textContent = 'Retina';
-        }
-      }
-
-      tabMac?.addEventListener('click', () => switchMockup('mac'));
-      tabWin?.addEventListener('click', () => switchMockup('win'));
 
       switchLink?.addEventListener('click', (e) => {
-        // If they click the switch link, toggle the state
-        if (currentOS === 'mac') {
-          e.preventDefault();
-          applyOS('win');
-        } else {
-          e.preventDefault();
-          applyOS('mac');
-        }
+        e.preventDefault();
+        applyOS(currentOS === 'mac' ? 'win' : 'mac');
       });
 
-      // Apply initial state based on detection
       if (isWin) {
         applyOS('win');
       }

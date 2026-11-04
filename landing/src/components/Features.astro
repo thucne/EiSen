@@ -7,185 +7,121 @@ interface Props {
 }
 
 const { locale } = Astro.props;
-const t = getDictionary(locale);
-const f = t.features;
+const f = getDictionary(locale).features;
+
+const tagClass = 'inline-block font-mono text-xs text-zinc-400 border border-white/15 rounded px-1.5 py-0.5';
+const stageClass = 'relative aspect-[16/10] overflow-hidden rounded-xl border border-white/10 bg-[#1a1b20]';
 ---
 
-<section id="features" class="py-14 sm:py-24 relative">
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-    <!-- Section Header -->
-    <div class="text-center max-w-3xl mx-auto mb-10 sm:mb-16 space-y-3 sm:space-y-4">
-      <div class="text-xs font-bold tracking-widest text-indigo-400 uppercase font-mono">
-        {f.eyebrow}
-      </div>
-      <h2 class="text-3xl sm:text-5xl font-extrabold tracking-tight text-white">
-        {f.title}
-      </h2>
-      <p class="text-base sm:text-lg text-slate-300">
-        {f.subtitle}
-      </p>
-      <p class="text-sm text-slate-400">
-        {f.whatsNew}
-      </p>
+<section id="features" class="py-16 sm:py-24 scroll-mt-16">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+    <h2 class="max-w-3xl text-3xl sm:text-5xl font-bold tracking-tight text-zinc-50">{f.title}</h2>
+
+    <!-- Each figure carries data-video-slot, where a real recording replaces the illustration later. -->
+    <div class="mt-12 sm:mt-20 space-y-16 sm:space-y-24">
+      <!-- Redact -->
+      <article class="grid lg:grid-cols-2 gap-6 lg:gap-14 items-center">
+        <div>
+          <span class={tagClass}>{f.bothPlatforms}</span>
+          <h3 class="mt-3 text-2xl sm:text-3xl font-semibold tracking-tight text-zinc-50">{f.redact.title}</h3>
+          <p class="mt-3 text-zinc-300 leading-relaxed">{f.redact.description}</p>
+        </div>
+        <figure data-video-slot="redact" role="img" aria-label={f.redact.demoLabel} class={stageClass}>
+          <div class="absolute inset-0 flex flex-col justify-center p-5 sm:p-8 font-mono text-xs sm:text-sm text-zinc-400 leading-8 sm:leading-9">
+            <p>DATABASE_HOST=db.internal</p>
+            <p class="flex items-center gap-2 whitespace-nowrap">
+              <span>API_KEY=</span>
+              <span class="inline-block h-5 sm:h-6 w-40 sm:w-56 max-w-[55%] rounded-[2px] bg-black" aria-hidden="true"></span>
+            </p>
+            <p>REGION=ap-southeast-1</p>
+            <p class="flex items-center gap-2 whitespace-nowrap">
+              <span>PASSWORD=</span>
+              <span class="inline-block h-5 sm:h-6 w-28 sm:w-40 rounded-[2px] bg-black" aria-hidden="true"></span>
+            </p>
+            <p>LOG_LEVEL=info</p>
+          </div>
+        </figure>
+      </article>
+
+      <!-- Floating thumbnail -->
+      <article class="grid lg:grid-cols-2 gap-6 lg:gap-14 items-center">
+        <div class="lg:order-2">
+          <span class={tagClass}>{f.macOnly}</span>
+          <h3 class="mt-3 text-2xl sm:text-3xl font-semibold tracking-tight text-zinc-50">{f.thumbnail.title}</h3>
+          <p class="mt-3 text-zinc-300 leading-relaxed">{f.thumbnail.description}</p>
+        </div>
+        <figure data-video-slot="thumbnail" role="img" aria-label={f.thumbnail.demoLabel} class:list={[stageClass, 'lg:order-1']}>
+          <div class="absolute left-[8%] top-[12%] w-[52%] space-y-2.5" aria-hidden="true">
+            <div class="ml-auto w-fit max-w-full rounded-xl rounded-br-sm bg-zinc-700 px-3 py-1.5 text-xs sm:text-sm text-zinc-100">{f.thumbnail.demoMessage}</div>
+            <div class="h-16 sm:h-24 rounded-lg border border-dashed border-white/25"></div>
+          </div>
+          <svg class="absolute inset-0 w-full h-full" viewBox="0 0 160 100" fill="none" aria-hidden="true">
+            <path d="M126 76 C 112 74, 104 62, 92 52" stroke="#ff6b3d" stroke-width="1.1" stroke-linecap="round" stroke-dasharray="2.4 2.4" />
+            <path d="M97 51.5 L92 52 L93.5 56.6" stroke="#ff6b3d" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+          <div class="absolute right-[5%] bottom-[8%] w-[28%] aspect-[4/3] rounded-lg bg-zinc-200 p-1 shadow-lg shadow-black/50 rotate-[-2deg]" aria-hidden="true">
+            <div class="h-full w-full rounded bg-[#26272d] p-1.5 space-y-1">
+              <div class="h-1 w-3/4 rounded bg-zinc-500"></div>
+              <div class="h-1 w-1/2 rounded bg-zinc-600"></div>
+              <div class="h-2 w-2/3 rounded-[1px] bg-black"></div>
+              <div class="h-1 w-3/5 rounded bg-zinc-600"></div>
+            </div>
+          </div>
+        </figure>
+      </article>
+
+      <!-- Capture previous region -->
+      <article class="grid lg:grid-cols-2 gap-6 lg:gap-14 items-center">
+        <div>
+          <span class={tagClass}>{f.macOnly}</span>
+          <h3 class="mt-3 text-2xl sm:text-3xl font-semibold tracking-tight text-zinc-50">{f.previous.title}</h3>
+          <p class="mt-3 text-zinc-300 leading-relaxed">{f.previous.description}</p>
+        </div>
+        <figure data-video-slot="previous-region" role="img" aria-label={f.previous.demoLabel} class={stageClass}>
+          <div class="absolute inset-[6%] grid grid-cols-3 gap-2 opacity-60" aria-hidden="true">
+            {[0, 1, 2, 3, 4, 5].map(() => <div class="rounded bg-zinc-700/50"></div>)}
+          </div>
+          <div class="absolute left-[24%] top-[20%] w-[52%] h-[48%] border-2 border-[#ff6b3d] shadow-[0_0_0_999px_rgba(0,0,0,0.55)]" aria-hidden="true"></div>
+          <div class="absolute bottom-[8%] left-1/2 -translate-x-1/2 flex items-center gap-1 font-mono text-xs sm:text-sm text-zinc-100" aria-hidden="true">
+            <kbd class="rounded border border-white/25 bg-zinc-800 px-2 py-1">Ctrl</kbd>
+            <kbd class="rounded border border-white/25 bg-zinc-800 px-2 py-1">Shift</kbd>
+            <kbd class="rounded border border-white/25 bg-zinc-800 px-2 py-1">2</kbd>
+          </div>
+        </figure>
+      </article>
+
+      <!-- OCR -->
+      <article class="grid lg:grid-cols-2 gap-6 lg:gap-14 items-center">
+        <div class="lg:order-2">
+          <span class={tagClass}>{f.bothPlatforms}</span>
+          <h3 class="mt-3 text-2xl sm:text-3xl font-semibold tracking-tight text-zinc-50">{f.ocr.title}</h3>
+          <p class="mt-3 text-zinc-300 leading-relaxed">{f.ocr.description}</p>
+        </div>
+        <figure data-video-slot="ocr" role="img" aria-label={f.ocr.demoLabel} class:list={[stageClass, 'lg:order-1']}>
+          <div class="absolute inset-0 flex flex-col items-center justify-center gap-4 px-4" aria-hidden="true">
+            <div class="border-2 border-[#ff6b3d] px-3 py-2 sm:px-5 sm:py-3 font-mono text-xs sm:text-base text-zinc-100 whitespace-nowrap">
+              {f.ocr.demoText}
+            </div>
+            <div class="flex items-center gap-2 rounded-lg bg-zinc-100 px-3 py-1.5 text-xs sm:text-sm font-medium text-zinc-900">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
+              <span>OCR • {f.ocr.demoCopied}</span>
+            </div>
+          </div>
+        </figure>
+      </article>
     </div>
 
-    <!-- Feature Cards Grid (3x2) -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-8">
-      <!-- 1. Smart Crop & Shortcuts -->
-      <div class="relative group p-5 sm:p-8 rounded-2xl bg-[#161822]/90 border border-white/10 hover:border-indigo-500/50 hover:shadow-xl hover:shadow-indigo-500/10 transition-all duration-300 flex flex-col justify-between">
-        <div>
-          <div class="w-12 h-12 rounded-xl bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center text-indigo-400 mb-6 group-hover:scale-110 transition-transform">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+    <!-- The rest of the tool, without a card for each item -->
+    <div class="mt-16 sm:mt-24 pt-10 border-t border-white/10">
+      <h3 class="text-xl font-semibold text-zinc-50">{f.moreTitle}</h3>
+      <dl class="mt-6 grid sm:grid-cols-2 lg:grid-cols-3 gap-x-10 gap-y-5">
+        {f.more.map((item) => (
+          <div>
+            <dt class="font-medium text-zinc-100">{item.title}</dt>
+            <dd class="mt-1 text-sm text-zinc-400 leading-relaxed">{item.description}</dd>
           </div>
-          <span class="text-xs font-mono font-semibold text-indigo-400 tracking-wider uppercase">{f.crop.tag}</span>
-          <h3 class="text-xl font-bold text-white mt-1 mb-3">{f.crop.title}</h3>
-          <p class="text-sm text-slate-300 leading-relaxed mb-6">{f.crop.description}</p>
-        </div>
-        <ul class="space-y-2 border-t border-white/5 pt-4 text-xs text-slate-400 font-medium">
-          <li class="flex items-start gap-2">
-            <span class="text-emerald-400">✓</span>
-            <span>{f.crop.bullet1}</span>
-          </li>
-          <li class="flex items-start gap-2">
-            <span class="text-emerald-400">✓</span>
-            <span>{f.crop.bullet2}</span>
-          </li>
-          <li class="flex items-start gap-2">
-            <span class="text-emerald-400">✓</span>
-            <span>{f.crop.bullet3}</span>
-          </li>
-        </ul>
-      </div>
-
-      <!-- 2. Annotation Suite -->
-      <div class="relative group p-5 sm:p-8 rounded-2xl bg-[#161822]/90 border border-white/10 hover:border-purple-500/50 hover:shadow-xl hover:shadow-purple-500/10 transition-all duration-300 flex flex-col justify-between">
-        <div>
-          <div class="w-12 h-12 rounded-xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-400 mb-6 group-hover:scale-110 transition-transform">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
-          </div>
-          <span class="text-xs font-mono font-semibold text-purple-400 tracking-wider uppercase">{f.annotate.tag}</span>
-          <h3 class="text-xl font-bold text-white mt-1 mb-3">{f.annotate.title}</h3>
-          <p class="text-sm text-slate-300 leading-relaxed mb-6">{f.annotate.description}</p>
-        </div>
-        <ul class="space-y-2 border-t border-white/5 pt-4 text-xs text-slate-400 font-medium">
-          <li class="flex items-start gap-2">
-            <span class="text-emerald-400">✓</span>
-            <span>{f.annotate.bullet1}</span>
-          </li>
-          <li class="flex items-start gap-2">
-            <span class="text-emerald-400">✓</span>
-            <span>{f.annotate.bullet2}</span>
-          </li>
-          <li class="flex items-start gap-2">
-            <span class="text-emerald-400">✓</span>
-            <span>{f.annotate.bullet3}</span>
-          </li>
-        </ul>
-      </div>
-
-      <!-- 3. Redaction & Privacy Blur -->
-      <div class="relative group p-5 sm:p-8 rounded-2xl bg-[#161822]/90 border border-white/10 hover:border-red-500/50 hover:shadow-xl hover:shadow-red-500/10 transition-all duration-300 flex flex-col justify-between">
-        <div>
-          <div class="w-12 h-12 rounded-xl bg-red-500/10 border border-red-500/30 flex items-center justify-center text-red-400 mb-6 group-hover:scale-110 transition-transform">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
-          </div>
-          <span class="text-xs font-mono font-semibold text-red-400 tracking-wider uppercase">{f.redact.tag}</span>
-          <h3 class="text-xl font-bold text-white mt-1 mb-3">{f.redact.title}</h3>
-          <p class="text-sm text-slate-300 leading-relaxed mb-6">{f.redact.description}</p>
-        </div>
-        <ul class="space-y-2 border-t border-white/5 pt-4 text-xs text-slate-400 font-medium">
-          <li class="flex items-start gap-2">
-            <span class="text-emerald-400">✓</span>
-            <span>{f.redact.bullet1}</span>
-          </li>
-          <li class="flex items-start gap-2">
-            <span class="text-emerald-400">✓</span>
-            <span>{f.redact.bullet2}</span>
-          </li>
-          <li class="flex items-start gap-2">
-            <span class="text-emerald-400">✓</span>
-            <span>{f.redact.bullet3}</span>
-          </li>
-        </ul>
-      </div>
-
-      <!-- 4. On-Device OCR -->
-      <div class="relative group p-5 sm:p-8 rounded-2xl bg-[#161822]/90 border border-white/10 hover:border-cyan-500/50 hover:shadow-xl hover:shadow-cyan-500/10 transition-all duration-300 flex flex-col justify-between">
-        <div>
-          <div class="w-12 h-12 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 mb-6 group-hover:scale-110 transition-transform">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-          </div>
-          <span class="text-xs font-mono font-semibold text-cyan-400 tracking-wider uppercase">{f.ocr.tag}</span>
-          <h3 class="text-xl font-bold text-white mt-1 mb-3">{f.ocr.title}</h3>
-          <p class="text-sm text-slate-300 leading-relaxed mb-6">{f.ocr.description}</p>
-        </div>
-        <ul class="space-y-2 border-t border-white/5 pt-4 text-xs text-slate-400 font-medium">
-          <li class="flex items-start gap-2">
-            <span class="text-emerald-400">✓</span>
-            <span>{f.ocr.bullet1}</span>
-          </li>
-          <li class="flex items-start gap-2">
-            <span class="text-emerald-400">✓</span>
-            <span>{f.ocr.bullet2}</span>
-          </li>
-          <li class="flex items-start gap-2">
-            <span class="text-emerald-400">✓</span>
-            <span>{f.ocr.bullet3}</span>
-          </li>
-        </ul>
-      </div>
-
-      <!-- 5. Eyedropper Loupe -->
-      <div class="relative group p-5 sm:p-8 rounded-2xl bg-[#161822]/90 border border-white/10 hover:border-emerald-500/50 hover:shadow-xl hover:shadow-emerald-500/10 transition-all duration-300 flex flex-col justify-between">
-        <div>
-          <div class="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 mb-6 group-hover:scale-110 transition-transform">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4 4.001 4.001 0 015.426-3.738l8.288-8.288a2 2 0 112.828 2.828l-8.288 8.288A4.001 4.001 0 017 21z"/></svg>
-          </div>
-          <span class="text-xs font-mono font-semibold text-emerald-400 tracking-wider uppercase">{f.loupe.tag}</span>
-          <h3 class="text-xl font-bold text-white mt-1 mb-3">{f.loupe.title}</h3>
-          <p class="text-sm text-slate-300 leading-relaxed mb-6">{f.loupe.description}</p>
-        </div>
-        <ul class="space-y-2 border-t border-white/5 pt-4 text-xs text-slate-400 font-medium">
-          <li class="flex items-start gap-2">
-            <span class="text-emerald-400">✓</span>
-            <span>{f.loupe.bullet1}</span>
-          </li>
-          <li class="flex items-start gap-2">
-            <span class="text-emerald-400">✓</span>
-            <span>{f.loupe.bullet2}</span>
-          </li>
-          <li class="flex items-start gap-2">
-            <span class="text-emerald-400">✓</span>
-            <span>{f.loupe.bullet3}</span>
-          </li>
-        </ul>
-      </div>
-
-      <!-- 6. Session History & Menu Bar Hub -->
-      <div class="relative group p-5 sm:p-8 rounded-2xl bg-[#161822]/90 border border-white/10 hover:border-amber-500/50 hover:shadow-xl hover:shadow-amber-500/10 transition-all duration-300 flex flex-col justify-between">
-        <div>
-          <div class="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 mb-6 group-hover:scale-110 transition-transform">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-          </div>
-          <span class="text-xs font-mono font-semibold text-amber-400 tracking-wider uppercase">{f.history.tag}</span>
-          <h3 class="text-xl font-bold text-white mt-1 mb-3">{f.history.title}</h3>
-          <p class="text-sm text-slate-300 leading-relaxed mb-6">{f.history.description}</p>
-        </div>
-        <ul class="space-y-2 border-t border-white/5 pt-4 text-xs text-slate-400 font-medium">
-          <li class="flex items-start gap-2">
-            <span class="text-emerald-400">✓</span>
-            <span>{f.history.bullet1}</span>
-          </li>
-          <li class="flex items-start gap-2">
-            <span class="text-emerald-400">✓</span>
-            <span>{f.history.bullet2}</span>
-          </li>
-          <li class="flex items-start gap-2">
-            <span class="text-emerald-400">✓</span>
-            <span>{f.history.bullet3}</span>
-          </li>
-        </ul>
-      </div>
+        ))}
+      </dl>
     </div>
   </div>
 </section>

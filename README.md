@@ -2,11 +2,13 @@
 
 Fast screen capture and annotation for **macOS** and **Windows**. Built with **Tauri v2**, **Rust**, and **SvelteKit**. Fully local — no telemetry, no network calls for capture or OCR.
 
+> **Mac first.** I built EiSen for my Mac, because I couldn't find a free screenshot app that was good enough. A Mac is also all I have to test on, so the Windows version is built and packaged automatically, and I haven't been able to try it on a real Windows PC. It may have bugs; please [open an issue](https://github.com/thucne/EiSen/issues) if you find one.
+
 ---
 
 ## Install & use
 
-1. **Platforms:** macOS 11+ and Windows 10/11. Version 1.0.0 is macOS only for now; Windows stays on its 0.2 release until the new features are verified there.
+1. **Platforms:** macOS 11+ and Windows 10/11. Version 1.0.0 is on the Microsoft Store and hasn't been run on a real Windows PC yet. The floating thumbnail and capture previous region are macOS only.
 2. **Windows (recommended):** install EiSen from the [Microsoft Store](https://apps.microsoft.com/detail/9NRLQNXFVBF8). Store installations receive updates through Microsoft Store. If Store access is unavailable, use the Windows NSIS setup installer `.exe` from [GitHub Releases](https://github.com/thucne/EiSen/releases) or [eisen.a302.link/download](https://eisen.a302.link/download).
 3. **Windows direct-download note:** the GitHub/website NSIS fallback is unsigned. SmartScreen may show **Unknown publisher** or **Windows protected your PC**, and managed devices may block it. Verify the published `.sha256` sidecar and only continue when you trust the download source. Direct downloads do not include an auto-updater.
 4. After you open EiSen there is **no Dock / Taskbar icon** by default. Look for the EiSen icon in the **menu bar / system tray**: Capture now, Capture previous region (macOS), Settings, History, Quit.
