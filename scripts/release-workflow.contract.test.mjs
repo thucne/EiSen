@@ -23,6 +23,9 @@ assert.match(workflow, /name:\s+EiSen \$\{\{\s*steps\.release_metadata\.outputs\
 assert.match(workflow, /## What's Changed in EiSen/);
 assert.match(workflow, /### ✨ Highlights & Improvements/);
 assert.match(workflow, /### 🔐 Checksums/);
+assert.match(workflow, /Persistent History/);
+assert.match(workflow, /Up to 50 saved captures remain in History across relaunches/);
+assert.match(workflow, /Store may offer an earlier version until certification completes/);
 assert.match(workflow, /shasum -a 256/);
 assert.match(workflow, /Get-FileHash -Algorithm SHA256/);
 assert.match(workflow, /Get-AuthenticodeSignature/);

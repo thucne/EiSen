@@ -7,19 +7,14 @@ compatibility artifact, verifies checksums, and publishes them through one
 final job. The local macOS script remains available for a Mac-only build or
 for validating a notarized bundle before publishing.
 
-As of v0.2.5, the signed and notarized macOS DMG and the Microsoft Store
-Windows MSIX are published. The GitHub NSIS installer remains a direct-download
-fallback and is intentionally unsigned for the compatibility path.
-
-For v0.2.6, publish the signed and notarized macOS DMG on GitHub and submit
-the Windows MSIX to Microsoft Store. Hold the v0.2.6 NSIS installer. The
-cross-platform `Release` workflow below requires an NSIS artifact, so do not
-dispatch it for this release. Build the DMG with `scripts/release-macos.sh`
-from the tagged commit, attach its checksum to a draft GitHub Release, and
-publish that release after verification. Build the Store package with the
-`Store MSIX` workflow from the same tag; upload only its `store` artifact to
-Partner Center. Store certification and the Windows GUI checks remain separate
-evidence gates.
+The current release is v1.0.1. Publish the signed and notarized macOS DMG and
+the unsigned Windows NSIS fallback from the same tag with the `Release`
+workflow, explicitly setting `allow_unsigned_windows=true`. Keep the
+SmartScreen warning and SHA-256 sidecar. Build the 1.0.1.0 Store MSIX
+separately with the `Store MSIX` workflow and submit it to Partner Center.
+Microsoft Store currently offers v1.0.0; show v1.0.1 there only after
+certification completes. The Windows GUI verification matrix remains a
+separate evidence gate.
 
 Signing credentials never enter this repository. Local macOS builds read
 `~/.eisen-release.env`; GitHub Actions reads repository secrets. Do not paste a
@@ -119,13 +114,13 @@ From the repository root, run the signed diagnostic package first, then the
 unsigned package intended for Store upload:
 
 ```powershell
-pwsh .\scripts\build-msix.ps1 -Mode test -Version 0.2.5.0
-pwsh .\scripts\build-msix.ps1 -Mode store -Version 0.2.5.0
+pwsh .\scripts\build-msix.ps1 -Mode test -Version 1.0.1.0
+pwsh .\scripts\build-msix.ps1 -Mode store -Version 1.0.1.0
 ```
 
 `test` creates a locally signed package with a development certificate for
 install/activation smoke testing. It must never be uploaded to Partner
-Center. `store` creates `EiSen_0.2.5.0_x64.msix`, its SHA-256 sidecar, and
+Center. `store` creates `EiSen_1.0.1.0_x64.msix`, its SHA-256 sidecar, and
 metadata under `artifacts/msix/`; this is the package to upload to the
 MSIX/PWA product. The script stages the executable and assets in a temporary
 directory and does not edit the repository manifest.
@@ -134,7 +129,7 @@ The reproducible CI path is the manual **Store MSIX** workflow:
 
 ```bash
 gh workflow run "Store MSIX" --repo thucne/EiSen --ref main \
-  -f ref=v0.2.5 -f version=0.2.5.0
+  -f ref=v1.0.1 -f version=1.0.1.0
 gh run list --repo thucne/EiSen --workflow "Store MSIX" --limit 1
 gh run watch RUN_ID --repo thucne/EiSen --exit-status
 ```
@@ -153,13 +148,14 @@ remains `PENDING` even when CI and Store packaging checks are green.
 
 ### Partner Center submission
 
-Upload only the successful `EiSen_0.2.5.0_x64.msix` artifact. Keep pricing
+Upload only the successful `EiSen_1.0.1.0_x64.msix` artifact. Keep pricing
 free, target Windows desktop x64, use the EiSen website and privacy/support
 links in the Store listing, and describe the local-only capture/OCR behavior.
 The GitHub NSIS download is documented as a secondary unsigned fallback, not as
 the Store package. The Store link is the primary Windows CTA on the README and
 landing site; retain the direct-download warning for users who need the
-fallback. Microsoft Store certification and publication are separate from the
+fallback. Until Microsoft completes certification, the Store listing continues
+to offer v1.0.0. Store certification and publication are separate from the
 GitHub Release workflow.
 
 ## 4. Prepare a release commit
@@ -173,16 +169,16 @@ Versions must agree in:
 Run the check before committing and pass the tag again in CI:
 
 ```bash
-bash scripts/check-version.sh v0.2.5
+bash scripts/check-version.sh v1.0.1
 ```
 
 Commit and tag the release commit, then push both refs:
 
 ```bash
-git commit -am "chore: prepare v0.2.5 release"
-git tag -a v0.2.5 -m "EiSen v0.2.5"
+git commit -am "chore: prepare v1.0.1 release"
+git tag -a v1.0.1 -m "EiSen v1.0.1"
 git push origin main
-git push origin v0.2.5
+git push origin v1.0.1
 ```
 
 Pushing a `v*` tag does not start the release workflow automatically.
@@ -190,15 +186,15 @@ Pushing a `v*` tag does not start the release workflow automatically.
 ## 5. Publish both platforms with GitHub Actions
 
 Use one workflow run per tag. Confirm the GitHub CLI is authenticated, then
-dispatch the workflow against the existing tag. Keep
-`allow_unsigned_windows=false` for the normal signed path:
+dispatch the workflow against the existing tag with the explicitly approved
+unsigned Windows fallback (`allow_unsigned_windows=true`):
 
 ```bash
 gh workflow run Release --repo thucne/EiSen --ref main \
-  -f tag=v0.2.5 -f allow_unsigned_windows=false
+  -f tag=v1.0.1 -f allow_unsigned_windows=true
 gh run list --repo thucne/EiSen --workflow Release --limit 1
 gh run watch RUN_ID --repo thucne/EiSen --exit-status
-gh release view v0.2.5 --repo thucne/EiSen
+gh release view v1.0.1 --repo thucne/EiSen
 ```
 
 The tag keeps the `vX.Y.Z` convention, while the release display name must be
@@ -207,13 +203,6 @@ structure: `What's Changed in EiSen X.Y.Z`, an introductory paragraph,
 `✨ Highlights & Improvements`, and `🔐 Checksums`. The workflow applies this
 display-name and structure automatically; edit the highlights for each release
 when publishing a manually curated release note.
-
-For the v0.2.5 direct-download compatibility artifact, the approved unsigned invocation is:
-
-```bash
-gh workflow run Release --repo thucne/EiSen --ref main \
-  -f tag=v0.2.5 -f allow_unsigned_windows=true
-```
 
 The workflow checks the version triad in both platform jobs. It publishes only
 after the macOS and Windows jobs complete, the DMG/EXE checksums verify, and
@@ -228,7 +217,7 @@ existing GitHub Release:
 
 ```bash
 ./scripts/release-macos.sh              # build and verify only
-./scripts/release-macos.sh --upload v0.2.5
+./scripts/release-macos.sh --upload v1.0.1
 ```
 
 The script requires a matching version tag when `--upload` is used. Omit
@@ -242,20 +231,20 @@ machine. The workflow writes checksum sidecars without a platform-specific
 line ending, so the same command works on macOS and Linux:
 
 ```bash
-mkdir -p /tmp/eisen-release-v0.2.5
-gh release download v0.2.5 --repo thucne/EiSen --dir /tmp/eisen-release-v0.2.5
-(cd /tmp/eisen-release-v0.2.5 && sha256sum -c -- *.dmg.sha256 *.exe.sha256)
+mkdir -p /tmp/eisen-release-v1.0.1
+gh release download v1.0.1 --repo thucne/EiSen --dir /tmp/eisen-release-v1.0.1
+(cd /tmp/eisen-release-v1.0.1 && sha256sum -c -- *.dmg.sha256 *.exe.sha256)
 ```
 
 On macOS, use `shasum -a 256 --check` if `sha256sum` is unavailable. On
 Windows, verify the installer with PowerShell:
 
 ```powershell
-Get-FileHash .\EiSen_0.2.5_x64-setup.exe -Algorithm SHA256
-Get-AuthenticodeSignature .\EiSen_0.2.5_x64-setup.exe
+Get-FileHash .\EiSen_1.0.1_x64-setup.exe -Algorithm SHA256
+Get-AuthenticodeSignature .\EiSen_1.0.1_x64-setup.exe
 ```
 
-For the v0.2.5 direct-download compatibility artifact, `Get-AuthenticodeSignature` is
+For the v1.0.1 direct-download compatibility artifact, `Get-AuthenticodeSignature` is
 expected to report `NotSigned` for the Windows installer. That is a known
 release limitation and is called out in the GitHub release notes; do not treat
 the installer as signed because it was downloaded from the official page.

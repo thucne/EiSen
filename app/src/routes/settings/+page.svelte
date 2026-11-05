@@ -1,13 +1,11 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { goto } from "$app/navigation";
-  import { listen } from "@tauri-apps/api/event";
   import { disable, enable } from "@tauri-apps/plugin-autostart";
   import { open } from "@tauri-apps/plugin-dialog";
   import * as api from "$lib/api";
   import logoMark from "$lib/assets/eisen-mark-reversed.svg";
   import Toast from "$lib/components/Toast.svelte";
-  import { history } from "$lib/history";
   import { isWindowsUserAgent, normalizeHotkey, supportedHotkeys } from "$lib/hotkeyOptions";
   import { i18n, initLang, setLang, uiLangFromConfig } from "$lib/i18n";
   import {
@@ -52,14 +50,7 @@
     isWindows = isWindowsUserAgent(navigator.userAgent);
     void initLang();
     api.getAppVersion().then((v) => { if (v) appVersion = v; }).catch(() => {});
-    const un = listen<string[]>("history", (e) => {
-      history.set(e.payload);
-      void goto("/");
-    });
     void load();
-    return () => {
-      void un.then((fn) => fn());
-    };
   });
 
   async function load() {

@@ -15,16 +15,16 @@ Built with **Astro 5** and **Tailwind CSS**. Fully static, lightweight client sc
   - Smart OS Detection with auto-switching between the macOS DMG and Microsoft Store for Windows
   - Bidirectional `hreflang` alternate links & automated multilingual `sitemap.xml`
 - **Rich Structured Data (SEO):**
-  - Schema.org `SoftwareApplication` (macOS 11.0+ & Windows 10/11, 100% Free, v0.2.5)
+  - Schema.org `SoftwareApplication` (macOS 11.0+ & Windows 10/11, 100% Free; macOS and direct Windows release v1.0.1, Microsoft Store v1.0.0 until certification)
   - Schema.org `FAQPage` for Google Rich Snippets
   - OpenGraph & Twitter Card previews
 - **Branding & Tokens:**
   - Dark Glassmorphism matching the EiSen native desktop app
   - Local variable fonts (`Plus Jakarta Sans` & `JetBrains Mono`)
 - **Direct Downloads & Fast Redirects:**
-  - `/download/windows` and `/exe` 302 to the v0.2.5 GitHub Release NSIS fallback `EiSen_0.2.5_x64-setup.exe` (2,599,622 bytes / 2.60 MB download)
-  - `/download/mac` and `/dmg` 302 to the v1.0.0 GitHub Release `EiSen_1.0.0_aarch64.dmg`
-  - Windows installed size, Microsoft Store package size, and runtime memory use are not represented by those installer download sizes.
+  - `/download/windows` and `/exe` 302 to the v1.0.1 GitHub Release NSIS fallback `EiSen_1.0.1_x64-setup.exe`
+  - `/download/mac` and `/dmg` 302 to the v1.0.1 GitHub Release `EiSen_1.0.1_aarch64.dmg`
+  - Artifact size is shown on the release page; it can change between builds. Windows installed size, Microsoft Store package size, and runtime memory use are not represented by the installer download size.
   - Also: `/download`, `/releases`, `/github`
 - **Windows distribution:** The Microsoft Store listing is the primary Windows install path. The direct NSIS installer remains an unsigned fallback; the site and GitHub release notes warn that SmartScreen or managed-device policy may block it, and users should verify the published SHA-256 sidecar before running.
 

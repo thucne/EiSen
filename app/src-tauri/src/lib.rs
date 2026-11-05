@@ -151,6 +151,10 @@ fn app_config_path(app: &tauri::AppHandle) -> Result<std::path::PathBuf, String>
     Ok(dir.join("config.json"))
 }
 
+fn app_history_path(app: &tauri::AppHandle) -> Result<std::path::PathBuf, String> {
+    Ok(app_config_path(app)?.with_file_name("history.json"))
+}
+
 fn persist_app_config(app: &tauri::AppHandle, cfg: &AppConfig) -> Result<(), String> {
     let path = app_config_path(app)?;
     persist_config(app, &path, cfg)
@@ -811,10 +815,16 @@ async fn cmd_extract_text_bytes(bytes: Vec<u8>) -> Result<String, String> {
 
 /// Record a capture id (its persisted image path) in the session history.
 fn push_history(app: &tauri::AppHandle, id: std::borrow::Cow<'_, str>) {
-    app.state::<Arc<Mutex<CaptureHistory>>>()
+    let state = app.state::<Arc<Mutex<CaptureHistory>>>();
+    let mut history = state
         .lock()
-        .unwrap_or_else(|e| e.into_inner())
-        .push(id.into_owned());
+        .unwrap_or_else(|e| e.into_inner());
+    history.push(id.into_owned());
+    if let Err(error) = history.persist() {
+        eprintln!("[eisen] failed to persist capture history: {error}");
+    }
+    drop(history);
+    emit_history(app);
 }
 
 /// Re-publish the current history to the main window, mirroring the tray's
@@ -822,30 +832,37 @@ fn push_history(app: &tauri::AppHandle, id: std::borrow::Cow<'_, str>) {
 /// dropped and the payload stays a `string[]` of paths (newest first).
 /// Gallery removal never touches the files themselves.
 fn emit_history(app: &tauri::AppHandle) {
-    let paths: Vec<String> = app
-        .state::<Arc<Mutex<CaptureHistory>>>()
+    let state = app.state::<Arc<Mutex<CaptureHistory>>>();
+    let paths = state
         .lock()
         .unwrap_or_else(|e| e.into_inner())
-        .recent()
-        .into_iter()
-        .filter(|p| std::path::Path::new(p).is_file())
-        .cloned()
-        .collect();
+        .recent_paths();
     if let Some(window) = app.get_webview_window("main") {
         let _ = window.emit("history", &paths);
     }
+}
+
+/// Return the current gallery snapshot after listeners have registered. The
+/// hub uses this on mount so a startup/tray event cannot be lost to webview
+/// initialization timing.
+#[tauri::command]
+fn cmd_get_history(app: tauri::AppHandle) -> Vec<String> {
+    app.state::<Arc<Mutex<CaptureHistory>>>()
+        .lock()
+        .unwrap_or_else(|e| e.into_inner())
+        .recent_paths()
 }
 
 /// Remove a path from the session history. GALLERY-ONLY: the image file on
 /// disk is never deleted or moved.
 #[tauri::command]
 fn cmd_remove_history(app: tauri::AppHandle, path: String) -> Result<(), String> {
-    let removed = app
+    let result = app
         .state::<Arc<Mutex<CaptureHistory>>>()
         .lock()
         .unwrap_or_else(|e| e.into_inner())
-        .remove(&path);
-    if !removed {
+        .remove_and_persist(&path)?;
+    if !result {
         return Err(format!("not in history: {path}"));
     }
     emit_history(&app);
@@ -1139,6 +1156,25 @@ builder
             }
 
             let mut cfg = app_config(app.handle());
+            match app_history_path(app.handle()) {
+                Ok(path) => match CaptureHistory::load_or_migrate(&path, &cfg.save_dir, 50) {
+                    Ok(history) => {
+                        *app
+                            .state::<Arc<Mutex<CaptureHistory>>>()
+                            .lock()
+                            .unwrap_or_else(|e| e.into_inner()) = history;
+                    }
+                    Err(error) => {
+                        eprintln!("[eisen] failed to load capture history: {error}");
+                        *app
+                            .state::<Arc<Mutex<CaptureHistory>>>()
+                            .lock()
+                            .unwrap_or_else(|e| e.into_inner()) =
+                            CaptureHistory::with_persistence_path(50, path);
+                    }
+                },
+                Err(error) => eprintln!("[eisen] failed to locate capture history: {error}"),
+            }
             let overlay = WebviewWindowBuilder::new(
                 app,
                 "overlay",
@@ -1269,6 +1305,7 @@ builder
             cmd_save_bytes,
             cmd_copy_and_save_bytes,
             cmd_get_config,
+            cmd_get_history,
             cmd_set_config,
             cmd_reset_config,
             cmd_get_last_capture,

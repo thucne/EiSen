@@ -9,6 +9,21 @@ export interface ChangelogEntry {
 /** Summaries of the GitHub Releases, which stay the source for full notes and checksums. */
 export const changelog: ChangelogEntry[] = [
   {
+    version: '1.0.1',
+    date: '2026-11-05',
+    platform: 'macOS, Windows direct download',
+    en: [
+      'History keeps up to 50 saved captures across relaunches and refreshes when the hub opens or EiSen saves a capture.',
+      'On the first launch after upgrading, EiSen imports up to 50 newest EiSen_*.png files from the configured save folder.',
+      'Removing an item from History hides it from the gallery but leaves its PNG on disk. The Microsoft Store currently offers v1.0.0.',
+    ],
+    vi: [
+      'Lịch sử giữ tối đa 50 ảnh đã lưu sau khi khởi động lại; được cập nhật khi mở trang chính hoặc khi EiSen lưu ảnh.',
+      'Trong lần mở đầu tiên sau khi nâng cấp, EiSen nhập tối đa 50 file EiSen_*.png mới nhất từ thư mục lưu đã chọn.',
+      'Xóa một mục khỏi Lịch sử chỉ ẩn mục đó khỏi thư viện, file PNG vẫn ở trên đĩa. Microsoft Store hiện vẫn cung cấp v1.0.0.',
+    ],
+  },
+  {
     version: '1.0.0',
     date: '2026-11-03',
     platform: 'Windows',

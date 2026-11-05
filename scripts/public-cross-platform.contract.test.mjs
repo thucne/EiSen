@@ -39,6 +39,24 @@ test('landing metadata is cross-platform', async () => {
   assert.match(seoHead, /og:image:alt" content="EiSen — Screen Capture & Annotation for macOS & Windows"/);
 });
 
+test('landing release links and copy distinguish v1.0.1 direct downloads from the Store version', async () => {
+  const redirects = await source('landing/public/_redirects');
+  const english = await source('landing/src/i18n/en.ts');
+  const vietnamese = await source('landing/src/i18n/vi.ts');
+  const changelog = await source('landing/src/i18n/changelog.ts');
+
+  assert.match(redirects, /releases\/download\/v1\.0\.1\/EiSen_1\.0\.1_aarch64\.dmg/);
+  assert.match(redirects, /releases\/download\/v1\.0\.1\/EiSen_1\.0\.1_x64-setup\.exe/);
+  assert.match(english, /Microsoft Store: version 1\.0\.0 • Direct installer: version 1\.0\.1/);
+  assert.match(vietnamese, /Microsoft Store: phiên bản 1\.0\.0 • Bộ cài trực tiếp: phiên bản 1\.0\.1/);
+  assert.match(english, /v1\.0\.1 for macOS and direct Windows keeps up to 50 saved captures in History across relaunches/);
+  assert.match(vietnamese, /v1\.0\.1 trên macOS và Windows tải trực tiếp giữ tối đa 50 ảnh đã lưu trong Lịch sử sau khi khởi động lại/);
+  assert.match(changelog, /imports up to 50 newest EiSen_\*\.png files from the configured save folder/);
+  assert.match(changelog, /Removing an item from History hides it from the gallery but leaves its PNG on disk/);
+  assert.doesNotMatch(english, /History lives in memory|History is empty after a relaunch/);
+  assert.doesNotMatch(vietnamese, /Lịch sử chỉ nằm trong bộ nhớ và trống sau khi mở lại/);
+});
+
 test('desktop app shell uses EiSen branding and cross-platform copy', async () => {
   const appHtml = await source('app/src/app.html');
   const english = await source('app/src/lib/i18n/en.ts');

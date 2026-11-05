@@ -10,7 +10,7 @@ EiSen is a **local macOS and Windows app**. It does not send captures, OCR text,
 
 **Saved captures.** If you Save (or copy-and-save), a PNG is written to the folder you chose in Settings (`save_dir`). The default is your Desktop folder when it exists. Those files are ordinary PNGs you own. EiSen does not encrypt them at rest. Removing an item from the in-app History gallery does **not** delete the file on disk.
 
-**Session History.** The hub gallery is in-memory for the current launch (up to 50 paths). After a relaunch the gallery is empty; that is expected. Files already saved remain in the save folder.
+**Capture History.** In v1.0.1, EiSen keeps up to 50 saved capture paths in History across relaunches. The path list and gallery removals are stored locally in `history.json` beside `config.json`. On the first launch after upgrading, EiSen imports up to 50 newest `EiSen_*.png` files from the configured save folder. History refreshes when the hub opens and after EiSen saves a capture. Removing an item from the gallery keeps it removed from History but does **not** delete its PNG.
 
 **Settings.** Language, save folder, hotkey, “launch at login”, and your sound, floating thumbnail and pen smoothing preferences are stored in `config.json` inside the OS-specific application config directory. Launch-at-login uses local OS startup registration, not a network service.
 

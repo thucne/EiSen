@@ -20,7 +20,7 @@ const comparisonRows = [
   { feature: 'Cover sensitive content', eisen: 'Solid Redact and Blur', cleanshot: 'Pixelate and Blur' },
   { feature: 'Screen recording', eisen: 'No', cleanshot: 'Yes, with a video editor' },
   { feature: 'Scrolling capture', eisen: 'No', cleanshot: 'Yes' },
-  { feature: 'Download Package Size', eisen: '4.56 MB macOS DMG / 2.60 MB Windows NSIS fallback; Store package varies', cleanshot: 'Varies by release' },
+  { feature: 'Download Package Size', eisen: 'See each macOS DMG / Windows NSIS release; Store package varies', cleanshot: 'Varies by release' },
   { feature: 'Account or license', eisen: 'None', cleanshot: 'License key' },
   { feature: 'Platform Support', eisen: 'macOS 11+ (Apple Silicon download) & Windows 10/11 (64-bit)', cleanshot: 'macOS 13+' },
 ];
@@ -40,7 +40,7 @@ const faqs = [
   },
   {
     q: 'How does EiSen compare to Shottr?',
-    a: 'Shottr is a small native Mac app, free to use with reminders after 30 days, $12 for a license, and it has scrolling capture and S3 upload. EiSen is open source with no paid tier, has no upload feature, and also runs on Windows at version 0.2.'
+    a: 'Shottr is a small native Mac app, free to use with reminders after 30 days, $12 for a license, and it has scrolling capture and S3 upload. EiSen is open source with no paid tier, has no upload feature, and also runs on Windows.'
   },
 ];
 ---
@@ -76,7 +76,7 @@ const faqs = [
           >
             <AppleIcon class="w-5 h-5 shrink-0" size={20} />
             <span>Download EiSen Free for Mac</span>
-            <span class="text-xs px-2 py-0.5 rounded-full bg-white/20 font-mono font-medium">DMG (4.56 MB)</span>
+            <span class="text-xs px-2 py-0.5 rounded-full bg-white/20 font-mono font-medium">Apple Silicon DMG</span>
           </a>
 
           <a

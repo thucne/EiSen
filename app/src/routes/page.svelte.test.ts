@@ -55,7 +55,54 @@ describe("hub history smoke", () => {
     });
     expect(screen.getByText(en.hub.itemCount.replace("{n}", "2"))).toBeInTheDocument();
   });
+
+  it("loads persisted history after registering for live updates", async () => {
+    const saved = ["/tmp/one.png", "/tmp/two.png"];
+    h.invoke.mockImplementation((cmd: string) => {
+      if (cmd === "cmd_get_history") {
+        expect(h.listeners.has("history")).toBe(true);
+        return Promise.resolve(saved);
+      }
+      return configOk(cmd)
+        ? Promise.resolve({ lang: "En", save_dir: "/tmp", launch_at_login: false, hotkey: "DoubleOption" })
+        : Promise.resolve(undefined);
+    });
+
+    render(HubPage);
+    await waitFor(() => {
+      expect(document.querySelectorAll(".history-card").length).toBe(2);
+    });
+    expect(historyRows()).toEqual(["one.png", "two.png"]);
+  });
+
+  it("does not let a late initial snapshot overwrite a newer history event", async () => {
+    let resolveInitial!: (paths: string[]) => void;
+    h.invoke.mockImplementation((cmd: string) => {
+      if (cmd === "cmd_get_history") {
+        return new Promise<string[]>((resolve) => {
+          resolveInitial = resolve;
+        });
+      }
+      return configOk(cmd)
+        ? Promise.resolve({ lang: "En", save_dir: "/tmp", launch_at_login: false, hotkey: "DoubleOption" })
+        : Promise.resolve(undefined);
+    });
+
+    render(HubPage);
+    await waitFor(() => expect(resolveInitial).toBeTypeOf("function"));
+    const latest = ["/tmp/newer.png"];
+    h.listeners.get("history")?.({ payload: latest });
+    resolveInitial(["/tmp/older.png"]);
+
+    await waitFor(() => expect(historyRows()).toEqual(["newer.png"]));
+  });
 });
+
+function historyRows(): string[] {
+  return Array.from(document.querySelectorAll(".history-card"), (card) =>
+    card.querySelector(".filename")?.textContent?.trim() ?? "",
+  );
+}
 
 describe("hub thumbnails", () => {
   function emitHistory(payload: string[]) {
