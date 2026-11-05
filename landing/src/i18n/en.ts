@@ -54,9 +54,9 @@ export const en = {
       link: "Read the release notes",
     },
     size: {
-      value: "See release",
-      label: "Current DMG size",
-      sub: "The exact size and SHA-256 checksum are listed with each release asset.",
+      value: "4.61 MB",
+      label: "DMG download",
+      sub: "Apple Silicon v1.0.1 build, with a published SHA-256 checksum.",
       link: "See the release",
     },
     network: {
@@ -191,7 +191,7 @@ export const en = {
   },
   downloadSection: {
     title: "Try it on your next screenshot.",
-    subtitle: "Free, no account. Check the release for the current DMG size.",
+    subtitle: "Free, no account, and a 4.61 MB download.",
     buttonMac: "Download for Mac",
     buttonWin: "Get from Microsoft Store",
     buttonWinDirect: "Use unsigned direct .exe fallback",

@@ -10,7 +10,7 @@ export interface ChangelogEntry {
 export const changelog: ChangelogEntry[] = [
   {
     version: '1.0.1',
-    date: '2026-11-05',
+    date: '2026-11-06',
     platform: 'macOS, Windows direct download',
     en: [
       'History keeps up to 50 saved captures across relaunches and refreshes when the hub opens or EiSen saves a capture.',

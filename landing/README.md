@@ -22,9 +22,9 @@ Built with **Astro 5** and **Tailwind CSS**. Fully static, lightweight client sc
   - Dark Glassmorphism matching the EiSen native desktop app
   - Local variable fonts (`Plus Jakarta Sans` & `JetBrains Mono`)
 - **Direct Downloads & Fast Redirects:**
-  - `/download/windows` and `/exe` 302 to the v1.0.1 GitHub Release NSIS fallback `EiSen_1.0.1_x64-setup.exe`
-  - `/download/mac` and `/dmg` 302 to the v1.0.1 GitHub Release `EiSen_1.0.1_aarch64.dmg`
-  - Artifact size is shown on the release page; it can change between builds. Windows installed size, Microsoft Store package size, and runtime memory use are not represented by the installer download size.
+  - `/download/windows` and `/exe` 302 to the v1.0.1 GitHub Release NSIS fallback `EiSen_1.0.1_x64-setup.exe` (2,729,186 bytes / 2.73 MB download)
+  - `/download/mac` and `/dmg` 302 to the v1.0.1 GitHub Release `EiSen_1.0.1_aarch64.dmg` (4,608,612 bytes / 4.61 MB download)
+  - These are the v1.0.1 artifact download sizes; Windows installed size, Microsoft Store package size, and runtime memory use are not represented by the installer download sizes.
   - Also: `/download`, `/releases`, `/github`
 - **Windows distribution:** The Microsoft Store listing is the primary Windows install path. The direct NSIS installer remains an unsigned fallback; the site and GitHub release notes warn that SmartScreen or managed-device policy may block it, and users should verify the published SHA-256 sidecar before running.
 

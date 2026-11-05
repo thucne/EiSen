@@ -54,9 +54,9 @@ export const vi = {
       link: "Đọc ghi chú phát hành",
     },
     size: {
-      value: "Xem bản phát hành",
-      label: "dung lượng DMG hiện tại",
-      sub: "Dung lượng và mã SHA-256 chính xác được ghi cùng từng file phát hành.",
+      value: "4,61 MB",
+      label: "dung lượng file DMG",
+      sub: "Bản Apple Silicon v1.0.1, có công bố mã SHA-256.",
       link: "Xem bản phát hành",
     },
     network: {
@@ -191,7 +191,7 @@ export const vi = {
   },
   downloadSection: {
     title: "Thử ngay với ảnh chụp tiếp theo của bạn.",
-    subtitle: "Miễn phí, không tài khoản. Xem dung lượng DMG hiện tại trong trang phát hành.",
+    subtitle: "Miễn phí, không tài khoản, chỉ 4,61 MB.",
     buttonMac: "Tải cho Mac",
     buttonWin: "Tải từ Microsoft Store",
     buttonWinDirect: "Dùng bản .exe trực tiếp chưa ký số",
