@@ -220,6 +220,13 @@ export function getThumbnail(path: string): Promise<string> {
 }
 
 /**
+ * Get the persisted capture gallery (newest first).
+ */
+export function getHistory(): Promise<string[]> {
+  return invoke("cmd_get_history");
+}
+
+/**
  * Remove a capture from the session gallery (the file on disk is untouched).
  */
 export function removeHistory(path: string): Promise<void> {

@@ -148,13 +148,10 @@ fn show_history(app: &AppHandle) {
         .state::<Arc<Mutex<CaptureHistory>>>()
         .lock()
         .unwrap_or_else(|e| e.into_inner())
-        .recent()
-        .into_iter()
-        .filter(|p| std::path::Path::new(p).is_file())
-        .cloned()
-        .collect();
+        .recent_paths();
     show_main_window(app);
     if let Some(window) = app.get_webview_window("main") {
+        let _ = window.emit("show-history", ());
         let _ = window.emit("history", &paths);
     }
 }

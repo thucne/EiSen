@@ -16,7 +16,7 @@ const t = getDictionary(locale);
 const dmgUrl = dmgDownloadPath;
 const exeUrl = exeDownloadPath;
 const winStoreUrl = microsoftStoreUrl;
-const dmgBadge = locale === 'vi' ? '4,56 MB' : '4.56 MB';
+const dmgBadge = 'DMG';
 
 const tools = [
   { label: 'Arrow', path: 'M5 19L19 5m0 0H9m10 0v10' },
@@ -227,7 +227,7 @@ const tools = [
           if (title && title.dataset.winText) title.textContent = title.dataset.winText;
           if (subtitle && subtitle.dataset.winText) subtitle.textContent = subtitle.dataset.winText;
           if (switchLink && btn) switchLink.href = btn.dataset.macUrl || '#';
-          if (switchText) switchText.textContent = btn?.dataset.switchToMac || 'On a Mac? Download EiSen 1.0';
+          if (switchText) switchText.textContent = btn?.dataset.switchToMac || 'On a Mac? Download EiSen 1.0.1';
           if (windowsNote) windowsNote.classList.remove('hidden');
           if (windowsWarning) {
             windowsWarning.classList.remove('hidden');

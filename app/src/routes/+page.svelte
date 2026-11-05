@@ -31,6 +31,7 @@
   } | null>(null);
   let permissionOk = $state(true);
   let appVersion = $state<string>("0.2.6");
+  let historyRevision = 0;
 
   function probePermission() {
     api.screenPermission()
@@ -71,14 +72,16 @@
     const unHotkeyWarning = listen<string>("hotkey-warning", (e) => {
       showHotkeyWarning(e.payload);
     });
-    const unH = listen<string[]>("history", (e) => {
-      history.set(e.payload);
+    let disposed = false;
+    let unHistory: (() => void) | undefined;
+    const applyHistory = (paths: string[]) => {
+      history.set(paths);
       // Fire-and-forget: any failed fetch just leaves the card on the styled
       // placeholder below. Policy: the renderer only ever displays
       // server-managed temp/appcache artifacts — the original save_dir
       // path sits OUTSIDE the asset scope and must never be used as a URL.
       Promise.all(
-        e.payload.map((p) =>
+        paths.map((p) =>
           api
             .getThumbnail(p)
             .then((t) => {
@@ -87,12 +90,40 @@
             .catch(() => {}),
         ),
       );
-    });
+    };
+    void listen<string[]>("history", (e) => {
+      historyRevision += 1;
+      applyHistory(e.payload);
+    })
+      .then((unlisten) => {
+        if (disposed) {
+          unlisten();
+          return;
+        }
+        unHistory = unlisten;
+        // Query only after the event subscription is installed. If a newer
+        // save/removal event wins the race with this IPC response, keep it.
+        const requestedRevision = historyRevision;
+        void api
+          .getHistory()
+          .then((paths) => {
+            if (
+              !disposed &&
+              historyRevision === requestedRevision &&
+              Array.isArray(paths)
+            ) {
+              applyHistory(paths);
+            }
+          })
+          .catch(() => {});
+      })
+      .catch(() => {});
     const unS = listen("settings", () => {
       void goto("/settings");
     });
     return () => {
-      void unH.then((fn) => fn());
+      disposed = true;
+      unHistory?.();
       void unS.then((fn) => fn());
       void unHotkey.then((fn) => fn());
       void unHotkeyWarning.then((fn) => fn());
@@ -124,6 +155,7 @@
   function removeCard(path: string) {
     status = null;
     const prev = $history;
+    historyRevision += 1;
     history.update((list) => list.filter((p) => p !== path));
     api.removeHistory(path).catch((err) => {
       history.set(prev);
