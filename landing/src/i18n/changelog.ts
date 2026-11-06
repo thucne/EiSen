@@ -9,6 +9,21 @@ export interface ChangelogEntry {
 /** Summaries of the GitHub Releases, which stay the source for full notes and checksums. */
 export const changelog: ChangelogEntry[] = [
   {
+    version: '1.0.2',
+    date: '2026-11-06',
+    platform: 'macOS, Windows direct download',
+    en: [
+      'Swipe right to dismiss the floating capture preview, or two-finger swipe right on the trackpad.',
+      'Reduced floating preview auto-dismiss delay to 1.5 seconds, with customizable duration (1.5s, 3s, 5s, 8s) in Settings.',
+      'Dragging the thumbnail out to other apps continues to work seamlessly.',
+    ],
+    vi: [
+      'Quẹt sang phải để tắt nhanh ảnh chụp xem trước nổi, hoặc vuốt 2 ngón sang phải trên trackpad.',
+      'Giảm thời gian hiển thị tự tắt của ảnh xem trước xuống 1.5 giây, có thể điều chỉnh trong Cài đặt (1.5s, 3s, 5s, 8s).',
+      'Kéo thả ảnh xem trước sang các ứng dụng khác vẫn hoạt động mượt mà.',
+    ],
+  },
+  {
     version: '1.0.1',
     date: '2026-11-06',
     platform: 'macOS, Windows direct download',

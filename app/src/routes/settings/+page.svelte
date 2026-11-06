@@ -19,6 +19,7 @@
     RotateCcw,
     Settings,
     PenLine,
+    Clock,
     Volume2, GalleryThumbnails,
   } from "@lucide/svelte";
 
@@ -136,6 +137,12 @@
     if (!cfg) return;
     const on = (e.target as HTMLInputElement).checked;
     await save({ ...cfg, show_thumbnail: on });
+  }
+
+  async function onThumbnailDurationChange(e: Event) {
+    if (!cfg) return;
+    const value = parseFloat((e.target as HTMLSelectElement).value);
+    await save({ ...cfg, thumbnail_duration: value });
   }
 
   async function onPenSmoothingChange(e: Event) {
@@ -262,6 +269,29 @@
             <span class="slider"></span>
           </label>
         </div>
+
+        {#if cfg.show_thumbnail}
+          <div class="setting-row">
+            <div class="row-label">
+              <Clock size={18} class="row-icon" />
+              <div>
+                <h3>{t.settings.thumbnailDuration}</h3>
+                <p>{t.settings.thumbnailDurationHelp}</p>
+              </div>
+            </div>
+            <select
+              class="custom-select"
+              aria-label={t.settings.thumbnailDuration}
+              value={String(cfg.thumbnail_duration ?? 1.5)}
+              onchange={onThumbnailDurationChange}
+            >
+              <option value="1.5">{t.settings.thumbnailDuration15}</option>
+              <option value="3">{t.settings.thumbnailDuration3}</option>
+              <option value="5">{t.settings.thumbnailDuration5}</option>
+              <option value="8">{t.settings.thumbnailDuration8}</option>
+            </select>
+          </div>
+        {/if}
       {/if}
 
       <!-- Pen smoothing -->

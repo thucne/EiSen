@@ -34,6 +34,7 @@ const CFG = {
   hotkey: "DoubleOption",
   play_sounds: true,
   show_thumbnail: true,
+  thumbnail_duration: 1.5,
   pen_smoothing: "Medium",
 };
 
@@ -267,6 +268,20 @@ describe("language", () => {
     await waitFor(() => {
       expect(screen.getByText("v0.2.6")).toBeInTheDocument();
       expect(screen.getByText(/EiSen v0\.2\.6/)).toBeInTheDocument();
+    });
+  });
+
+  it("persists thumbnail duration when changed in settings", async () => {
+    render(SettingsPage);
+    const select = (await screen.findByRole("combobox", {
+      name: "Thumbnail duration",
+    })) as HTMLSelectElement;
+    expect(select.value).toBe("1.5");
+    await fireEvent.change(select, { target: { value: "3" } });
+    await waitFor(() => {
+      expect(h.invoke).toHaveBeenCalledWith("cmd_set_config", {
+        cfg: { ...CFG, thumbnail_duration: 3 },
+      });
     });
   });
 });

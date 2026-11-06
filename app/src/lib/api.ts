@@ -20,6 +20,7 @@ export interface AppConfig {
   hotkey: HotkeyPreset;
   play_sounds: boolean;
   show_thumbnail: boolean;
+  thumbnail_duration: number;
   pen_smoothing: PenSmoothing;
 }
 

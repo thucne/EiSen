@@ -39,7 +39,7 @@ test('landing metadata is cross-platform', async () => {
   assert.match(seoHead, /og:image:alt" content="EiSen — Screen Capture & Annotation for macOS & Windows"/);
 });
 
-test('landing release links and copy distinguish v1.0.1 direct downloads from the Store version', async () => {
+test('landing release links and copy distinguish direct downloads from the Store version', async () => {
   const redirects = await source('landing/public/_redirects');
   const english = await source('landing/src/i18n/en.ts');
   const vietnamese = await source('landing/src/i18n/vi.ts');
@@ -47,18 +47,18 @@ test('landing release links and copy distinguish v1.0.1 direct downloads from th
   const seoHead = await source('landing/src/components/SeoHead.astro');
   const landingReadme = await source('landing/README.md');
 
-  assert.match(redirects, /releases\/download\/v1\.0\.1\/EiSen_1\.0\.1_aarch64\.dmg/);
-  assert.match(redirects, /releases\/download\/v1\.0\.1\/EiSen_1\.0\.1_x64-setup\.exe/);
-  assert.match(english, /Microsoft Store: version 1\.0\.0 • Direct installer: version 1\.0\.1/);
-  assert.match(vietnamese, /Microsoft Store: phiên bản 1\.0\.0 • Bộ cài trực tiếp: phiên bản 1\.0\.1/);
+  assert.match(redirects, /releases\/download\/v1\.0\.2\/EiSen_1\.0\.2_aarch64\.dmg/);
+  assert.match(redirects, /releases\/download\/v1\.0\.2\/EiSen_1\.0\.2_x64-setup\.exe/);
+  assert.match(english, /Microsoft Store: version 1\.0\.0 • Direct installer: version 1\.0\.2/);
+  assert.match(vietnamese, /Microsoft Store: phiên bản 1\.0\.0 • Bộ cài trực tiếp: phiên bản 1\.0\.2/);
   assert.match(english, /value: "4\.61 MB"/);
   assert.match(vietnamese, /value: "4,61 MB"/);
   assert.match(seoHead, /4,608,612 bytes \(4\.61 MB\).*2,729,186 bytes \(2\.73 MB\)/);
   assert.match(landingReadme, /2,729,186 bytes \/ 2\.73 MB/);
   assert.match(landingReadme, /4,608,612 bytes \/ 4\.61 MB/);
   assert.match(changelog, /date: '2026-11-06'/);
-  assert.match(english, /v1\.0\.1 for macOS and direct Windows keeps up to 50 saved captures in History across relaunches/);
-  assert.match(vietnamese, /v1\.0\.1 trên macOS và Windows tải trực tiếp giữ tối đa 50 ảnh đã lưu trong Lịch sử sau khi khởi động lại/);
+  assert.match(english, /v1\.0\.[12] for macOS and direct Windows keeps up to 50 saved captures in History across relaunches/);
+  assert.match(vietnamese, /v1\.0\.[12] trên macOS và Windows tải trực tiếp giữ tối đa 50 ảnh đã lưu trong Lịch sử sau khi khởi động lại/);
   assert.match(changelog, /imports up to 50 newest EiSen_\*\.png files from the configured save folder/);
   assert.match(changelog, /Removing an item from History hides it from the gallery but leaves its PNG on disk/);
   assert.doesNotMatch(english, /History lives in memory|History is empty after a relaunch/);

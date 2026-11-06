@@ -80,9 +80,9 @@ describe("floating thumbnail", () => {
   it("starts a drag past the threshold, not on a small wobble", async () => {
     const preview = await showThumbnail();
     await fireEvent.pointerDown(preview, { button: 0, clientX: 10, clientY: 10 });
-    await fireEvent.pointerMove(preview, { clientX: 12, clientY: 11 });
+    await fireEvent.pointerMove(preview, { clientX: 8, clientY: 10 });
     expect(h.invoke).not.toHaveBeenCalledWith("cmd_start_preview_drag");
-    await fireEvent.pointerMove(preview, { clientX: 20, clientY: 10 });
+    await fireEvent.pointerMove(preview, { clientX: 0, clientY: 10 });
     expect(h.invoke).toHaveBeenCalledWith("cmd_start_preview_drag");
     expect(h.invoke.mock.calls.filter(([cmd]) => cmd === "cmd_start_preview_drag")).toHaveLength(1);
   });
@@ -96,13 +96,82 @@ describe("floating thumbnail", () => {
       expect(h.invoke).not.toHaveBeenCalledWith("cmd_hide_feedback");
 
       await fireEvent.pointerDown(preview, { button: 0, clientX: 10, clientY: 10 });
-      await fireEvent.pointerMove(preview, { clientX: 30, clientY: 10 });
+      await fireEvent.pointerMove(preview, { clientX: 0, clientY: 0 });
       await fireEvent.pointerLeave(preview.parentElement!);
       vi.advanceTimersByTime(60_000);
       expect(h.invoke).not.toHaveBeenCalledWith("cmd_hide_feedback");
 
       h.listeners.get("feedback-drag-ended")!({ payload: null });
       vi.advanceTimersByTime(60_000);
+      expect(h.invoke).toHaveBeenCalledWith("cmd_hide_feedback");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("swipes right to dismiss past 50px threshold", async () => {
+    const preview = await showThumbnail();
+    vi.useFakeTimers();
+    try {
+      await fireEvent.pointerDown(preview, { button: 0, clientX: 10, clientY: 10 });
+      await fireEvent.pointerMove(preview, { clientX: 70, clientY: 10 });
+      expect(h.invoke).not.toHaveBeenCalledWith("cmd_start_preview_drag");
+      // Slide animation runs, then dismisses
+      vi.advanceTimersByTime(250);
+      expect(h.invoke).toHaveBeenCalledWith("cmd_hide_feedback");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("snaps back on swipe under threshold without dismissing", async () => {
+    const preview = await showThumbnail();
+    vi.useFakeTimers();
+    try {
+      await fireEvent.pointerDown(preview, { button: 0, clientX: 10, clientY: 10 });
+      await fireEvent.pointerMove(preview, { clientX: 30, clientY: 10 });
+      await fireEvent.pointerUp(preview);
+      vi.advanceTimersByTime(100);
+      expect(h.invoke).not.toHaveBeenCalledWith("cmd_hide_feedback");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("dismisses on trackpad horizontal swipe right", async () => {
+    const preview = await showThumbnail();
+    vi.useFakeTimers();
+    try {
+      await fireEvent.wheel(preview.parentElement!, { deltaX: 30 });
+      vi.advanceTimersByTime(250);
+      expect(h.invoke).toHaveBeenCalledWith("cmd_hide_feedback");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("auto-dismisses thumbnail after 1.5s by default", async () => {
+    vi.useFakeTimers();
+    try {
+      await showThumbnail();
+      vi.advanceTimersByTime(1400);
+      expect(h.invoke).not.toHaveBeenCalledWith("cmd_hide_feedback");
+      vi.advanceTimersByTime(200);
+      expect(h.invoke).toHaveBeenCalledWith("cmd_hide_feedback");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("respects custom duration_ms in feedback payload", async () => {
+    vi.useFakeTimers();
+    try {
+      render(FeedbackPage);
+      await waitFor(() => expect(h.listeners.has("feedback-show")).toBe(true));
+      show({ message: en.toasts.copied, kind: "ok", path: null, preview: "/tmp/a.png", duration_ms: 3000 } as any);
+      vi.advanceTimersByTime(2000);
+      expect(h.invoke).not.toHaveBeenCalledWith("cmd_hide_feedback");
+      vi.advanceTimersByTime(1100);
       expect(h.invoke).toHaveBeenCalledWith("cmd_hide_feedback");
     } finally {
       vi.useRealTimers();

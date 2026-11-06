@@ -955,6 +955,7 @@ struct FeedbackPayload {
     kind: String,
     path: Option<String>,
     preview: Option<String>,
+    duration_ms: Option<u64>,
 }
 
 fn place_thumbnail_window(
@@ -1037,9 +1038,24 @@ fn cmd_show_feedback(
             place_feedback_window(&app, &window);
         }
     }
+    let duration_ms = if preview.is_some() {
+        let secs = app_config(&app).thumbnail_duration;
+        Some((secs * 1000.0).round().max(500.0) as u64)
+    } else {
+        None
+    };
     let preview = preview.map(|image| image.to_string_lossy().into_owned());
     window
-        .emit("feedback-show", FeedbackPayload { message, kind, path, preview })
+        .emit(
+            "feedback-show",
+            FeedbackPayload {
+                message,
+                kind,
+                path,
+                preview,
+                duration_ms,
+            },
+        )
         .map_err(|e| e.to_string())?;
     #[cfg(target_os = "macos")]
     platform::mac_adapter::show_without_activation(&window);

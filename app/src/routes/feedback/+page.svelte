@@ -9,14 +9,16 @@
   /** A save stays longer so there is time to reach "Show in folder". */
   const DISMISS_MS = 2200;
   const DISMISS_WITH_PATH_MS = 5000;
-  const DISMISS_THUMBNAIL_MS = 6000;
+  const DEFAULT_DISMISS_THUMBNAIL_MS = 1500;
   const DRAG_THRESHOLD_PX = 4;
+  const SWIPE_DISMISS_THRESHOLD_PX = 50;
 
   type Feedback = {
     message: string;
     kind: "ok" | "err";
     path: string | null;
     preview?: string | null;
+    duration_ms?: number | null;
   };
 
   const t = $derived($i18n);
@@ -24,10 +26,27 @@
   let timer: ReturnType<typeof setTimeout> | undefined;
   let pressedAt: { x: number; y: number } | null = null;
   let dragging = false;
+  let swiping = $state(false);
+  let swipeOffset = $state(0);
+  let isSlidingOut = $state(false);
 
   function dismiss() {
+    clearTimeout(timer);
     feedback = null;
+    swiping = false;
+    isSlidingOut = false;
+    swipeOffset = 0;
+    pressedAt = null;
     void hideFeedback();
+  }
+
+  function dismissWithSlide() {
+    if (isSlidingOut) return;
+    isSlidingOut = true;
+    swiping = false;
+    pressedAt = null;
+    pauseDismiss();
+    setTimeout(dismiss, 180);
   }
 
   function pauseDismiss() {
@@ -36,9 +55,9 @@
 
   function scheduleDismiss() {
     clearTimeout(timer);
-    if (!feedback || dragging) return;
+    if (!feedback || dragging || swiping || isSlidingOut) return;
     const delay = feedback.preview
-      ? DISMISS_THUMBNAIL_MS
+      ? (feedback.duration_ms ?? DEFAULT_DISMISS_THUMBNAIL_MS)
       : feedback.path
         ? DISMISS_WITH_PATH_MS
         : DISMISS_MS;
@@ -62,12 +81,46 @@
   }
 
   function onPreviewPointerDown(e: PointerEvent) {
-    pressedAt = e.button === 0 ? { x: e.clientX, y: e.clientY } : null;
+    if (e.button === 0) {
+      pressedAt = { x: e.clientX, y: e.clientY };
+      swiping = false;
+      swipeOffset = 0;
+      try {
+        (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+      } catch {
+        // Ignored
+      }
+    } else {
+      pressedAt = null;
+    }
   }
 
   function onPreviewPointerMove(e: PointerEvent) {
-    if (!pressedAt) return;
-    if (Math.hypot(e.clientX - pressedAt.x, e.clientY - pressedAt.y) < DRAG_THRESHOLD_PX) return;
+    if (!pressedAt || isSlidingOut || dragging) return;
+    const dx = e.clientX - pressedAt.x;
+    const dy = e.clientY - pressedAt.y;
+
+    if (swiping) {
+      swipeOffset = Math.max(0, dx);
+      if (swipeOffset >= SWIPE_DISMISS_THRESHOLD_PX) {
+        dismissWithSlide();
+      }
+      return;
+    }
+
+    if (Math.hypot(dx, dy) < DRAG_THRESHOLD_PX) return;
+
+    if (dx > 0 && dx > Math.abs(dy)) {
+      swiping = true;
+      swipeOffset = dx;
+      pauseDismiss();
+      if (swipeOffset >= SWIPE_DISMISS_THRESHOLD_PX) {
+        dismissWithSlide();
+      }
+      return;
+    }
+
+    // Moving left, up, or diagonal: initiate file drag out to another app
     pressedAt = null;
     dragging = true;
     pauseDismiss();
@@ -77,9 +130,35 @@
     });
   }
 
+  function onPreviewPointerUp(e?: PointerEvent) {
+    if (e) {
+      try {
+        (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
+      } catch {
+        // Ignored
+      }
+    }
+    if (swiping && !isSlidingOut) {
+      if (swipeOffset >= SWIPE_DISMISS_THRESHOLD_PX) {
+        dismissWithSlide();
+      } else {
+        swipeOffset = 0;
+        swiping = false;
+        scheduleDismiss();
+      }
+    }
+    pressedAt = null;
+  }
+
+  function onWheel(e: WheelEvent) {
+    if (e.deltaX > 20 && !isSlidingOut) {
+      dismissWithSlide();
+    }
+  }
+
   async function openPreview() {
     pressedAt = null;
-    if (!feedback?.preview || dragging) return;
+    if (!feedback?.preview || dragging || swiping || isSlidingOut || swipeOffset > 0) return;
     try {
       await openInEditor(feedback.preview);
       dismiss();
@@ -93,11 +172,17 @@
     const un = listen<Feedback>("feedback-show", (event) => {
       feedback = event.payload;
       dragging = false;
+      swiping = false;
+      isSlidingOut = false;
+      swipeOffset = 0;
       pressedAt = null;
       scheduleDismiss();
     });
     const unDrag = listen("feedback-drag-ended", () => {
       dragging = false;
+      swiping = false;
+      isSlidingOut = false;
+      swipeOffset = 0;
       scheduleDismiss();
     });
     return () => {
@@ -111,9 +196,13 @@
 {#if feedback?.preview}
   <div
     class="thumbnail thumbnail-{feedback.kind}"
+    class:swiping={swiping}
+    class:sliding-out={isSlidingOut}
+    style={swipeOffset > 0 && !isSlidingOut ? `transform: translateX(${swipeOffset}px);` : undefined}
     role="status"
     onpointerenter={pauseDismiss}
     onpointerleave={scheduleDismiss}
+    onwheel={onWheel}
   >
     <button
       type="button"
@@ -122,6 +211,8 @@
       title={t.feedback.openInEditor}
       onpointerdown={onPreviewPointerDown}
       onpointermove={onPreviewPointerMove}
+      onpointerup={onPreviewPointerUp}
+      onpointercancel={onPreviewPointerUp}
       onclick={openPreview}
     >
       <img src={convertFileSrc(feedback.preview)} alt="" draggable="false" />
@@ -232,6 +323,17 @@
     font-size: 12px;
     font-weight: 500;
     user-select: none;
+    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease-out;
+  }
+
+  .thumbnail.swiping {
+    transition: none;
+  }
+
+  .thumbnail.sliding-out {
+    transform: translateX(120%) !important;
+    opacity: 0 !important;
+    transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.18s ease-out !important;
   }
 
   .preview {

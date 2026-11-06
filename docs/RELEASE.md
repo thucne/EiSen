@@ -7,12 +7,12 @@ compatibility artifact, verifies checksums, and publishes them through one
 final job. The local macOS script remains available for a Mac-only build or
 for validating a notarized bundle before publishing.
 
-The current release is v1.0.1. Publish the signed and notarized macOS DMG and
+The current release is v1.0.2. Publish the signed and notarized macOS DMG and
 the unsigned Windows NSIS fallback from the same tag with the `Release`
 workflow, explicitly setting `allow_unsigned_windows=true`. Keep the
-SmartScreen warning and SHA-256 sidecar. Build the 1.0.1.0 Store MSIX
+SmartScreen warning and SHA-256 sidecar. Build the 1.0.2.0 Store MSIX
 separately with the `Store MSIX` workflow and submit it to Partner Center.
-Microsoft Store currently offers v1.0.0; show v1.0.1 there only after
+Microsoft Store currently offers v1.0.0; show v1.0.2 there only after
 certification completes. The Windows GUI verification matrix remains a
 separate evidence gate.
 

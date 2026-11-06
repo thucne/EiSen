@@ -32,11 +32,11 @@ export const en = {
     downloadWin: "Get from Microsoft Store",
     windowsFallback: "Need a direct download? Use the unsigned .exe fallback",
     switchToWin: "On Windows? Get EiSen from the Microsoft Store",
-    switchToMac: "On a Mac? Download EiSen 1.0.1",
+    switchToMac: "On a Mac? Download EiSen 1.0.2",
     windowsNote: "EiSen 1.0.0 is in the Microsoft Store. The floating thumbnail and capture previous region are Mac only.",
     windowsWarning: "The Microsoft Store version is the recommended Windows install and receives Store-managed updates. The direct .exe fallback is unsigned, so SmartScreen may show Unknown publisher or Windows protected your PC, and managed devices may block it. Verify the SHA-256 sidecar on GitHub Releases before running.",
     githubCta: "View source",
-    requirements: "Version 1.0.1 • macOS 11 or later • Apple Silicon",
+    requirements: "Version 1.0.2 • macOS 11 or later • Apple Silicon",
     copyLink: "Copy link to open on your computer",
     copied: "Link copied",
     phoneNote: "EiSen runs on Mac and Windows. Copy the link and open it on your computer.",
@@ -56,7 +56,7 @@ export const en = {
     size: {
       value: "4.61 MB",
       label: "DMG download",
-      sub: "Apple Silicon v1.0.1 build, with a published SHA-256 checksum.",
+      sub: "Apple Silicon v1.0.2 build, with a published SHA-256 checksum.",
       link: "See the release",
     },
     network: {
@@ -144,7 +144,7 @@ export const en = {
     items: [
       {
         q: "Does EiSen support both macOS and Windows?",
-        a: "Yes. EiSen supports macOS 11 or later and 64-bit Windows 10 and 11. The current macOS and direct Windows releases are v1.0.1; the Microsoft Store version may lag until its update is certified. The floating thumbnail and capture previous region are Mac only.",
+        a: "Yes. EiSen supports macOS 11 or later and 64-bit Windows 10 and 11. The current macOS and direct Windows releases are v1.0.2; the Microsoft Store version may lag until its update is certified. The floating thumbnail and capture previous region are Mac only.",
       },
       {
         q: "Why is EiSen Mac first?",
@@ -168,7 +168,7 @@ export const en = {
       },
       {
         q: "Where do my captures go?",
-        a: "While you work, into a temporary folder that EiSen cleans up. When you save, into the folder you chose in Settings as an ordinary PNG. v1.0.1 for macOS and direct Windows keeps up to 50 saved captures in History across relaunches. On the first launch after upgrading, it imports up to 50 newest EiSen_*.png files from your configured save folder. Removing one from History hides it from the gallery but does not delete the PNG. History refreshes when you open the hub or EiSen saves a capture.",
+        a: "While you work, into a temporary folder that EiSen cleans up. When you save, into the folder you chose in Settings as an ordinary PNG. v1.0.2 for macOS and direct Windows keeps up to 50 saved captures in History across relaunches. On the first launch after upgrading, it imports up to 50 newest EiSen_*.png files from your configured save folder. Removing one from History hides it from the gallery but does not delete the PNG. History refreshes when you open the hub or EiSen saves a capture.",
       },
       {
         q: "How do I update to newer versions of EiSen?",
@@ -195,8 +195,8 @@ export const en = {
     buttonMac: "Download for Mac",
     buttonWin: "Get from Microsoft Store",
     buttonWinDirect: "Use unsigned direct .exe fallback",
-    detailsMac: "Version 1.0.1 • macOS 11 or later • Apple Silicon",
-    detailsWin: "Microsoft Store: version 1.0.0 • Direct installer: version 1.0.1 • Windows 10/11 (64-bit)",
+    detailsMac: "Version 1.0.2 • macOS 11 or later • Apple Silicon",
+    detailsWin: "Microsoft Store: version 1.0.0 • Direct installer: version 1.0.2 • Windows 10/11 (64-bit)",
     windowsSummary: "On Windows? EiSen is in the Microsoft Store",
     windowsWarningTitle: "Windows direct-download note",
     windowsWarning: "The Microsoft Store version is the recommended Windows install and receives Store-managed updates. The direct NSIS .exe fallback is unsigned, so SmartScreen may show Unknown publisher or Windows protected your PC, and managed devices may block it. Verify the SHA-256 sidecar on GitHub Releases before running.",
@@ -217,7 +217,7 @@ export const en = {
     subtitle: "EiSen gives you PrintScreen capture with an automatic Ctrl + Shift + 5 fallback, step numbering, blur, and native on-device Windows OCR — distributed through the Microsoft Store.",
     downloadCta: "Get from Microsoft Store",
     directDownloadCta: "Download direct .exe (fallback)",
-    downloadSub: "Microsoft Store: v1.0.0 • Direct unsigned NSIS fallback: v1.0.1 • Windows 10 / 11 (64-bit)",
+    downloadSub: "Microsoft Store: v1.0.0 • Direct unsigned NSIS fallback: v1.0.2 • Windows 10 / 11 (64-bit)",
     installWarningTitle: "Windows direct-download note",
     installWarning: "The Microsoft Store version is the recommended Windows install and receives Store-managed updates. The direct NSIS .exe fallback is unsigned, so Windows SmartScreen may show Unknown publisher or Windows protected your PC, and managed devices may block it. Verify the SHA-256 sidecar on GitHub Releases before running.",
     whyTitle: "Why use EiSen on Windows",

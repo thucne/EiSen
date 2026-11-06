@@ -6,7 +6,7 @@ export type Locale = 'en' | 'vi';
 export const locales: Locale[] = ['en', 'vi'];
 export const defaultLocale: Locale = 'en';
 
-export const appVersion = '1.0.1';
+export const appVersion = '1.0.2';
 
 /** Cloudflare Pages `_redirects` maps these to GitHub Release assets. */
 export const dmgDownloadPath = '/download/mac';

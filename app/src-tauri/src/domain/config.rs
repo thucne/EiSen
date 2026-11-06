@@ -76,6 +76,10 @@ pub enum PenSmoothing {
     High,
 }
 
+fn default_thumbnail_duration() -> f64 {
+    1.5
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct AppConfig {
@@ -87,6 +91,8 @@ pub struct AppConfig {
     /// After a capture, show a preview instead of the plain confirmation.
     pub show_thumbnail: bool,
     pub pen_smoothing: PenSmoothing,
+    #[serde(default = "default_thumbnail_duration")]
+    pub thumbnail_duration: f64,
 }
 
 impl Default for AppConfig {
@@ -101,6 +107,7 @@ impl Default for AppConfig {
                 play_sounds: true,
                 show_thumbnail: true,
                 pen_smoothing: PenSmoothing::default(),
+                thumbnail_duration: 1.5,
             },
             &|k| std::env::var(k).ok(),
         )
@@ -208,6 +215,7 @@ mod tests {
         assert_eq!(cfg.pen_smoothing, PenSmoothing::Medium);
         assert!(!cfg.play_sounds);
         assert!(cfg.show_thumbnail, "configs from before the thumbnail keep it on");
+        assert_eq!(cfg.thumbnail_duration, 1.5);
     }
 
     #[test]
@@ -246,6 +254,7 @@ mod tests {
             play_sounds: true,
             show_thumbnail: true,
             pen_smoothing: PenSmoothing::default(),
+            thumbnail_duration: 3.0,
         };
         save(&p, &want).unwrap();
         assert_eq!(load(&p), want);
@@ -377,6 +386,7 @@ mod tests {
             play_sounds: true,
             show_thumbnail: true,
             pen_smoothing: PenSmoothing::default(),
+            thumbnail_duration: 1.5,
         };
         let cfg = apply_env_overrides(base, &|key| match key {
             "EISEN_SAVE_DIR" => Some(format!("  {}  ", explicit.display())),
@@ -396,6 +406,7 @@ mod tests {
             play_sounds: true,
             show_thumbnail: true,
             pen_smoothing: PenSmoothing::default(),
+            thumbnail_duration: 1.5,
         };
         let getenv = |k: &str| match k {
             "EISEN_DEFAULT_LANG" => Some("Fr".to_string()),
@@ -419,6 +430,7 @@ mod tests {
             play_sounds: true,
             show_thumbnail: true,
             pen_smoothing: PenSmoothing::default(),
+            thumbnail_duration: 1.5,
         };
         let getenv = |k: &str| match k {
             "EISEN_SAVE_DIR" => Some("   ".to_string()),
@@ -457,6 +469,7 @@ mod tests {
             play_sounds: false,
             show_thumbnail: true,
             pen_smoothing: PenSmoothing::default(),
+            thumbnail_duration: 1.5,
         };
         let cfg = apply_env_overrides(base.clone(), &|_| None);
         assert_eq!(cfg, base);
