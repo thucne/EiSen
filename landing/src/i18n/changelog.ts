@@ -11,7 +11,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: '1.0.2',
     date: '2026-11-06',
-    platform: 'macOS, Windows direct download',
+    platform: 'macOS, Windows (Microsoft Store v1.0.2 and direct download)',
     en: [
       'Swipe right to dismiss the floating capture preview, or two-finger swipe right on the trackpad.',
       'Reduced floating preview auto-dismiss delay to 1.5 seconds, with customizable duration (1.5s, 3s, 5s, 8s) in Settings.',
@@ -26,16 +26,16 @@ export const changelog: ChangelogEntry[] = [
   {
     version: '1.0.1',
     date: '2026-11-06',
-    platform: 'macOS, Windows direct download',
+    platform: 'macOS, Windows (Microsoft Store v1.0.1 and direct download)',
     en: [
       'History keeps up to 50 saved captures across relaunches and refreshes when the hub opens or EiSen saves a capture.',
       'On the first launch after upgrading, EiSen imports up to 50 newest EiSen_*.png files from the configured save folder.',
-      'Removing an item from History hides it from the gallery but leaves its PNG on disk. The Microsoft Store currently offers v1.0.0.',
+      'Removing an item from History hides it from the gallery but leaves its PNG on disk.',
     ],
     vi: [
       'Lịch sử giữ tối đa 50 ảnh đã lưu sau khi khởi động lại; được cập nhật khi mở trang chính hoặc khi EiSen lưu ảnh.',
       'Trong lần mở đầu tiên sau khi nâng cấp, EiSen nhập tối đa 50 file EiSen_*.png mới nhất từ thư mục lưu đã chọn.',
-      'Xóa một mục khỏi Lịch sử chỉ ẩn mục đó khỏi thư viện, file PNG vẫn ở trên đĩa. Microsoft Store hiện vẫn cung cấp v1.0.0.',
+      'Xóa một mục khỏi Lịch sử chỉ ẩn mục đó khỏi thư viện, file PNG vẫn ở trên đĩa.',
     ],
   },
   {

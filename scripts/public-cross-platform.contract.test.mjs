@@ -49,16 +49,19 @@ test('landing release links and copy distinguish direct downloads from the Store
 
   assert.match(redirects, /releases\/download\/v1\.0\.2\/EiSen_1\.0\.2_aarch64\.dmg/);
   assert.match(redirects, /releases\/download\/v1\.0\.2\/EiSen_1\.0\.2_x64-setup\.exe/);
-  assert.match(english, /Microsoft Store: version 1\.0\.0 • Direct installer: version 1\.0\.2/);
-  assert.match(vietnamese, /Microsoft Store: phiên bản 1\.0\.0 • Bộ cài trực tiếp: phiên bản 1\.0\.2/);
+  assert.match(english, /Microsoft Store: version 1\.0\.2 • Direct installer: version 1\.0\.2/);
+  assert.match(vietnamese, /Microsoft Store: phiên bản 1\.0\.2 • Bộ cài trực tiếp: phiên bản 1\.0\.2/);
   assert.match(english, /value: "4\.61 MB"/);
   assert.match(vietnamese, /value: "4,61 MB"/);
-  assert.match(seoHead, /4,608,612 bytes \(4\.61 MB\).*2,729,186 bytes \(2\.73 MB\)/);
-  assert.match(landingReadme, /2,729,186 bytes \/ 2\.73 MB/);
-  assert.match(landingReadme, /4,608,612 bytes \/ 4\.61 MB/);
+  assert.match(seoHead, /4,606,653 bytes \(4\.61 MB\).*2,730,567 bytes \(2\.73 MB\)/);
+  assert.match(landingReadme, /2,730,567 bytes \/ 2\.73 MB/);
+  assert.match(landingReadme, /4,606,653 bytes \/ 4\.61 MB/);
+  assert.match(changelog, /platform: 'macOS, Windows \(Microsoft Store v1\.0\.1 and direct download\)'/);
+  assert.match(changelog, /platform: 'macOS, Windows \(Microsoft Store v1\.0\.2 and direct download\)'/);
+  assert.doesNotMatch(changelog, /Microsoft Store currently offers v1\.0\.0|Microsoft Store hiện vẫn cung cấp v1\.0\.0/);
   assert.match(changelog, /date: '2026-11-06'/);
-  assert.match(english, /v1\.0\.[12] for macOS and direct Windows keeps up to 50 saved captures in History across relaunches/);
-  assert.match(vietnamese, /v1\.0\.[12] trên macOS và Windows tải trực tiếp giữ tối đa 50 ảnh đã lưu trong Lịch sử sau khi khởi động lại/);
+  assert.match(english, /Since v1\.0\.1, EiSen keeps up to 50 saved captures in History across relaunches on macOS and Windows, including the Microsoft Store version/);
+  assert.match(vietnamese, /Từ v1\.0\.1, EiSen giữ tối đa 50 ảnh đã lưu trong Lịch sử sau khi khởi động lại trên macOS và Windows, bao gồm cả bản Microsoft Store/);
   assert.match(changelog, /imports up to 50 newest EiSen_\*\.png files from the configured save folder/);
   assert.match(changelog, /Removing an item from History hides it from the gallery but leaves its PNG on disk/);
   assert.doesNotMatch(english, /History lives in memory|History is empty after a relaunch/);
