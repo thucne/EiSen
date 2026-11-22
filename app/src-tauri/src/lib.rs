@@ -1031,6 +1031,7 @@ struct FeedbackPayload {
 
 static NEXT_FEEDBACK_ID: std::sync::atomic::AtomicU64 =
     std::sync::atomic::AtomicU64::new(1);
+#[cfg(target_os = "macos")]
 static NEXT_PREVIEW_DRAG_ID: std::sync::atomic::AtomicU64 =
     std::sync::atomic::AtomicU64::new(1);
 static ACTIVE_FEEDBACK_ID: Mutex<Option<u64>> = Mutex::new(None);
