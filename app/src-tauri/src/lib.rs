@@ -1243,6 +1243,15 @@ fn cmd_get_app_version() -> &'static str {
     env!("CARGO_PKG_VERSION")
 }
 
+/// Keep EiSen out of the macOS Dock and Recent Applications before `app.run()`
+/// triggers `AppDelegate::did_finish_launching`. Configuring this only inside
+/// `.setup()` runs after `tao` applies its `Regular` default.
+#[cfg(target_os = "macos")]
+fn configure_macos_background_app<R: tauri::Runtime>(app: &mut tauri::App<R>) {
+    app.set_activation_policy(tauri::ActivationPolicy::Accessory);
+    app.set_dock_visibility(false);
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     #[cfg(target_os = "macos")]
@@ -1276,15 +1285,8 @@ let builder = {
 #[cfg(not(target_os = "macos"))]
 let builder = builder;
 
-builder
+    let app = builder
         .setup(|app| {
-            // Hide from macOS Dock — EiSen lives only in the menu bar / system tray.
-            #[cfg(target_os = "macos")]
-            {
-                use tauri::ActivationPolicy;
-                app.set_activation_policy(ActivationPolicy::Accessory);
-                let _ = app.handle().set_dock_visibility(false);
-            }
             core::capture::cleanup_stale_temp_files();
 
             if let Some(main) = app.get_webview_window("main") {
@@ -1470,8 +1472,17 @@ builder
             cmd_start_preview_drag,
             cmd_reveal_path
         ])
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application");
+
+    #[cfg(target_os = "macos")]
+    let app = {
+        let mut app = app;
+        configure_macos_background_app(&mut app);
+        app
+    };
+
+    app.run(|_, _| {});
 }
 
 #[cfg(test)]

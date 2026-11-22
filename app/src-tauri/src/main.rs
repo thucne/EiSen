@@ -2,12 +2,11 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
-    // Set the activation policy to Accessory *before* Tauri initialises any
-    // NSWindow.  This must happen here — doing it inside `.setup()` is too
-    // late: Tauri has already created the default window by then and macOS
-    // Launch Services has already logged the process as a regular app,
-    // causing it to appear in the Dock's "Recent Applications" section even
-    // though `LSUIElement = true` is present in the bundle's Info.plist.
+    // Set the activation policy to Accessory *before* Tauri initialises Cocoa.
+    // `lib.rs` also configures `Accessory` + `set_dock_visibility(false)` on the
+    // built `App` before `app.run(...)`, because `.setup()` runs after `tao`'s
+    // `applicationDidFinishLaunching:` has already applied its `Regular` default
+    // (which logs EiSen into the Dock's Recent Applications).
     #[cfg(target_os = "macos")]
     {
         use objc2::MainThreadMarker;

@@ -17,6 +17,17 @@ export const changelog: ChangelogEntry[] = [
       ? `macOS, Windows (Microsoft Store v${releaseMetadata.windowsStore.version})`
       : 'macOS',
     en: [
+      'macOS Dock & Recent Applications stay hidden from initial launch by configuring Accessory activation policy before the event loop starts.',
+    ],
+    vi: [
+      'Sửa lỗi icon EiSen còn xuất hiện ở mục Mở gần đây trên Dock macOS bằng cách thiết lập chế độ chạy nền Accessory trước khi khởi chạy event loop.',
+    ],
+  },
+  {
+    version: '1.1.1',
+    date: '2026-11-22',
+    platform: 'macOS, Windows (Microsoft Store v1.1.1)',
+    en: [
       'Floating preview swipe-to-dismiss on Mac now follows your pointer or two-finger trackpad motion 1:1 and springs back if released early.',
       'Diagonal and upward drags on the floating preview start file drag-and-drop reliably, animating back to the preview if released without dropping.',
     ],
