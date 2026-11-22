@@ -12,8 +12,27 @@ export interface ChangelogEntry {
 export const changelog: ChangelogEntry[] = [
   {
     version: releaseMetadata.mac.version,
+    date: '2026-11-22',
+    platform: releaseMetadata.windowsStore.version === releaseMetadata.mac.version
+      ? `macOS, Windows (Microsoft Store v${releaseMetadata.windowsStore.version})`
+      : 'macOS',
+    en: [
+      'The editor waits for the image to load and offers fit-to-view and 100% zoom.',
+      'Dismiss the floating preview on Mac with a continuous two-finger horizontal swipe. Click to edit and drag to share still work.',
+      'Redact stays opaque with overlapping blur, and OCR uses the image and crop shown in the editor.',
+      'Concurrent saves choose separate filenames, and History keeps captures on temporarily unavailable drives.',
+    ],
+    vi: [
+      'Trình sửa đợi ảnh tải xong và hỗ trợ chế độ vừa khung xem hoặc thu phóng 100%.',
+      'Vuốt ngang hai ngón để đóng ảnh xem trước trên Mac. Bấm để sửa hoặc kéo file sang ứng dụng khác.',
+      'Vùng Che đặc vẫn giữ kín ảnh khi chồng với Làm mờ. OCR dùng đúng ảnh và vùng cắt trong trình sửa.',
+      'Các lượt lưu đồng thời dùng tên file riêng. Lịch sử giữ mục trên ổ đĩa tạm thời không truy cập được.',
+    ],
+  },
+  {
+    version: '1.0.2',
     date: '2026-11-06',
-    platform: `macOS, Windows (Microsoft Store v${releaseMetadata.windowsStore.version} and direct download)`,
+    platform: 'macOS, Windows (Microsoft Store v1.0.2 and direct download)',
     en: [
       'Swipe right to dismiss the floating capture preview, or two-finger swipe right on the trackpad.',
       'Reduced floating preview auto-dismiss delay to 1.5 seconds, with customizable duration (1.5s, 3s, 5s, 8s) in Settings.',
