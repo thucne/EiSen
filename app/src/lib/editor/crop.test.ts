@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   cropFromDrag,
   cropGesture,
+  effectiveCrop,
+  hasPendingCropChange,
   isValidCrop,
   MIN_CROP_SIZE,
   moveCrop,
@@ -69,6 +71,26 @@ describe("crop geometry", () => {
   it("stores a crop covering the whole image as no crop", () => {
     expect(storedCrop({ x: 0, y: 0, width: 800, height: 600 }, 800, 600)).toBe(null);
     expect(storedCrop(R, 800, 600)).toEqual(R);
+  });
+
+  it("uses a pending crop draft for rendering without committing it", () => {
+    const draft = { x: 20, y: 30, width: 400, height: 250 };
+    expect(effectiveCrop(draft, null, 800, 600)).toEqual(draft);
+    expect(hasPendingCropChange(draft, null, 800, 600)).toBe(true);
+  });
+
+  it("treats a full-image draft as unchanged when no crop is committed", () => {
+    const full = { x: 0, y: 0, width: 800, height: 600 };
+    expect(effectiveCrop(full, null, 800, 600)).toBe(null);
+    expect(hasPendingCropChange(full, null, 800, 600)).toBe(false);
+  });
+
+  it("detects when a draft widens a previously committed crop", () => {
+    const committed = { x: 100, y: 100, width: 200, height: 100 };
+    const full = { x: 0, y: 0, width: 800, height: 600 };
+    expect(effectiveCrop(full, committed, 800, 600)).toBe(null);
+    expect(hasPendingCropChange(full, committed, 800, 600)).toBe(true);
+    expect(hasPendingCropChange(committed, committed, 800, 600)).toBe(false);
   });
 
   it("picks the gesture from where the pointer lands", () => {

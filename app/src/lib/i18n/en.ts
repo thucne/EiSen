@@ -110,6 +110,8 @@ export const en = {
   editor: {
     title: "Editor",
     canvasLabel: "editor canvas",
+    fitToWindow: "Fit to view",
+    actualSize: "Zoom to 100%",
     deleteHint: "Delete — click to remove",
     keptOpen: "This edit stays open. Copy or save it before replacing it.",
     discardWarning: "Unsaved edits. Close again to discard them.",

@@ -46,10 +46,6 @@ beforeEach(() => {
   h.listeners.clear();
   Element.prototype.setPointerCapture ??= vi.fn();
   Element.prototype.releasePointerCapture ??= vi.fn();
-  Object.defineProperty(navigator, "clipboard", {
-    value: { writeText: vi.fn().mockResolvedValue(undefined) },
-    configurable: true,
-  });
 });
 
 function fullscreenSession() {
@@ -91,7 +87,7 @@ describe("repeat capture", () => {
 });
 
 describe("overlay IPC contract", () => {
-  it("posts exactly { rect, openEditor } to cmd_commit_region (Tauri camelCase arg contract)", async () => {
+  it("opens the exact committed image and keeps the previous editor hidden during commit", async () => {
     h.invoke.mockResolvedValue(fullscreenSession());
     render(OverlayPage);
     await waitFor(() => expect(h.listeners.has("fullscreen-ready")).toBe(true));
@@ -102,12 +98,17 @@ describe("overlay IPC contract", () => {
       expect(h.invoke.mock.calls.some(([cmd]) => cmd === "cmd_commit_region")).toBe(true);
     });
     const [, args] = h.invoke.mock.calls.find(([cmd]) => cmd === "cmd_commit_region")!;
-    expect(Object.keys(args).sort()).toEqual(["openEditor", "rect"]);
-    expect(args.openEditor).toBe(true);
+    expect(Object.keys(args).sort()).toEqual(["holdEditor", "openEditor", "rect"]);
+    expect(args.openEditor).toBe(false);
+    expect(args.holdEditor).toBe(true);
     expect(args.rect.width).toBeGreaterThan(0);
+    expect(h.invoke).toHaveBeenCalledWith("cmd_open_in_editor", {
+      path: fullscreenSession().path,
+      committed: true,
+    });
   });
 
-  it("calls cmd_extract_text with no arguments and copies the result", async () => {
+  it("extracts text from the exact committed capture and copies the result", async () => {
     h.invoke.mockImplementation((cmd: string) =>
       cmd === "cmd_commit_region"
         ? Promise.resolve(fullscreenSession())
@@ -123,8 +124,10 @@ describe("overlay IPC contract", () => {
     await waitFor(() => {
       expect(h.invoke.mock.calls.some(([cmd]) => cmd === "cmd_extract_text")).toBe(true);
     });
-    expect(h.invoke).toHaveBeenCalledWith("cmd_extract_text");
-    expect(navigator.clipboard.writeText).toHaveBeenCalledWith("hello world");
+    expect(h.invoke).toHaveBeenCalledWith("cmd_extract_text", {
+      capturePath: fullscreenSession().path,
+      copyToClipboard: true,
+    });
   });
 
   it("uses instant data-tip labels instead of delayed native title", async () => {
@@ -218,7 +221,7 @@ describe("overlay feedback", () => {
     await waitFor(() => expect(h.show).toHaveBeenCalled());
   });
 
-  it("shows the no-text message when OCR returns empty", async () => {
+  it("allows copying the same region after OCR returns no text", async () => {
     h.invoke.mockImplementation((cmd: string) =>
       cmd === "cmd_commit_region"
         ? Promise.resolve(fullscreenSession())
@@ -232,12 +235,19 @@ describe("overlay feedback", () => {
     await tick();
     fireEvent.click(toolbarBtn(`${en.actions.extractText} (O)`));
     expect(await screen.findByText(en.ocr.noText)).toBeTruthy();
-    expect(navigator.clipboard.writeText).not.toHaveBeenCalled();
     expect(h.hide).not.toHaveBeenCalled();
     await waitFor(() => expect(h.show).toHaveBeenCalled());
+    await waitFor(() => {
+      expect(toolbarBtn(`${en.overlay.copyToClipboard} (Enter / DblClick)`)).not.toBeDisabled();
+    });
+    fireEvent.click(toolbarBtn(`${en.overlay.copyToClipboard} (Enter / DblClick)`));
+    await waitFor(() => expect(h.invoke).toHaveBeenCalledWith("cmd_copy", {
+      capturePath: fullscreenSession().path,
+    }));
+    expect(h.invoke.mock.calls.filter(([cmd]) => cmd === "cmd_commit_region")).toHaveLength(1);
   });
 
-  it("shows the OCR success message and still writes the clipboard", async () => {
+  it("shows the OCR success message after the native clipboard command", async () => {
     h.invoke.mockImplementation((cmd: string) =>
       cmd === "cmd_commit_region"
         ? Promise.resolve(fullscreenSession())
@@ -257,7 +267,10 @@ describe("overlay feedback", () => {
         path: null,
       }),
     );
-    expect(navigator.clipboard.writeText).toHaveBeenCalledWith("hello world");
+    expect(h.invoke).toHaveBeenCalledWith("cmd_extract_text", {
+      capturePath: fullscreenSession().path,
+      copyToClipboard: true,
+    });
     expect(h.hide).toHaveBeenCalled();
   });
 });

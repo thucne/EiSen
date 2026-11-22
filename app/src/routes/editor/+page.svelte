@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onMount, tick } from "svelte";
   import { convertFileSrc, invoke } from "@tauri-apps/api/core";
   import { listen } from "@tauri-apps/api/event";
   import { getCurrentWindow } from "@tauri-apps/api/window";
@@ -31,6 +31,7 @@
     type Point,
     type Rect,
     type ResizeHandle,
+    type ShapeElement,
     type TextElement,
     type Tool,
   } from "$lib/editor/elements";
@@ -48,16 +49,19 @@
     resolveShortcut,
     sizeOptionsFor,
   } from "$lib/editor/keyboardShortcuts";
-  import { createSessionLoader, watchFocusReload } from "$lib/editor/session";
+  import { createSessionLoader, decodeEditorImage, watchFocusReload } from "$lib/editor/session";
   import { createCloseGuard } from "$lib/editor/closeGuard";
   import {
     cropFromDrag,
     cropGesture,
+    effectiveCrop,
+    hasPendingCropChange,
     isValidCrop,
     moveCrop,
     resizeCrop,
     storedCrop,
   } from "$lib/editor/crop";
+  import { extractEditorTextWithSnapshot } from "$lib/editor/ocr";
   import {
     HANDLE_R,
     cornerHandles,
@@ -123,7 +127,6 @@
   let textHeights = $state<Record<number, number>>({});
   let textWidths = $state<Record<number, number>>({});
   let svgEl = $state<SVGSVGElement | undefined>();
-  let containerEl = $state<HTMLDivElement | undefined>();
   let eraserBadge = $state<Point | null>(null);
 
   function purgeTextHeight(id: number) {
@@ -145,6 +148,12 @@
 
   // OCR state
   let isExtractingText = $state(false);
+  let isExporting = $state(false);
+  let replacingSession = $state(false);
+  let fitToWindow = $state(true);
+  let viewportWidth = $state(0);
+  let viewportHeight = $state(0);
+  let deviceScale = $state(1);
 
   // Eyedropper Loupe state
   let loupeVisible = $state(false);
@@ -172,8 +181,35 @@
   const fullImage = $derived<Rect>({ x: 0, y: 0, width: canvasW, height: canvasH });
   /** The whole image shows while adjusting, so a crop can be widened again. */
   const viewRect = $derived<Rect>($tool === "crop" ? fullImage : ($crop ?? fullImage));
+  const actualScale = $derived(exportScale / deviceScale);
+  const viewScale = $derived(
+    fitToWindow && viewRect.width > 0 && viewRect.height > 0 && viewportWidth > 64 && viewportHeight > 172
+      ? Math.min(actualScale, (viewportWidth - 64) / viewRect.width, (viewportHeight - 172) / viewRect.height)
+      : actualScale,
+  );
+  const zoomPercent = $derived(Math.round(viewScale / actualScale * 100));
+
+  function readDeviceScale() {
+    deviceScale = window.devicePixelRatio || 1;
+  }
 
   const selected = $derived($elements.find((e) => e.id === $selectedId) ?? null);
+  type RedactionElement = ShapeElement & { kind: "redact" };
+  const redactionElements = $derived(
+    $elements.filter((element): element is RedactionElement => element.kind === "redact"),
+  );
+  const redactionCountBeforeBlur = $derived.by(() => {
+    const counts = new Map<number, number>();
+    let count = 0;
+    for (const element of $elements) {
+      if (element.kind === "blur") counts.set(element.id, count);
+      if (element.kind === "redact") count++;
+    }
+    return counts;
+  });
+  function redactionsBeforeBlur(el: Element): RedactionElement[] {
+    return redactionElements.slice(0, redactionCountBeforeBlur.get(el.id) ?? 0);
+  }
   const selectedBox = $derived(selected ? bbox(selected) : null);
   const sizeControl = $derived(sizeControlVisible($tool, selected?.kind));
   const sizeTool = $derived(
@@ -234,7 +270,8 @@
   const loadSession = createSessionLoader({
     api: { getLastCapture: () => api.getEditorSession() },
     toFileSrc: convertFileSrc,
-    onLoaded: ({ width, height, scale, fileSrc }) => {
+    prepare: ({ fileSrc }) => decodeEditorImage(fileSrc),
+    onLoaded: async ({ path, width, height, scale, fileSrc }) => {
       canvasW = width;
       canvasH = height;
       exportScale = scale;
@@ -242,9 +279,12 @@
       loadError = null;
       cropDraft = null;
       reset();
+      await tick();
+      await invoke("cmd_editor_ready", { path });
     },
     onError: (message) => {
-      if (!imageSrc) loadError = message;
+      loadError = message;
+      void tick().then(() => invoke("cmd_editor_ready", { path: null })).catch(console.error);
     },
   });
 
@@ -257,6 +297,7 @@
   }
 
   onMount(() => {
+    readDeviceScale();
     void initLang();
     refreshPenSmoothing();
     void loadSession(true);
@@ -266,20 +307,26 @@
     });
     const unClose = getCurrentWindow().onCloseRequested((event) => {
       if (exportedAndClosing) return;
+      if (isExporting || isExtractingText) {
+        event.preventDefault();
+        return;
+      }
       const unsaved = get(hasEdits) || get(editingId) != null;
       if (closeGuard.allowClose(unsaved)) return;
       event.preventDefault();
       showToast(get(i18n).editor.discardWarning, "err");
     });
     const unReplace = listen("editor-replace-request", () => {
-      if (get(hasEdits) || get(editingId) != null) {
+      if (replacingSession || isExporting || isExtractingText ||
+          get(hasEdits) || get(editingId) != null || cropDraft != null) {
         showToast(get(i18n).editor.keptOpen, "ok");
         return;
       }
+      replacingSession = true;
       void api.adoptEditorSession().then(
         () => loadSession(true),
         (err) => showToast(String(err), "err"),
-      );
+      ).finally(() => { replacingSession = false; });
     });
     return () => {
       void un.then((fn) => fn());
@@ -323,13 +370,18 @@
   }
 
   async function copyExtractedText() {
+    if (!imageSrc || loadError || replacingSession || isExporting) return;
     if (isExtractingText) return;
     isExtractingText = true;
     try {
       // Read what would be exported, so a crop or Redact block hides text from OCR too.
-      const text = $hasEdits
-        ? await api.extractTextBytes(await exportRenderedBytes())
-        : await api.extractText();
+      const text = await extractEditorTextWithSnapshot({
+        hasRenderedChanges:
+          get(hasEdits) || hasPendingCropChange(cropDraft, get(crop), canvasW, canvasH),
+        extractPinned: api.extractEditorText,
+        renderSnapshot: exportRenderedBytes,
+        extractRendered: api.extractTextBytes,
+      });
       if (!text || text.trim().length === 0) {
         showToast(t.ocr.noText, "err");
       } else {
@@ -518,8 +570,7 @@
       return;
     }
     if ($tool === "eraser") {
-      const rect = containerEl?.getBoundingClientRect();
-      eraserBadge = rect ? { x: e.clientX - rect.left, y: e.clientY - rect.top } : null;
+      eraserBadge = p;
     }
     lastPointer = p;
     if (!drag) return;
@@ -625,20 +676,23 @@
   async function exportRenderedBytes(): Promise<Uint8Array> {
     if (!imageSrc || !canvasW || !canvasH) throw new Error("Canvas image not ready");
     if ($editingId != null) commitText();
+    const exportElements = get(elements);
     return renderAnnotatedPng({
       imageSrc,
       canvasW,
       canvasH,
       exportScale,
       svgEl: svgEl ?? null,
-      getElements: () => $elements,
-      crop: get(crop),
+      getElements: () => exportElements,
+      crop: effectiveCrop(cropDraft, get(crop), canvasW, canvasH),
     });
   }
 
   async function doAction(kind: "copy" | "save" | "copyAndSave") {
-    if ($tool === "crop") applyCrop();
+    if (!imageSrc || loadError || replacingSession || isExporting || isExtractingText) return;
+    isExporting = true;
     try {
+      if ($tool === "crop") applyCrop();
       if (!get(hasEdits)) {
         if (kind === "copy") {
           await api.copyEditor();
@@ -665,6 +719,8 @@
       }
     } catch (err) {
       showToast(String(err), "err");
+    } finally {
+      isExporting = false;
     }
   }
 
@@ -781,7 +837,7 @@
   }
 </script>
 
-<svelte:window onkeydown={onKeyDown} onkeyup={onKeyUp} />
+<svelte:window onkeydown={onKeyDown} onkeyup={onKeyUp} onresize={readDeviceScale} />
 
 <main class="editor-layout">
   <!-- Glassmorphic Header with Output Actions -->
@@ -797,6 +853,15 @@
 
     <!-- Output Actions (Always Visible in Header) -->
     <div class="header-actions">
+      {#if imageSrc && !loadError}
+        <button
+          type="button"
+          class="tb-btn"
+          title={fitToWindow ? t.editor.actualSize : t.editor.fitToWindow}
+          aria-label={fitToWindow ? t.editor.actualSize : t.editor.fitToWindow}
+          onclick={() => { fitToWindow = !fitToWindow; }}
+        >{zoomPercent}%</button>
+      {/if}
       <button
         class="tb-btn accent {isExtractingText ? 'loading' : ''}"
         title={`${t.actions.extractText} (OCR)`}
@@ -832,7 +897,7 @@
   </header>
 
   <!-- Editor Canvas Area -->
-  <div class="canvas-viewport">
+  <div class="canvas-viewport" bind:clientWidth={viewportWidth} bind:clientHeight={viewportHeight}>
     {#if loadError}
       <div class="load-error animate-fade">
         <p>{t.toasts.loadFailed}</p>
@@ -840,11 +905,10 @@
         <button class="btn-primary" onclick={closeEditor}>{t.actions.dismiss}</button>
       </div>
     {:else if imageSrc}
-      <div class="canvas-frame" style="width:{viewRect.width}px;height:{viewRect.height}px">
+      <div class="canvas-frame" style="width:{viewRect.width * viewScale}px;height:{viewRect.height * viewScale}px">
       <div
         class="canvas-container"
-        bind:this={containerEl}
-        style="width:{canvasW}px;height:{canvasH}px;left:{-viewRect.x}px;top:{-viewRect.y}px"
+        style="width:{canvasW}px;height:{canvasH}px;left:{-viewRect.x * viewScale}px;top:{-viewRect.y * viewScale}px;transform:scale({viewScale})"
         oncontextmenu={(e) => e.preventDefault()}
         role="img"
       >
@@ -977,7 +1041,30 @@
                   height={Math.max(1, el.height)}
                   viewBox="{el.x} {el.y} {Math.max(1, el.width)} {Math.max(1, el.height)}"
                 >
-                  <image href={imageSrc} width={canvasW} height={canvasH} filter="url(#pixel-blur)" />
+                  <g filter="url(#pixel-blur)">
+                    <image href={imageSrc} width={canvasW} height={canvasH} />
+                    {#each redactionElements as redact (redact.id)}
+                      <rect
+                        x={redact.x}
+                        y={redact.y}
+                        width={redact.width}
+                        height={redact.height}
+                        fill={REDACT_FILL}
+                        opacity="1"
+                      />
+                    {/each}
+                  </g>
+                  {#each redactionsBeforeBlur(el) as redact (redact.id)}
+                    <rect
+                      x={redact.x}
+                      y={redact.y}
+                      width={redact.width}
+                      height={redact.height}
+                      fill={REDACT_FILL}
+                      fill-opacity="1"
+                      opacity="1"
+                    />
+                  {/each}
                 </svg>
               </g>
               <rect
@@ -1000,6 +1087,8 @@
                 width={el.width}
                 height={el.height}
                 fill={REDACT_FILL}
+                fill-opacity="1"
+                opacity="1"
               />
             {:else if el.kind === "pen"}
               <path
@@ -1306,6 +1395,7 @@
 
   .canvas-container {
     position: absolute;
+    transform-origin: top left;
   }
 
   /* The canvas below takes every crop gesture; this is only what it draws. */

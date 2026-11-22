@@ -4,7 +4,7 @@ import WindowsIcon from '../components/WindowsIcon.astro';
 import AppleIcon from '../components/AppleIcon.astro';
 import GithubIcon from '../components/GithubIcon.astro';
 import MacFirstNote from '../components/MacFirstNote.astro';
-import { exeDownloadPath, dmgDownloadPath, githubUrl, microsoftStoreUrl, releasesUrl } from '../i18n/utils';
+import { exeDownloadPath, dmgDownloadPath, githubUrl, microsoftStoreUrl, releaseMetadata, releasesUrl } from '../i18n/utils';
 import { en } from '../i18n/en';
 
 const t = en.windowsPage;
@@ -23,7 +23,7 @@ const comparisonRows = [
 const faqs = [
   {
     q: 'Which versions of Windows are supported?',
-    a: 'EiSen 1.0.2 in the Microsoft Store supports 64-bit Windows 10 (version 2004 or newer) and Windows 11. The direct v1.0.2 installer is also available from GitHub Releases. It uses modern WinRT APIs and native Rust bindings for maximum performance.',
+    a: `EiSen ${releaseMetadata.windowsStore.version} in the Microsoft Store supports 64-bit Windows 10 (version 2004 or newer) and Windows 11. The direct v${releaseMetadata.windowsDirect.version} installer is also available from GitHub Releases. It uses modern WinRT APIs and native Rust bindings for maximum performance.`,
   },
   {
     q: 'Does EiSen require Administrator privileges to install?',

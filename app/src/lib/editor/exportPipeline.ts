@@ -253,6 +253,7 @@ export function compositeBlurRegions(
   canvasW: number,
   canvasH: number,
   scale = 1,
+  priorRedactions: readonly Element[] = [],
 ): void {
   const supportsFilter = typeof ctx.filter === "string";
   for (const r of blurClipRects(elements)) {
@@ -268,6 +269,9 @@ export function compositeBlurRegions(
       ctx.fillStyle = "#0f172a";
       ctx.fillRect(sr.x, sr.y, sr.width, sr.height);
     }
+    // Keep the mask repaint inside this blur's clip. A redaction elsewhere on
+    // the canvas must not alter pixels that this blur did not touch.
+    for (const redact of priorRedactions) paintRedaction(ctx, redact, scale);
     ctx.restore();
   }
 }
@@ -302,9 +306,7 @@ export interface AnnotatedPngSource {
   /** Live editor SVG whose annotation nodes get rasterized; null skips only
    *  those SVG layers. Text, blur and redactions are still painted. */
   svgEl: SVGSVGElement | null;
-  /** Read at each z-order step so commits that land mid-render (e.g. a text
-   *  edit ending during base-image decode) are honored exactly like the
-   *  original in-page implementation. */
+  /** Supplies the annotation state corresponding to the SVG at export start. */
   getElements: () => readonly Element[];
   /** Capture scale factor from `CaptureSession.scale`; 1 means the capture
    *  is already 1:1 with logical points. */
@@ -332,11 +334,20 @@ export async function renderAnnotatedPng(
   const kept = exportCropRect(src.crop, { width: pxW, height: pxH }, scale);
   canvas.width = kept.width;
   canvas.height = kept.height;
-  const ctx = canvas.getContext("2d")!;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Failed to prepare the export canvas");
   // Everything below draws in full-image pixels; the canvas edge does the clipping.
   ctx.translate(-kept.left, -kept.top);
 
-  // 1. Draw base captured image
+  const segments = segmentElementsForExport(src.getElements());
+  const clone = src.svgEl?.cloneNode(true) as SVGSVGElement | undefined;
+  clone
+    ?.querySelectorAll(EXPORT_STRIP_SELECTOR)
+    .forEach((node) => node.remove());
+  clone?.setAttribute("width", String(pxW));
+  clone?.setAttribute("height", String(pxH));
+  const annotatedNodes = clone ? Array.from(clone.querySelectorAll("[data-el-id]")) : [];
+
   const baseImg = new Image();
   baseImg.crossOrigin = "anonymous";
   await new Promise((resolve, reject) => {
@@ -346,26 +357,43 @@ export async function renderAnnotatedPng(
   });
   ctx.drawImage(baseImg, 0, 0, pxW, pxH);
 
-  // 2. Clone SVG element & strip selection UI overlays
-  const clone = src.svgEl?.cloneNode(true) as SVGSVGElement | undefined;
-  clone
-    ?.querySelectorAll(EXPORT_STRIP_SELECTOR)
-    .forEach((node) => node.remove());
-  clone?.setAttribute("width", String(pxW));
-  clone?.setAttribute("height", String(pxH));
-  const annotatedNodes = clone ? Array.from(clone.querySelectorAll("[data-el-id]")) : [];
-
   // Reproduce live-view stacking: walk elements in array order, drawing
   // each non-blur run as its own partial layer and compositing each blur
   // region at its exact position (elements before a blur stay occluded,
-  // elements after it render above).
-  for (const seg of segmentElementsForExport(src.getElements())) {
+  // elements after it render above). Every blur reads from one private source
+  // with all redactions applied, including redactions that appear later in the
+  // z-order, so covered source pixels can never spread beyond their masks.
+  const redactions = segments.flatMap((seg) => seg.kind === "redact" ? [seg.element] : []);
+  const hasBlur = segments.some((seg) => seg.kind === "blur");
+  let blurSource: CanvasImageSource = baseImg;
+  if (hasBlur && redactions.length > 0) {
+    const safeCanvas = document.createElement("canvas");
+    safeCanvas.width = pxW;
+    safeCanvas.height = pxH;
+    const safeCtx = safeCanvas.getContext("2d");
+    if (!safeCtx) throw new Error("Failed to prepare safe blur source");
+    safeCtx.drawImage(baseImg, 0, 0, pxW, pxH);
+    for (const redact of redactions) paintRedaction(safeCtx, redact, scale);
+    blurSource = safeCanvas;
+  }
+  const priorRedactions: Element[] = [];
+
+  for (const seg of segments) {
     if (seg.kind === "blur") {
-      compositeBlurRegions(ctx, baseImg, [seg.element], canvasW, canvasH, scale);
+      compositeBlurRegions(
+        ctx,
+        blurSource,
+        [seg.element],
+        canvasW,
+        canvasH,
+        scale,
+        priorRedactions,
+      );
       continue;
     }
     if (seg.kind === "redact") {
       paintRedaction(ctx, seg.element, scale);
+      priorRedactions.push(seg.element);
       continue;
     }
     if (seg.kind === "text") {

@@ -1,3 +1,5 @@
+import { releaseMetadata } from "./release";
+
 export interface ChangelogEntry {
   version: string;
   date: string;
@@ -9,9 +11,9 @@ export interface ChangelogEntry {
 /** Summaries of the GitHub Releases, which stay the source for full notes and checksums. */
 export const changelog: ChangelogEntry[] = [
   {
-    version: '1.0.2',
+    version: releaseMetadata.mac.version,
     date: '2026-11-06',
-    platform: 'macOS, Windows (Microsoft Store v1.0.2 and direct download)',
+    platform: `macOS, Windows (Microsoft Store v${releaseMetadata.windowsStore.version} and direct download)`,
     en: [
       'Swipe right to dismiss the floating capture preview, or two-finger swipe right on the trackpad.',
       'Reduced floating preview auto-dismiss delay to 1.5 seconds, with customizable duration (1.5s, 3s, 5s, 8s) in Settings.',

@@ -1,4 +1,5 @@
 use std::path::{Path, PathBuf};
+use std::{fs, fs::OpenOptions, io, io::Write};
 
 use serde::{Deserialize, Serialize};
 
@@ -202,7 +203,55 @@ pub fn load(path: &Path) -> AppConfig {
 /// Persists `cfg` as pretty JSON; `Ok(())` on success.
 pub fn save(path: &Path, cfg: &AppConfig) -> std::io::Result<()> {
     let json = serde_json::to_string_pretty(cfg).map_err(std::io::Error::other)?;
-    std::fs::write(path, json)
+    write_atomic(path, json.as_bytes())
+}
+
+fn write_atomic(path: &Path, bytes: &[u8]) -> io::Result<()> {
+    let parent = path
+        .parent()
+        .filter(|parent| !parent.as_os_str().is_empty())
+        .unwrap_or_else(|| Path::new("."));
+    fs::create_dir_all(parent)?;
+
+    let mut temporary = None;
+    for attempt in 0..32u32 {
+        let candidate = parent.join(format!(".config-{}-{attempt}.tmp", std::process::id()));
+        let mut options = OpenOptions::new();
+        options.write(true).create_new(true);
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::OpenOptionsExt;
+            options.mode(0o600);
+        }
+        match options.open(&candidate) {
+            Ok(file) => {
+                temporary = Some((candidate, file));
+                break;
+            }
+            Err(error) if error.kind() == io::ErrorKind::AlreadyExists => continue,
+            Err(error) => return Err(error),
+        }
+    }
+
+    let (temporary_path, mut file) = temporary.ok_or_else(|| {
+        io::Error::new(
+            io::ErrorKind::AlreadyExists,
+            format!(
+                "could not reserve a config snapshot in {}",
+                parent.display()
+            ),
+        )
+    })?;
+    let result = (|| {
+        file.write_all(bytes)?;
+        file.sync_all()?;
+        drop(file);
+        fs::rename(&temporary_path, path)
+    })();
+    if result.is_err() {
+        let _ = fs::remove_file(&temporary_path);
+    }
+    result
 }
 
 #[cfg(test)]
@@ -214,13 +263,19 @@ mod tests {
         let cfg: AppConfig = serde_json::from_str(r#"{"play_sounds":false}"#).unwrap();
         assert_eq!(cfg.pen_smoothing, PenSmoothing::Medium);
         assert!(!cfg.play_sounds);
-        assert!(cfg.show_thumbnail, "configs from before the thumbnail keep it on");
+        assert!(
+            cfg.show_thumbnail,
+            "configs from before the thumbnail keep it on"
+        );
         assert_eq!(cfg.thumbnail_duration, 1.5);
     }
 
     #[test]
     fn pen_smoothing_roundtrips_as_variant_name() {
-        let cfg = AppConfig { pen_smoothing: PenSmoothing::High, ..AppConfig::default() };
+        let cfg = AppConfig {
+            pen_smoothing: PenSmoothing::High,
+            ..AppConfig::default()
+        };
         let json = serde_json::to_string(&cfg).unwrap();
         assert!(json.contains("\"pen_smoothing\":\"High\""));
         let back: AppConfig = serde_json::from_str(&json).unwrap();
@@ -258,6 +313,55 @@ mod tests {
         };
         save(&p, &want).unwrap();
         assert_eq!(load(&p), want);
+
+        let replacement = AppConfig {
+            lang: Lang::En,
+            thumbnail_duration: 8.0,
+            ..want.clone()
+        };
+        save(&p, &replacement).unwrap();
+        assert_eq!(load(&p), replacement);
+        let serialized = std::fs::read_to_string(&p).unwrap();
+        assert!(serialized.starts_with("{\n  \"lang\""));
+    }
+
+    #[test]
+    fn failed_atomic_config_replacement_cleans_temporary_file() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("cfg.json");
+        std::fs::create_dir(&path).unwrap();
+
+        assert!(save(&path, &AppConfig::default()).is_err());
+        let leftovers = std::fs::read_dir(dir.path())
+            .unwrap()
+            .filter_map(Result::ok)
+            .filter(|entry| {
+                entry
+                    .file_name()
+                    .to_string_lossy()
+                    .starts_with(&format!(".config-{}-", std::process::id()))
+            })
+            .count();
+        assert_eq!(leftovers, 0);
+        assert!(path.is_dir());
+    }
+
+    #[test]
+    fn failed_temp_reservation_keeps_the_existing_config_unchanged() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("cfg.json");
+        let original = b"previous config";
+        std::fs::write(&path, original).unwrap();
+        for attempt in 0..32u32 {
+            std::fs::create_dir(
+                dir.path()
+                    .join(format!(".config-{}-{attempt}.tmp", std::process::id())),
+            )
+            .unwrap();
+        }
+
+        assert!(save(&path, &AppConfig::default()).is_err());
+        assert_eq!(std::fs::read(&path).unwrap(), original);
     }
 
     #[test]

@@ -112,6 +112,8 @@ export const vi: Dict = {
   editor: {
     title: "Trình sửa",
     canvasLabel: "khung vẽ trình sửa",
+    fitToWindow: "Vừa khung xem",
+    actualSize: "Thu phóng 100%",
     deleteHint: "Xóa — bấm để gỡ",
     keptOpen: "Bản sửa này vẫn mở. Hãy sao chép hoặc lưu trước khi thay bằng ảnh mới.",
     discardWarning: "Thay đổi chưa được lưu. Đóng lần nữa để bỏ.",

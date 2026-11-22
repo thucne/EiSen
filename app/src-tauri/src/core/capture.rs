@@ -1,4 +1,5 @@
 use crate::domain::region::{LogicalRect, PixelRect};
+use std::collections::HashMap;
 use std::fmt;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
@@ -125,6 +126,44 @@ pub struct LastRegion {
     pub display: DisplayGeometry,
 }
 
+#[derive(Default)]
+struct PreviewState {
+    current: Option<PathBuf>,
+    active_drags: HashMap<PathBuf, usize>,
+}
+
+/// Keeps a preview file alive for the lifetime of one native file drag.
+pub struct PreviewDragLease {
+    path: PathBuf,
+    state: Arc<Mutex<PreviewState>>,
+}
+
+impl PreviewDragLease {
+    pub fn path(&self) -> &Path {
+        &self.path
+    }
+}
+
+impl Drop for PreviewDragLease {
+    fn drop(&mut self) {
+        let remove_file = {
+            let mut state = self.state.lock().unwrap_or_else(|e| e.into_inner());
+            if let Some(count) = state.active_drags.get_mut(&self.path) {
+                if *count > 1 {
+                    *count -= 1;
+                } else {
+                    state.active_drags.remove(&self.path);
+                }
+            }
+            state.current.as_deref() != Some(self.path.as_path())
+                && !state.active_drags.contains_key(&self.path)
+        };
+        if remove_file {
+            let _ = std::fs::remove_file(&self.path);
+        }
+    }
+}
+
 pub struct CaptureOrchestrator {
     provider: Arc<dyn ScreenProvider>,
     busy: AtomicBool,
@@ -132,10 +171,9 @@ pub struct CaptureOrchestrator {
     /// run. Unlike `busy`, this is released on crop Io so overlay retry can
     /// call `finish` again while the session stays busy.
     finishing: AtomicBool,
-    /// Entry claim for a capture trigger (`begin_capture`). Trigger sites
-    /// (hotkey, tray, command) can run concurrently on worker threads; this
-    /// flag serializes them so only one runs the stale-busy recovery +
-    /// `start()` sequence at a time.
+    /// Claim shared by the window-facing capture actions. The overlay can be
+    /// hidden while commit is working, so visibility alone cannot serialize
+    /// triggers with commit, cancel, or reopening a saved capture.
     entering: AtomicBool,
     last: Mutex<Option<(PathBuf, LogicalRect, f64)>>,
     screen: Mutex<Option<PixelRect>>,
@@ -148,7 +186,7 @@ pub struct CaptureOrchestrator {
     /// Copy of the latest result for the floating thumbnail. The capture it
     /// came from is deleted by the next `start`, and a drop target may still
     /// be reading this one.
-    preview: Mutex<Option<PathBuf>>,
+    preview: Arc<Mutex<PreviewState>>,
 }
 
 impl CaptureOrchestrator {
@@ -163,7 +201,7 @@ impl CaptureOrchestrator {
             editor_pin: Mutex::new(None),
             editor_suspended: AtomicBool::new(false),
             last_region: Mutex::new(None),
-            preview: Mutex::new(None),
+            preview: Arc::new(Mutex::new(PreviewState::default())),
         }
     }
 
@@ -208,7 +246,36 @@ impl CaptureOrchestrator {
     }
 
     pub fn preview(&self) -> Option<PathBuf> {
-        self.preview.lock().unwrap_or_else(|e| e.into_inner()).clone()
+        self.preview
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .current
+            .clone()
+    }
+
+    pub fn preview_matches(&self, expected: &Path) -> bool {
+        self.preview
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .current
+            .as_deref()
+            == Some(expected)
+    }
+
+    /// Acquire a lease only when `expected` names the current backend-issued preview.
+    pub fn begin_preview_drag(&self, expected: &str) -> Option<PreviewDragLease> {
+        let path = PathBuf::from(expected);
+        {
+            let mut state = self.preview.lock().unwrap_or_else(|e| e.into_inner());
+            if state.current.as_deref() != Some(path.as_path()) {
+                return None;
+            }
+            *state.active_drags.entry(path.clone()).or_insert(0) += 1;
+        }
+        Some(PreviewDragLease {
+            path,
+            state: Arc::clone(&self.preview),
+        })
     }
 
     /// Keep `bytes` as the thumbnail image, replacing the previous one. It is
@@ -216,10 +283,18 @@ impl CaptureOrchestrator {
     pub fn keep_preview(&self, bytes: &[u8]) -> Result<(), String> {
         let dir = preview_dir();
         std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
-        let path = crate::domain::naming::unique_path(&dir, &crate::domain::naming::default_filename());
-        std::fs::write(&path, bytes).map_err(|e| e.to_string())?;
+        let path = crate::core::output::save_image(
+            &dir,
+            &crate::domain::naming::default_filename(),
+            bytes,
+        )
+        .map_err(|e| e.to_string())?;
         restrict_permissions(&path);
-        let old = self.preview.lock().unwrap_or_else(|e| e.into_inner()).replace(path);
+        let old = {
+            let mut state = self.preview.lock().unwrap_or_else(|e| e.into_inner());
+            let old = state.current.replace(path);
+            old.filter(|path| !state.active_drags.contains_key(path))
+        };
         if let Some(old) = old {
             let _ = std::fs::remove_file(old);
         }
@@ -227,10 +302,30 @@ impl CaptureOrchestrator {
     }
 
     pub fn clear_preview(&self) {
-        let old = self.preview.lock().unwrap_or_else(|e| e.into_inner()).take();
+        let old = {
+            let mut state = self.preview.lock().unwrap_or_else(|e| e.into_inner());
+            let old = state.current.take();
+            old.filter(|path| !state.active_drags.contains_key(path))
+        };
         if let Some(old) = old {
             let _ = std::fs::remove_file(old);
         }
+    }
+
+    /// Clear the current preview only when it still matches the supplied identity.
+    pub fn clear_preview_if(&self, expected: &str) -> bool {
+        let old = {
+            let mut state = self.preview.lock().unwrap_or_else(|e| e.into_inner());
+            if state.current.as_deref() != Some(Path::new(expected)) {
+                return false;
+            }
+            let old = state.current.take();
+            old.filter(|path| !state.active_drags.contains_key(path))
+        };
+        if let Some(old) = old {
+            let _ = std::fs::remove_file(old);
+        }
+        true
     }
 
     pub fn start(&self) -> Result<CaptureHandle, CaptureError> {
@@ -347,12 +442,12 @@ impl CaptureOrchestrator {
             *self.last_region.lock().unwrap_or_else(|e| e.into_inner()) =
                 Some(LastRegion { rect, display });
         }
-        self.busy.store(false, Ordering::SeqCst);
-        self.finishing.store(false, Ordering::SeqCst);
         let old = self.lock_last().replace((out.clone(), rect, scale));
         if let Some((path, _, _)) = old {
             let _ = std::fs::remove_file(&path);
         }
+        self.busy.store(false, Ordering::SeqCst);
+        self.finishing.store(false, Ordering::SeqCst);
         Ok(CaptureSession {
             path: out,
             rect,
@@ -425,6 +520,32 @@ impl CaptureOrchestrator {
         self.lock_last().clone()
     }
 
+    pub(crate) fn require_capture_path(&self, expected: &str) -> Result<(), String> {
+        if !self
+            .lock_last()
+            .as_ref()
+            .is_some_and(|(path, _, _)| path.as_os_str() == expected)
+        {
+            return Err("the capture changed; select a region again".to_string());
+        }
+        Ok(())
+    }
+
+    /// Resolve only the current committed capture. A renderer can identify an
+    /// expected result without granting access to any other path.
+    pub(crate) fn committed_path(&self, expected: Option<&str>) -> Result<PathBuf, String> {
+        if self.is_busy() {
+            return Err("finish selecting a capture first".to_string());
+        }
+        let (path, _, _) = self
+            .last()
+            .ok_or_else(|| "no committed capture".to_string())?;
+        if expected.is_some_and(|expected| path.as_os_str() != expected) {
+            return Err("the capture changed; select a region again".to_string());
+        }
+        Ok(path)
+    }
+
     /// Reopen an existing image (e.g. from the session history) as the current
     /// session. The source is copied to a fresh temp file so the
     /// orchestrator's temp-file lifecycle (deleted on the next `start` or
@@ -466,12 +587,12 @@ impl CaptureOrchestrator {
 
 /// RAII token holding the capture-trigger entry claim. Releasing on drop
 /// guarantees the claim is freed on every early-return path.
-struct TriggerClaimGuard<'a> {
+pub(crate) struct TriggerClaimGuard<'a> {
     orchestrator: &'a CaptureOrchestrator,
 }
 
 impl<'a> TriggerClaimGuard<'a> {
-    fn acquire(orchestrator: &'a CaptureOrchestrator) -> Option<Self> {
+    pub(crate) fn acquire(orchestrator: &'a CaptureOrchestrator) -> Option<Self> {
         if orchestrator.try_claim_trigger() {
             Some(TriggerClaimGuard { orchestrator })
         } else {
@@ -594,16 +715,28 @@ fn begin_capture_on(
         if overlay.is_visible().unwrap_or(false) {
             // The overlay is open, so another trigger means "never mind". Its
             // own cancel path resets the selection and restores focus.
+            let source = orchestrator.last().map(|(path, _, _)| path);
             return overlay
                 .emit_to(
                     tauri::EventTarget::webview_window("overlay"),
                     "capture-cancel",
-                    (),
+                    source,
                 )
                 .map_err(|e| e.to_string())
                 .and_then(|()| Err("cancelled the open capture".to_string()));
         }
         orchestrator.cancel();
+    }
+    #[cfg(target_os = "macos")]
+    if !crate::platform::mac_adapter::has_screen_permission() {
+        let handle = app.clone();
+        let _ = app.run_on_main_thread(move || {
+            super::tray::show_main_window(&handle);
+            if let Some(main) = handle.get_webview_window("main") {
+                let _ = main.emit("show-history", ());
+            }
+        });
+        return Err("screen recording permission required".to_string());
     }
     #[cfg(target_os = "macos")]
     crate::platform::mac_adapter::remember_previous_app();
@@ -986,15 +1119,22 @@ mod tests {
         let bytes = std::fs::read(&session.path).unwrap();
         o.keep_preview(&bytes).unwrap();
         let first = o.preview().unwrap();
+        assert!(o.begin_preview_drag("/tmp/not-the-current-preview.png").is_none());
+        let drag_lease = o.begin_preview_drag(first.to_str().unwrap()).unwrap();
         o.start().unwrap();
         assert!(!session.path.exists(), "start deletes the previous capture");
-        assert!(first.is_file(), "the preview must survive that cleanup");
+        assert!(first.is_file(), "an active drag keeps the preview alive");
 
         o.keep_preview(&bytes).unwrap();
         let second = o.preview().unwrap();
-        assert!(!first.exists(), "a new preview replaces the old file");
+        assert!(first.is_file(), "replacing a preview preserves an active drag file");
+        assert!(!o.clear_preview_if(first.to_str().unwrap()));
+        assert_eq!(o.preview(), Some(second.clone()));
         o.clear_preview();
         assert!(!second.exists());
+        assert!(first.is_file(), "clearing the current preview preserves the drag file");
+        drop(drag_lease);
+        assert!(!first.exists(), "the drag file is removed when its lease ends");
         assert_eq!(o.preview(), None);
         o.cancel();
     }
@@ -1105,6 +1245,21 @@ mod tests {
         let r = o.start();
         assert!(r.is_ok());
         assert!(matches!(o.start(), Err(CaptureError::Busy)));
+    }
+
+    #[test]
+    fn committed_path_requires_the_current_cropped_image() {
+        let o = CaptureOrchestrator::new(StubProvider::new());
+        o.start().unwrap();
+        assert!(o.committed_path(None).is_err());
+        let first = o.finish(region()).unwrap().path;
+        assert_eq!(o.committed_path(first.to_str()).unwrap(), first);
+
+        o.start().unwrap();
+        let second = o.finish(region()).unwrap().path;
+        assert!(o.committed_path(first.to_str()).is_err());
+        assert_eq!(o.committed_path(second.to_str()).unwrap(), second);
+        o.cancel();
     }
 
     #[test]

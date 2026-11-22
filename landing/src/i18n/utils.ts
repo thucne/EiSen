@@ -1,12 +1,15 @@
 import { en } from './en';
 import { vi } from './vi';
+import { releaseMetadata } from './release';
+
+export { formatArtifactSize, formatByteCount, releaseMetadata } from './release';
 
 export type Locale = 'en' | 'vi';
 
 export const locales: Locale[] = ['en', 'vi'];
 export const defaultLocale: Locale = 'en';
 
-export const appVersion = '1.0.2';
+export const appVersion = releaseMetadata.mac.version;
 
 /** Cloudflare Pages `_redirects` maps these to GitHub Release assets. */
 export const dmgDownloadPath = '/download/mac';

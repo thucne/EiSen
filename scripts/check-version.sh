@@ -43,6 +43,17 @@ if pkg != cargo or pkg != tauri:
     print(f"  app/src-tauri/tauri.conf.json {tauri}", file=sys.stderr)
     sys.exit(1)
 
+npm_lock = json.loads((root / "app/package-lock.json").read_text())
+if npm_lock.get("version") != pkg or npm_lock.get("packages", {}).get("", {}).get("version") != pkg:
+    print(f"app/package-lock.json must identify the root package as {pkg}", file=sys.stderr)
+    sys.exit(1)
+
+cargo_lock = (root / "app/src-tauri/Cargo.lock").read_text()
+cargo_locked = re.search(r'(?m)^name = "eisen"\nversion = "([^"]+)"', cargo_lock)
+if not cargo_locked or cargo_locked.group(1) != pkg:
+    print(f"app/src-tauri/Cargo.lock must identify eisen as {pkg}", file=sys.stderr)
+    sys.exit(1)
+
 msix_sources = {
     "app/msix/Package.appxmanifest": r'<Identity\b[^>]*\bVersion="([^"]+)"',
     ".github/workflows/store-msix.yml": r"(?m)^\s*default:\s*(\d+\.\d+\.\d+\.\d+)\s*$",

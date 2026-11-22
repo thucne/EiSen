@@ -4,14 +4,14 @@ on:
   workflow_dispatch:
     inputs:
       ref:
-        description: Git ref to package
+        description: Published release tag to package
         required: true
-        default: main
+        default: v1.1.0
         type: string
       version:
         description: Four-part MSIX version for the Store package
         required: true
-        default: 1.0.2.0
+        default: 1.1.0.0
         type: string
 
 permissions:
@@ -58,14 +58,19 @@ jobs:
       - name: Validate MSIX version and packaging contracts
         shell: bash
         env:
+          RELEASE_TAG: ${{ inputs.ref }}
           MSIX_VERSION: ${{ inputs.version }}
         run: |
           set -euo pipefail
-          if [[ ! "$MSIX_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "MSIX version must contain four numeric components: $MSIX_VERSION" >&2
+          if [[ ! "$MSIX_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.0$ ]]; then
+            echo "MSIX version must end with revision .0: $MSIX_VERSION" >&2
             exit 1
           fi
-          bash scripts/check-version.sh "v${MSIX_VERSION%.*}"
+          if [[ "$RELEASE_TAG" != "v${MSIX_VERSION%.0}" ]]; then
+            echo "Package the release tag matching the requested MSIX version" >&2
+            exit 1
+          fi
+          bash scripts/check-version.sh "$RELEASE_TAG"
           node scripts/msix-manifest.contract.test.mjs
           node scripts/release-workflow.contract.test.mjs
 
@@ -180,6 +185,13 @@ jobs:
           if ($actualHash -ne $expectedHash) {
             throw "Store package checksum does not match its sidecar"
           }
+          $sourceCommit = (git rev-parse HEAD).Trim()
+          if ($LASTEXITCODE -ne 0 -or $sourceCommit -notmatch '^[0-9a-f]{40}$') {
+            throw "Store package source commit is unavailable"
+          }
+          $metadata = Get-Content -LiteralPath $metadataPath -Raw | ConvertFrom-Json
+          $metadata | Add-Member -NotePropertyName sourceCommit -NotePropertyValue $sourceCommit
+          $metadata | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $metadataPath -Encoding utf8
           $testPackagePath = Join-Path $env:GITHUB_WORKSPACE "artifacts/msix/EiSen_${env:MSIX_VERSION}_x64-test.msix"
           if ($packagePath -eq $testPackagePath) {
             throw 'Store and diagnostic package names must remain distinct'

@@ -32,6 +32,13 @@ struct PersistedEntry {
     root: String,
 }
 
+enum CaptureCheck {
+    Valid(HistoryEntry),
+    Unavailable(HistoryEntry),
+    Missing,
+    Invalid,
+}
+
 /// Capped, newest-first history. The optional persistence path is set by
 /// `load_or_migrate`; a normal in-memory instance remains useful in unit tests.
 #[derive(Clone)]
@@ -94,9 +101,13 @@ impl CaptureHistory {
                 if cap > 0 {
                     let mut seen = HashSet::new();
                     for entry in snapshot.entries {
-                        let Some(entry) = normalize_persisted_entry(&entry) else {
-                            continue;
-                        };
+                        let entry =
+                            match check_capture(Path::new(&entry.path), Path::new(&entry.root)) {
+                                CaptureCheck::Valid(entry) | CaptureCheck::Unavailable(entry) => {
+                                    entry
+                                }
+                                CaptureCheck::Missing | CaptureCheck::Invalid => continue,
+                            };
                         if seen.insert(entry.path.clone()) {
                             history.store.push_back(entry);
                             if history.store.len() == cap {
@@ -107,7 +118,12 @@ impl CaptureHistory {
                 }
                 // Rewrite a normalized snapshot so missing files, invalid
                 // entries, and any over-cap data stay removed on later runs.
-                history.persist()?;
+                // An unavailable capture remains in memory and on disk if
+                // possible; a temporary cleanup write failure must not turn a
+                // successfully loaded snapshot into an empty history.
+                if let Err(error) = history.persist() {
+                    eprintln!("[eisen] failed to persist normalized history: {error}");
+                }
             }
             Ok(_) => {
                 return Err(format!(
@@ -117,7 +133,9 @@ impl CaptureHistory {
             }
             Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
                 history.store = migrate_save_directory(save_dir, cap)?;
-                history.persist()?;
+                if let Err(error) = history.persist() {
+                    eprintln!("[eisen] failed to persist migrated history: {error}");
+                }
             }
             Err(error) => {
                 return Err(format!(
@@ -147,14 +165,38 @@ impl CaptureHistory {
         self.store.iter().map(|entry| &entry.path).collect()
     }
 
+    /// Return a cached capture path only while a fresh filesystem check
+    /// validates the file. Unavailable history rows remain visible in the
+    /// gallery, but cannot authorize renderer path access during an outage.
+    pub fn validated_capture_path(&self, requested: &Path) -> Option<PathBuf> {
+        let entry = self
+            .store
+            .iter()
+            .find(|entry| Path::new(&entry.path) == requested)?;
+        match check_capture(Path::new(&entry.path), &entry.root) {
+            CaptureCheck::Valid(validated) => Some(PathBuf::from(validated.path)),
+            CaptureCheck::Unavailable(_) | CaptureCheck::Missing | CaptureCheck::Invalid => None,
+        }
+    }
+
     /// Return gallery paths after pruning removed or invalid files. The
     /// pruned list is persisted so external file removal cannot make an item
     /// reappear on the next launch.
     pub fn recent_paths(&mut self) -> Vec<CaptureId> {
-        let before = self.store.len();
-        self.store
-            .retain(|entry| normalize_capture(Path::new(&entry.path), &entry.root).is_some());
-        if self.store.len() != before {
+        let mut pruned = false;
+        self.store.retain_mut(
+            |entry| match check_capture(Path::new(&entry.path), &entry.root) {
+                CaptureCheck::Valid(normalized) | CaptureCheck::Unavailable(normalized) => {
+                    *entry = normalized;
+                    true
+                }
+                CaptureCheck::Missing | CaptureCheck::Invalid => {
+                    pruned = true;
+                    false
+                }
+            },
+        );
+        if pruned {
             if let Err(error) = self.persist() {
                 eprintln!("[eisen] failed to persist pruned history: {error}");
             }
@@ -201,14 +243,17 @@ impl CaptureHistory {
         let entries = self
             .store
             .iter()
-            .filter_map(|entry| {
-                normalize_capture(Path::new(&entry.path), &entry.root).map(|normalized| {
-                    PersistedEntry {
-                        path: normalized.path,
-                        root: normalized.root.to_string_lossy().into_owned(),
+            .filter_map(
+                |entry| match check_capture(Path::new(&entry.path), &entry.root) {
+                    CaptureCheck::Valid(normalized) | CaptureCheck::Unavailable(normalized) => {
+                        Some(PersistedEntry {
+                            path: normalized.path,
+                            root: normalized.root.to_string_lossy().into_owned(),
+                        })
                     }
-                })
-            })
+                    CaptureCheck::Missing | CaptureCheck::Invalid => None,
+                },
+            )
             .collect();
         let snapshot = PersistedHistory {
             version: HISTORY_FILE_VERSION,
@@ -268,48 +313,117 @@ fn migrate_save_directory(save_dir: &Path, cap: usize) -> Result<VecDeque<Histor
         .collect())
 }
 
-fn normalize_persisted_entry(entry: &PersistedEntry) -> Option<HistoryEntry> {
-    normalize_capture(Path::new(&entry.path), Path::new(&entry.root))
-}
-
 /// Validate persisted or migrated paths before they become renderer roots:
 /// require an absolute direct child of its recorded save directory, a regular
 /// non-symlink EiSen PNG, and the PNG file signature. Canonicalization ensures
-/// a symlinked parent cannot escape the recorded directory.
-fn normalize_capture(path: &Path, root: &Path) -> Option<HistoryEntry> {
-    if !path.is_absolute() || !root.is_absolute() || !is_capture_filename(path.file_name()?) {
-        return None;
-    }
-
-    let metadata = fs::symlink_metadata(path).ok()?;
-    if !metadata.file_type().is_file() {
-        return None;
-    }
-
-    let canonical_root = fs::canonicalize(root).ok()?;
-    if !canonical_root.is_dir() {
-        return None;
-    }
-    let canonical_path = fs::canonicalize(path).ok()?;
-    if canonical_path.parent()? != canonical_root
-        || !is_capture_filename(canonical_path.file_name()?)
+/// a symlinked parent cannot escape the recorded directory. I/O failures are
+/// kept distinct from a confirmed missing file or a structurally invalid
+/// capture so temporary access problems do not erase recoverable history.
+fn check_capture(path: &Path, root: &Path) -> CaptureCheck {
+    if !path.is_absolute()
+        || !root.is_absolute()
+        || path
+            .components()
+            .chain(root.components())
+            .any(|component| component == std::path::Component::ParentDir)
+        || !path.file_name().is_some_and(is_capture_filename)
     {
-        return None;
+        return CaptureCheck::Invalid;
+    }
+
+    let unavailable_without_canonical_root = || {
+        if path.parent() == Some(root) {
+            CaptureCheck::Unavailable(HistoryEntry {
+                path: path.to_string_lossy().into_owned(),
+                root: root.to_path_buf(),
+            })
+        } else {
+            CaptureCheck::Invalid
+        }
+    };
+
+    let canonical_root = match fs::canonicalize(root) {
+        Ok(root) if root.is_dir() => root,
+        Ok(_) => return CaptureCheck::Invalid,
+        Err(_) => return unavailable_without_canonical_root(),
+    };
+
+    let unavailable_entry = || {
+        let parent_is_root = path
+            .parent()
+            .and_then(|parent| fs::canonicalize(parent).ok())
+            .is_some_and(|parent| parent == canonical_root);
+        if parent_is_root {
+            CaptureCheck::Unavailable(HistoryEntry {
+                path: path.to_string_lossy().into_owned(),
+                root: canonical_root.clone(),
+            })
+        } else {
+            CaptureCheck::Invalid
+        }
+    };
+    let missing_entry = || match fs::canonicalize(root) {
+        Ok(current_root) if current_root == canonical_root => CaptureCheck::Missing,
+        Ok(_) => CaptureCheck::Invalid,
+        Err(_) => unavailable_without_canonical_root(),
+    };
+
+    match fs::symlink_metadata(path) {
+        Ok(metadata) if metadata.file_type().is_file() => {}
+        Ok(_) => return CaptureCheck::Invalid,
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => return missing_entry(),
+        Err(_) => return unavailable_entry(),
+    }
+
+    let canonical_path = match fs::canonicalize(path) {
+        Ok(path) => path,
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => return missing_entry(),
+        Err(_) => return unavailable_entry(),
+    };
+    if canonical_path.parent() != Some(canonical_root.as_path())
+        || !canonical_path.file_name().is_some_and(is_capture_filename)
+    {
+        return CaptureCheck::Invalid;
     }
 
     let mut signature = [0; PNG_SIGNATURE.len()];
-    File::open(&canonical_path)
-        .ok()?
-        .read_exact(&mut signature)
-        .ok()?;
+    let mut file = match File::open(&canonical_path) {
+        Ok(file) => file,
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => return missing_entry(),
+        Err(_) => {
+            return CaptureCheck::Unavailable(HistoryEntry {
+                path: canonical_path.to_string_lossy().into_owned(),
+                root: canonical_root.clone(),
+            });
+        }
+    };
+    match file.read_exact(&mut signature) {
+        Ok(()) => {}
+        Err(error) if error.kind() == std::io::ErrorKind::UnexpectedEof => {
+            return CaptureCheck::Invalid;
+        }
+        Err(_) => {
+            return CaptureCheck::Unavailable(HistoryEntry {
+                path: canonical_path.to_string_lossy().into_owned(),
+                root: canonical_root.clone(),
+            });
+        }
+    }
     if &signature != PNG_SIGNATURE {
-        return None;
+        return CaptureCheck::Invalid;
     }
 
-    Some(HistoryEntry {
+    CaptureCheck::Valid(HistoryEntry {
         path: canonical_path.to_string_lossy().into_owned(),
         root: canonical_root,
     })
+}
+
+fn normalize_capture(path: &Path, root: &Path) -> Option<HistoryEntry> {
+    match check_capture(path, root) {
+        CaptureCheck::Valid(entry) => Some(entry),
+        CaptureCheck::Unavailable(_) | CaptureCheck::Missing | CaptureCheck::Invalid => None,
+    }
 }
 
 fn is_capture_filename(name: &std::ffi::OsStr) -> bool {
@@ -505,6 +619,82 @@ mod tests {
                 second.to_string_lossy().into_owned(),
             ]
         );
+    }
+
+    #[test]
+    fn history_keeps_rows_while_the_capture_directory_is_unavailable() {
+        let dir = tempdir().unwrap();
+        let save_dir = dir.path().join("captures");
+        fs::create_dir_all(&save_dir).unwrap();
+        let history_path = dir.path().join("history.json");
+        let image = write_png(&save_dir, "EiSen_20261105_100000.png");
+        let expected = image.to_string_lossy().into_owned();
+        let mut history = load(&history_path, &save_dir, 50);
+        history.push(expected.clone());
+        history.persist().unwrap();
+        assert_eq!(
+            history.validated_capture_path(Path::new(&expected)),
+            Some(image.clone())
+        );
+
+        let offline_dir = dir.path().join("captures-offline");
+        fs::rename(&save_dir, &offline_dir).unwrap();
+        assert_eq!(history.recent_paths(), [expected.clone()]);
+        let unavailable = load(&history_path, &save_dir, 50);
+        assert_eq!(paths(&unavailable), [expected.clone()]);
+        assert_eq!(
+            unavailable.validated_capture_path(Path::new(&expected)),
+            None
+        );
+
+        fs::rename(&offline_dir, &save_dir).unwrap();
+        assert_eq!(
+            unavailable.validated_capture_path(Path::new(&expected)),
+            Some(image.clone())
+        );
+        let restored = load(&history_path, &save_dir, 50);
+        assert_eq!(paths(&restored), [expected.clone()]);
+
+        fs::remove_file(&image).unwrap();
+        let mut after_deletion = restored;
+        assert!(after_deletion.recent_paths().is_empty());
+        assert!(load(&history_path, &save_dir, 50).is_empty());
+    }
+
+    #[test]
+    fn loaded_snapshot_survives_failure_to_persist_cleanup() {
+        let dir = tempdir().unwrap();
+        let save_dir = dir.path().join("captures");
+        fs::create_dir_all(&save_dir).unwrap();
+        let history_path = dir.path().join("history.json");
+        let image = write_png(&save_dir, "EiSen_20261105_100000.png");
+        let original = serde_json::to_vec_pretty(&PersistedHistory {
+            version: HISTORY_FILE_VERSION,
+            entries: vec![PersistedEntry {
+                path: image.to_string_lossy().into_owned(),
+                root: fs::canonicalize(&save_dir)
+                    .unwrap()
+                    .to_string_lossy()
+                    .into_owned(),
+            }],
+        })
+        .unwrap();
+        fs::write(&history_path, &original).unwrap();
+
+        // Occupy every atomic-write temporary name so cleanup persistence
+        // fails deterministically after the snapshot has been read.
+        for attempt in 0..32u32 {
+            fs::create_dir(
+                dir.path()
+                    .join(format!(".history-{}-{attempt}.tmp", std::process::id())),
+            )
+            .unwrap();
+        }
+
+        let loaded = CaptureHistory::load_or_migrate(&history_path, &save_dir, 50)
+            .expect("the valid in-memory snapshot survives a failed cleanup write");
+        assert_eq!(paths(&loaded), [image.to_string_lossy().into_owned()]);
+        assert_eq!(fs::read(&history_path).unwrap(), original);
     }
 
     #[test]

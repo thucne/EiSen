@@ -39,25 +39,45 @@ test('landing metadata is cross-platform', async () => {
   assert.match(seoHead, /og:image:alt" content="EiSen — Screen Capture & Annotation for macOS & Windows"/);
 });
 
-test('landing release links and copy distinguish direct downloads from the Store version', async () => {
+test('static download redirects match release metadata', async () => {
+  const metadata = JSON.parse(await source('landing/src/data/release-metadata.json'));
   const redirects = await source('landing/public/_redirects');
+  const assetPath = (release) =>
+    `/releases/download/v${release.version}/${release.assetName.replace('{version}', release.version)}`;
+
+  for (const release of [metadata.mac, metadata.windowsStore, metadata.windowsDirect]) {
+    assert.match(release.version, /^\d+\.\d+\.\d+$/);
+  }
+  assert.equal(typeof metadata.mac.sizeBytes, 'number');
+  assert.equal(metadata.windowsStore.sizeBytes, null);
+  assert.equal(typeof metadata.windowsDirect.sizeBytes, 'number');
+  assert.ok(redirects.includes(assetPath(metadata.mac)), 'macOS redirect should use the metadata asset');
+  assert.ok(redirects.includes(assetPath(metadata.windowsDirect)), 'Windows direct redirect should use the metadata asset');
+  assert.ok(redirects.includes(`/releases/tag/v${metadata.mac.version}`));
+});
+
+test('landing release links and copy distinguish direct downloads from the Store version', async () => {
   const english = await source('landing/src/i18n/en.ts');
   const vietnamese = await source('landing/src/i18n/vi.ts');
   const changelog = await source('landing/src/i18n/changelog.ts');
   const seoHead = await source('landing/src/components/SeoHead.astro');
-  const landingReadme = await source('landing/README.md');
+  const story = await source('landing/src/pages/story.astro');
 
-  assert.match(redirects, /releases\/download\/v1\.0\.2\/EiSen_1\.0\.2_aarch64\.dmg/);
-  assert.match(redirects, /releases\/download\/v1\.0\.2\/EiSen_1\.0\.2_x64-setup\.exe/);
-  assert.match(english, /Microsoft Store: version 1\.0\.2 • Direct installer: version 1\.0\.2/);
-  assert.match(vietnamese, /Microsoft Store: phiên bản 1\.0\.2 • Bộ cài trực tiếp: phiên bản 1\.0\.2/);
-  assert.match(english, /value: "4\.61 MB"/);
-  assert.match(vietnamese, /value: "4,61 MB"/);
-  assert.match(seoHead, /4,606,653 bytes \(4\.61 MB\).*2,730,567 bytes \(2\.73 MB\)/);
-  assert.match(landingReadme, /2,730,567 bytes \/ 2\.73 MB/);
-  assert.match(landingReadme, /4,606,653 bytes \/ 4\.61 MB/);
+  assert.match(english, /detailsWin: `Microsoft Store: version \$\{windowsStoreVersion\} • Direct installer: version \$\{windowsDirectVersion\}/);
+  assert.match(vietnamese, /detailsWin: `Microsoft Store: phiên bản \$\{windowsStoreVersion\} • Bộ cài trực tiếp: phiên bản \$\{windowsDirectVersion\}/);
+  assert.match(english, /value: formatArtifactSize\(releaseMetadata\.mac\.sizeBytes, "en"\)/);
+  assert.match(vietnamese, /value: formatArtifactSize\(releaseMetadata\.mac\.sizeBytes, "vi"\)/);
+  assert.match(seoHead, /softwareVersion: releaseMetadata\.mac\.version/);
+  assert.match(seoHead, /formatByteCount\(releaseMetadata\.mac\.sizeBytes\)/);
+  assert.match(seoHead, /formatByteCount\(releaseMetadata\.windowsDirect\.sizeBytes\)/);
+  assert.match(changelog, /version: releaseMetadata\.mac\.version/);
+  assert.match(changelog, /Microsoft Store v\$\{releaseMetadata\.windowsStore\.version\}/);
+  assert.match(story, /releaseMetadata\.mac\.version/);
+  assert.match(story, /releaseMetadata\.windowsDirect\.version/);
+  assert.match(story, /releaseMetadata\.windowsStore\.version/);
+  assert.match(story, /Apple Silicon only/);
+  assert.doesNotMatch(story, /Apple Silicon\s*&amp;\s*Intel/);
   assert.match(changelog, /platform: 'macOS, Windows \(Microsoft Store v1\.0\.1 and direct download\)'/);
-  assert.match(changelog, /platform: 'macOS, Windows \(Microsoft Store v1\.0\.2 and direct download\)'/);
   assert.doesNotMatch(changelog, /Microsoft Store currently offers v1\.0\.0|Microsoft Store hiện vẫn cung cấp v1\.0\.0/);
   assert.match(changelog, /date: '2026-11-06'/);
   assert.match(english, /Since v1\.0\.1, EiSen keeps up to 50 saved captures in History across relaunches on macOS and Windows, including the Microsoft Store version/);

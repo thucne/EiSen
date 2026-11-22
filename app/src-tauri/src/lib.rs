@@ -21,6 +21,13 @@ struct HotkeyNotices {
     warning: Option<String>,
 }
 
+fn claim_capture_action(
+    orchestrator: &CaptureOrchestrator,
+) -> Result<capture::TriggerClaimGuard<'_>, String> {
+    capture::TriggerClaimGuard::acquire(orchestrator)
+        .ok_or_else(|| "another capture action is in progress".to_string())
+}
+
 /// Begin a capture session: captures the whole active display to a temp PNG,
 /// shows the overlay window and emits `capture-ready` with the image path.
 /// The hotkey and the tray's "Capture now" item use the same path.
@@ -38,7 +45,13 @@ async fn cmd_commit_region(
     orchestrator: State<'_, Arc<CaptureOrchestrator>>,
     rect: LogicalRect,
     open_editor: Option<bool>,
+    hold_editor: Option<bool>,
+    source_path: Option<String>,
 ) -> Result<CaptureSession, String> {
+    let _claim = claim_capture_action(orchestrator.inner())?;
+    if let Some(source_path) = source_path.as_deref() {
+        orchestrator.require_capture_path(source_path)?;
+    }
     // Hide the overlay synchronously BEFORE the compute: the user must get
     // immediate visual feedback that the selection was accepted.
     if let Some(overlay) = app.get_webview_window("overlay") {
@@ -56,7 +69,7 @@ async fn cmd_commit_region(
             if open_editor.unwrap_or(false) {
                 sound::play(SoundEffect::Shutter, app_config(&app).play_sounds);
                 show_editor(&app, &orch_for_ui).map_err(|e| e.to_string())?;
-            } else {
+            } else if !hold_editor.unwrap_or(false) {
                 resign_overlay_activation(&app);
                 capture::restore_editor_after_capture(&app, &orch_for_ui);
             }
@@ -76,7 +89,12 @@ async fn cmd_commit_region(
 fn cmd_cancel_capture(
     app: tauri::AppHandle,
     orchestrator: State<'_, Arc<CaptureOrchestrator>>,
+    source_path: Option<String>,
 ) -> Result<(), String> {
+    let _claim = claim_capture_action(orchestrator.inner())?;
+    if let Some(source_path) = source_path.as_deref() {
+        orchestrator.require_capture_path(source_path)?;
+    }
     orchestrator.cancel();
     if let Some(overlay) = app.get_webview_window("overlay") {
         let _ = overlay.hide();
@@ -129,20 +147,24 @@ fn validator_roots(save_dir: std::path::PathBuf, history: Vec<String>) -> Vec<st
     roots
 }
 
-/// Gather the shared allowlist roots for renderer-supplied paths from app
-/// state. Single source of truth for every command that accepts a path
-/// (cmd_open_in_editor, cmd_get_thumbnail, cmd_copy_path), so new commands
-/// cannot drift from the settled plan-025 root list.
-fn build_validator_roots(app: &tauri::AppHandle) -> Vec<std::path::PathBuf> {
+fn validate_capture_file(
+    app: &tauri::AppHandle,
+    requested: &std::path::Path,
+) -> Result<std::path::PathBuf, String> {
     let history = app
         .state::<Arc<Mutex<CaptureHistory>>>()
         .lock()
         .unwrap_or_else(|e| e.into_inner())
-        .recent()
-        .into_iter()
-        .cloned()
-        .collect();
-    validator_roots(app_config(app).save_dir, history)
+        .validated_capture_path(requested);
+    let roots = validator_roots(
+        app_config(app).save_dir,
+        history.into_iter().map(|path| path.to_string_lossy().into_owned()).collect(),
+    );
+    let path = crate::domain::path_guard::ensure_allowed(requested, &roots)?;
+    if !path.is_file() {
+        return Err("the capture file is unavailable".to_string());
+    }
+    Ok(path)
 }
 
 fn app_config_path(app: &tauri::AppHandle) -> Result<std::path::PathBuf, String> {
@@ -200,6 +222,17 @@ fn save_config(app: &tauri::AppHandle, cfg: &AppConfig) -> Result<AppConfig, Str
     app.global_shortcut()
         .unregister_all()
         .map_err(|e| format!("failed to unregister hotkeys: {e}"))?;
+    let restore_shortcut = |cause: &str| {
+        let restored = app
+            .global_shortcut()
+            .unregister_all()
+            .map_err(|error| error.to_string())
+            .and_then(|_| hotkey::register(app, &old.hotkey));
+        match restored {
+            Ok(_) => format!("{cause}; restored previous shortcut"),
+            Err(error) => format!("{cause}; failed to restore previous shortcut: {error}"),
+        }
+    };
     let registration = hotkey::register(app, &cfg.hotkey);
     match hotkey::save_outcome(&old.hotkey, &cfg.hotkey, registration.is_ok()) {
         hotkey::SaveOutcome::PersistOnly => {
@@ -208,14 +241,15 @@ fn save_config(app: &tauri::AppHandle, cfg: &AppConfig) -> Result<AppConfig, Str
         }
         hotkey::SaveOutcome::Commit => {
             let registration = registration.expect("successful registration must have a result");
+            let mut active_cfg = cfg.clone();
+            active_cfg.hotkey = registration.active;
+            persist_config(app, &path, &active_cfg)
+                .map_err(|error| restore_shortcut(&format!("failed to save settings: {error}")))?;
             #[cfg(target_os = "macos")]
             {
                 let registry = app.state::<Arc<Mutex<platform::mac_adapter::MonitorRegistry>>>();
                 platform::mac_adapter::apply_monitor_action(app, &registry, action);
             }
-            let mut active_cfg = cfg.clone();
-            active_cfg.hotkey = registration.active;
-            persist_config(app, &path, &active_cfg)?;
             if let Some(message) = hotkey::registration_warning(registration) {
                 set_hotkey_warning(app, message);
             }
@@ -225,19 +259,7 @@ fn save_config(app: &tauri::AppHandle, cfg: &AppConfig) -> Result<AppConfig, Str
             let e = registration
                 .err()
                 .unwrap_or_else(|| "unknown error".into());
-            let restored = app
-                .global_shortcut()
-                .unregister_all()
-                .map_err(|e2| format!("failed to unregister hotkeys: {e2}"))
-                .and_then(|_| hotkey::register(app, &old.hotkey));
-            match restored {
-                Ok(_) => Err(format!(
-                    "hotkey re-register failed: {e}; restored previous shortcut"
-                )),
-                Err(e2) => Err(format!(
-                    "hotkey re-register failed: {e}; RESTORING PREVIOUS SHORTCUT ALSO FAILED: {e2}"
-                )),
-            }
+            Err(restore_shortcut(&format!("hotkey re-register failed: {e}")))
         }
     }
 }
@@ -271,10 +293,9 @@ fn apply_lang(app: &tauri::AppHandle, lang: Lang) {
 #[tauri::command]
 fn cmd_set_config(app: tauri::AppHandle, cfg: AppConfig) -> Result<AppConfig, String> {
     let mut cfg = cfg;
-    // Save targets derive solely from this validated dir joined with a
-    // generated filename (see cmd_save/cmd_save_bytes), so set-time
-    // validation covers them; those commands take no renderer path.
-    cfg.save_dir = crate::domain::path_guard::ensure_valid_target_dir(&cfg.save_dir)?;
+    if cfg.save_dir != app_config(&app).save_dir {
+        cfg.save_dir = crate::domain::path_guard::ensure_valid_target_dir(&cfg.save_dir)?;
+    }
     save_config(&app, &cfg)
 }
 
@@ -494,13 +515,18 @@ fn show_editor(app: &tauri::AppHandle, orchestrator: &CaptureOrchestrator) -> ta
             .always_on_top(true)
             .skip_taskbar(true)
             .transparent(true)
+            .visible(false)
+            .focused(false)
             .min_inner_size(680.0, 480.0)
             .build()?
     };
     let _ = window.set_title(app_config(app).lang.editor_title());
     let _ = apply_window_glass(&window);
-    if let Some((_, rect, _)) = orchestrator.last() {
-        if let Some(mon) = captured_monitor(app)? {
+    if let Some((_, rect, _)) = orchestrator.last().filter(|_| !replacing) {
+        let monitor = captured_monitor(app).ok().flatten()
+            .or_else(|| app.get_webview_window("main")?.current_monitor().ok().flatten())
+            .or_else(|| app.primary_monitor().ok().flatten());
+        if let Some(mon) = monitor {
             let scale = mon.scale_factor();
             let size = mon.size();
             let pos = mon.position();
@@ -542,31 +568,61 @@ fn show_editor(app: &tauri::AppHandle, orchestrator: &CaptureOrchestrator) -> ta
             let _ = window.center();
         }
     }
-    window.show()?;
-    window.set_focus()?;
-    orchestrator.clear_editor_suspended();
     if replacing {
+        window.show()?;
+        window.set_focus()?;
         let _ = window.emit("editor-replace-request", ());
+    }
+    orchestrator.clear_editor_suspended();
+    Ok(())
+}
+
+#[tauri::command]
+fn cmd_editor_ready(
+    window: tauri::WebviewWindow,
+    orchestrator: State<'_, Arc<CaptureOrchestrator>>,
+    path: Option<String>,
+) -> Result<(), String> {
+    if window.label() != "editor" {
+        return Err("only the editor can confirm image readiness".to_string());
+    }
+    if let Some(path) = path {
+        if editor_pin_path(orchestrator.inner())?.as_os_str() != path.as_str() {
+            return Ok(());
+        }
+    }
+    if orchestrator.is_busy() {
+        orchestrator.mark_editor_suspended();
+    } else if !window.is_visible().map_err(|e| e.to_string())? {
+        window.show().map_err(|e| e.to_string())?;
+        window.set_focus().map_err(|e| e.to_string())?;
     }
     Ok(())
 }
 
 /// Reopen an existing capture image (from the session history) in the editor.
 #[tauri::command]
-fn cmd_open_in_editor(
+async fn cmd_open_in_editor(
     app: tauri::AppHandle,
     orchestrator: State<'_, Arc<CaptureOrchestrator>>,
     path: String,
+    committed: Option<bool>,
 ) -> Result<(), String> {
+    let _claim = claim_capture_action(orchestrator.inner())?;
+    if committed.unwrap_or(false) {
+        orchestrator.committed_path(Some(&path))?;
+        if let Some(overlay) = app.get_webview_window("overlay") {
+            overlay.hide().map_err(|e| e.to_string())?;
+        }
+        sound::play(SoundEffect::Shutter, app_config(&app).play_sounds);
+        return show_editor(&app, orchestrator.inner()).map_err(|e| e.to_string());
+    }
     // IPC trust boundary: custom commands bypass Tauri capability gating, so
     // the renderer-supplied path must pass the explicit root allowlist
     // (save_dir + history entries; temp stays implicit inside ensure_allowed)
     // before the orchestrator touches it. The hub legitimately sends
     // previously-SAVED paths from save_dir, which the extra roots keep working.
-    let allowed = crate::domain::path_guard::ensure_allowed(
-        std::path::Path::new(&path),
-        &build_validator_roots(&app),
-    )?;
+    let allowed = validate_capture_file(&app, std::path::Path::new(&path))?;
     if let Some(overlay) = app.get_webview_window("overlay") {
         if overlay.is_visible().unwrap_or(false) {
             return Err(
@@ -574,9 +630,10 @@ fn cmd_open_in_editor(
             );
         }
     }
-    orchestrator
-        .reopen(&allowed)
-        .map_err(|e| e.to_string())?;
+    let capture = Arc::clone(orchestrator.inner());
+    tauri::async_runtime::spawn_blocking(move || capture.reopen(&allowed))
+        .await
+        .map_err(|e| format!("reopen task failed: {e}"))??;
     show_editor(&app, &orchestrator).map_err(|e| e.to_string())
 }
 
@@ -585,14 +642,7 @@ fn cmd_open_in_editor(
 /// convertFileSrc.
 #[tauri::command]
 async fn cmd_get_thumbnail(app: tauri::AppHandle, path: String) -> Result<String, String> {
-    // IPC trust boundary: custom commands bypass Tauri capability gating, so
-    // validate BEFORE any filesystem access (same rule as plan 025), using
-    // the shared root list (save_dir + session-history entries; temp stays
-    // implicit inside ensure_allowed).
-    let src = crate::domain::path_guard::ensure_allowed(
-        std::path::Path::new(&path),
-        &build_validator_roots(&app),
-    )?;
+    let src = validate_capture_file(&app, std::path::Path::new(&path))?;
 
     let dir = app
         .path()
@@ -613,38 +663,39 @@ async fn cmd_get_thumbnail(app: tauri::AppHandle, path: String) -> Result<String
 async fn cmd_copy(
     app: tauri::AppHandle,
     orchestrator: State<'_, Arc<CaptureOrchestrator>>,
+    capture_path: Option<String>,
 ) -> Result<(), String> {
-    // State is not Send-friendly: pull the owned path out BEFORE spawning.
-    let (path, _, _) = orchestrator
-        .last()
-        .ok_or_else(|| "no capture in progress; commit a region first".to_string())?;
+    let _claim = claim_capture_action(orchestrator.inner())?;
+    let path = orchestrator.committed_path(capture_path.as_deref())?;
     // Decode + clipboard write run together in spawn_blocking. Splitting the
     // clipboard onto the main thread would require exporting decode_image from
     // output.rs (out of scope); the plugin is invoked from the blocking pool.
     let app_for_copy = app.clone();
     tauri::async_runtime::spawn_blocking(move || {
         let bytes = std::fs::read(&path).map_err(|e| format!("failed to read capture image: {e}"))?;
+        output::copy_image(&app_for_copy, &bytes).map_err(|e| e.to_string())?;
         keep_preview(&app_for_copy, &bytes);
-        output::copy_image(&app_for_copy, &bytes).map_err(|e| e.to_string())
+        Ok::<(), String>(())
     })
     .await
     .map_err(|e| format!("copy task failed: {e}"))??;
     sound::play(SoundEffect::Copy, app_config(&app).play_sounds);
+    capture::restore_editor_after_capture(&app, orchestrator.inner());
     Ok(())
 }
 
 /// Copy the PNG at `path` to the clipboard. Unlike `cmd_copy` this reads the
 /// given file (a hub-gallery capture), not the orchestrator's last capture.
 #[tauri::command]
-fn cmd_copy_path(app: tauri::AppHandle, path: String) -> Result<(), String> {
-    // IPC trust boundary: route through the shared allowlist like every
-    // path-taking command (module invariant in domain/path_guard.rs).
-    crate::domain::path_guard::ensure_allowed(
-        std::path::Path::new(&path),
-        &build_validator_roots(&app),
-    )?;
-    let bytes = std::fs::read(&path).map_err(|e| format!("failed to read image: {e}"))?;
-    output::copy_image(&app, &bytes).map_err(|e| e.to_string())?;
+async fn cmd_copy_path(app: tauri::AppHandle, path: String) -> Result<(), String> {
+    let path = validate_capture_file(&app, std::path::Path::new(&path))?;
+    let app_for_copy = app.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        let bytes = std::fs::read(&path).map_err(|e| format!("failed to read image: {e}"))?;
+        output::copy_image(&app_for_copy, &bytes).map_err(|e| e.to_string())
+    })
+    .await
+    .map_err(|e| format!("copy task failed: {e}"))??;
     sound::play(SoundEffect::Copy, app_config(&app).play_sounds);
     Ok(())
 }
@@ -655,22 +706,24 @@ fn cmd_copy_path(app: tauri::AppHandle, path: String) -> Result<(), String> {
 async fn cmd_save(
     app: tauri::AppHandle,
     orchestrator: State<'_, Arc<CaptureOrchestrator>>,
+    capture_path: Option<String>,
 ) -> Result<SaveResult, String> {
-    // State is not Send-friendly: pull the owned path out BEFORE spawning.
-    let (path, _, _) = orchestrator
-        .last()
-        .ok_or_else(|| "no capture in progress; commit a region first".to_string())?;
+    let _claim = claim_capture_action(orchestrator.inner())?;
+    let path = orchestrator.committed_path(capture_path.as_deref())?;
     let dir = app_config(&app).save_dir;
     let app_for_preview = app.clone();
     let saved = tauri::async_runtime::spawn_blocking(move || {
         let bytes = std::fs::read(&path).map_err(|e| format!("failed to read capture image: {e}"))?;
+        let saved = output::save_image(&dir, &naming::default_filename(), &bytes)
+            .map_err(|e| e.to_string())?;
         keep_preview(&app_for_preview, &bytes);
-        output::save_image(&dir, &naming::default_filename(), &bytes).map_err(|e| e.to_string())
+        Ok::<_, String>(saved)
     })
     .await
     .map_err(|e| format!("save task failed: {e}"))??;
     push_history(&app, saved.to_string_lossy());
     sound::play(SoundEffect::Save, app_config(&app).play_sounds);
+    capture::restore_editor_after_capture(&app, orchestrator.inner());
     Ok(SaveResult { path: saved })
 }
 
@@ -766,13 +819,21 @@ fn cmd_play_sound(app: tauri::AppHandle, effect: String) -> Result<(), String> {
 /// Extract text from the last capture image using native OCR.
 #[tauri::command]
 async fn cmd_extract_text(
+    app: tauri::AppHandle,
     orchestrator: State<'_, Arc<CaptureOrchestrator>>,
+    capture_path: Option<String>,
+    copy_to_clipboard: Option<bool>,
 ) -> Result<String, String> {
-    // State is not Send-friendly: pull the owned path out BEFORE spawning.
-    let (path, _, _) = orchestrator
-        .last()
-        .ok_or_else(|| "no capture session active".to_string())?;
-    extract_text_from_path(path).await
+    let _claim = claim_capture_action(orchestrator.inner())?;
+    let path = orchestrator.committed_path(capture_path.as_deref())?;
+    let text = extract_text_from_path(path).await?;
+    if copy_to_clipboard.unwrap_or(false) && !text.trim().is_empty() {
+        use tauri_plugin_clipboard_manager::ClipboardExt;
+        app.clipboard().write_text(text.as_str()).map_err(|e| e.to_string())?;
+        sound::play(SoundEffect::Copy, app_config(&app).play_sounds);
+        capture::restore_editor_after_capture(&app, orchestrator.inner());
+    }
+    Ok(text)
 }
 
 async fn extract_text_from_path(path: std::path::PathBuf) -> Result<String, String> {
@@ -793,6 +854,15 @@ async fn extract_text_from_path(path: std::path::PathBuf) -> Result<String, Stri
         let _ = path;
         Err("OCR is currently supported on macOS and Windows only".to_string())
     }
+}
+
+/// Extract text from the image currently pinned by the editor.
+#[tauri::command]
+async fn cmd_extract_editor_text(
+    orchestrator: State<'_, Arc<CaptureOrchestrator>>,
+) -> Result<String, String> {
+    let path = editor_pin_path(orchestrator.inner())?;
+    extract_text_from_path(path).await
 }
 
 /// Extract text from the editor's rendered result, so OCR reads what the user
@@ -951,12 +1021,19 @@ fn keep_preview(app: &tauri::AppHandle, bytes: &[u8]) {
 
 #[derive(Clone, serde::Serialize)]
 struct FeedbackPayload {
+    id: u64,
     message: String,
     kind: String,
     path: Option<String>,
     preview: Option<String>,
     duration_ms: Option<u64>,
 }
+
+static NEXT_FEEDBACK_ID: std::sync::atomic::AtomicU64 =
+    std::sync::atomic::AtomicU64::new(1);
+static NEXT_PREVIEW_DRAG_ID: std::sync::atomic::AtomicU64 =
+    std::sync::atomic::AtomicU64::new(1);
+static ACTIVE_FEEDBACK_ID: Mutex<Option<u64>> = Mutex::new(None);
 
 fn place_thumbnail_window(
     app: &tauri::AppHandle,
@@ -1023,14 +1100,21 @@ fn cmd_show_feedback(
     kind: String,
     path: Option<String>,
 ) -> Result<(), String> {
+    let orchestrator = app.state::<Arc<CaptureOrchestrator>>();
     let window = app
         .get_webview_window("feedback")
         .ok_or_else(|| "feedback window is unavailable".to_string())?;
     let preview = if kind == "ok" {
-        app.state::<Arc<CaptureOrchestrator>>().preview()
+        orchestrator.preview()
     } else {
         None
     };
+    if preview.is_none() {
+        orchestrator.clear_preview();
+    }
+    let mut active_feedback = ACTIVE_FEEDBACK_ID.lock().unwrap_or_else(|e| e.into_inner());
+    let feedback_id = NEXT_FEEDBACK_ID.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+    *active_feedback = Some(feedback_id);
     match &preview {
         Some(image) => place_thumbnail_window(&app, &window, image),
         None => {
@@ -1044,58 +1128,98 @@ fn cmd_show_feedback(
     } else {
         None
     };
-    let preview = preview.map(|image| image.to_string_lossy().into_owned());
-    window
-        .emit(
-            "feedback-show",
-            FeedbackPayload {
-                message,
-                kind,
-                path,
-                preview,
-                duration_ms,
-            },
-        )
-        .map_err(|e| e.to_string())?;
+    if let Err(err) = window.emit(
+        "feedback-show",
+        FeedbackPayload {
+            id: feedback_id,
+            message,
+            kind,
+            path,
+            preview: preview.map(|image| image.to_string_lossy().into_owned()),
+            duration_ms,
+        },
+    ) {
+        *active_feedback = None;
+        return Err(err.to_string());
+    }
     #[cfg(target_os = "macos")]
     platform::mac_adapter::show_without_activation(&window);
     #[cfg(not(target_os = "macos"))]
-    window.show().map_err(|e| e.to_string())?;
+    if let Err(err) = window.show() {
+        *active_feedback = None;
+        return Err(err.to_string());
+    }
     Ok(())
 }
 
 #[tauri::command]
-fn cmd_hide_feedback(app: tauri::AppHandle) {
+fn cmd_hide_feedback(app: tauri::AppHandle, feedback_id: u64, preview: Option<String>) {
+    let mut active_feedback = ACTIVE_FEEDBACK_ID.lock().unwrap_or_else(|e| e.into_inner());
+    if *active_feedback != Some(feedback_id) {
+        return;
+    }
+    *active_feedback = None;
     if let Some(window) = app.get_webview_window("feedback") {
         let _ = window.hide();
     }
-    app.state::<Arc<CaptureOrchestrator>>().clear_preview();
+    if let Some(preview) = preview {
+        app.state::<Arc<CaptureOrchestrator>>()
+            .clear_preview_if(&preview);
+    }
 }
 
 /// Start dragging the thumbnail's image out to another app.
 #[tauri::command]
-fn cmd_start_preview_drag(app: tauri::AppHandle) -> Result<(), String> {
+fn cmd_start_preview_drag(
+    app: tauri::AppHandle,
+    feedback_id: u64,
+    preview: String,
+) -> Result<(), String> {
     #[cfg(target_os = "macos")]
     {
-        let image = app
-            .state::<Arc<CaptureOrchestrator>>()
-            .preview()
-            .ok_or_else(|| "no thumbnail to drag".to_string())?;
         let window = app
             .get_webview_window("feedback")
             .ok_or_else(|| "feedback window is unavailable".to_string())?;
+        let lease = {
+            let active_feedback = ACTIVE_FEEDBACK_ID.lock().unwrap_or_else(|e| e.into_inner());
+            if *active_feedback != Some(feedback_id) {
+                None
+            } else {
+                app.state::<Arc<CaptureOrchestrator>>()
+                    .begin_preview_drag(&preview)
+            }
+        };
+        let Some(lease) = lease else {
+            let _ = window.emit("feedback-drag-ended", feedback_id);
+            return Ok(());
+        };
+        let drag_id = NEXT_PREVIEW_DRAG_ID.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
         let app_for_drag = app.clone();
         app.run_on_main_thread(move || {
-            if let Err(e) = platform::mac_adapter::start_file_drag(&app_for_drag, &window, &image) {
+            let active_feedback = ACTIVE_FEEDBACK_ID.lock().unwrap_or_else(|e| e.into_inner());
+            let current_preview = app_for_drag
+                .state::<Arc<CaptureOrchestrator>>()
+                .preview_matches(lease.path());
+            if *active_feedback != Some(feedback_id) || !current_preview {
+                let _ = window.emit("feedback-drag-ended", feedback_id);
+                return;
+            }
+            if let Err(e) = platform::mac_adapter::start_file_drag(
+                &app_for_drag,
+                &window,
+                feedback_id,
+                drag_id,
+                lease,
+            ) {
                 eprintln!("[eisen] thumbnail drag failed: {e}");
-                let _ = window.emit("feedback-drag-ended", ());
+                let _ = window.emit("feedback-drag-ended", feedback_id);
             }
         })
         .map_err(|e| e.to_string())
     }
     #[cfg(not(target_os = "macos"))]
     {
-        let _ = app;
+        let _ = (app, feedback_id, preview);
         Err("dragging a thumbnail is only supported on macOS".to_string())
     }
 }
@@ -1103,14 +1227,11 @@ fn cmd_start_preview_drag(app: tauri::AppHandle) -> Result<(), String> {
 /// Show a saved capture in Finder or File Explorer.
 #[tauri::command]
 fn cmd_reveal_path(app: tauri::AppHandle, path: String) -> Result<(), String> {
-    let path = std::path::Path::new(&path);
-    // IPC trust boundary: route through the shared allowlist like every
-    // path-taking command (module invariant in domain/path_guard.rs).
-    crate::domain::path_guard::ensure_allowed(path, &build_validator_roots(&app))?;
+    let path = validate_capture_file(&app, std::path::Path::new(&path))?;
     #[cfg(target_os = "macos")]
-    return platform::mac_adapter::reveal_in_file_manager(path);
+    return platform::mac_adapter::reveal_in_file_manager(&path);
     #[cfg(target_os = "windows")]
-    return platform::windows_adapter::reveal_in_file_manager(path);
+    return platform::windows_adapter::reveal_in_file_manager(&path);
     #[cfg(not(any(target_os = "macos", target_os = "windows")))]
     Err("reveal is supported on macOS and Windows only".to_string())
 }
@@ -1327,12 +1448,14 @@ builder
             cmd_get_last_capture,
             cmd_get_editor_session,
             cmd_adopt_editor_session,
+            cmd_editor_ready,
             cmd_copy_editor,
             cmd_save_editor,
             cmd_copy_and_save_editor,
             cmd_open_in_editor,
             cmd_get_thumbnail,
             cmd_extract_text,
+            cmd_extract_editor_text,
             cmd_extract_text_bytes,
             cmd_remove_history,
             cmd_hotkey_error,

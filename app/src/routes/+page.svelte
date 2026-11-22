@@ -32,6 +32,7 @@
   let permissionOk = $state(true);
   let appVersion = $state<string>("0.2.6");
   let historyRevision = 0;
+  let historyEventRevision = 0;
 
   function probePermission() {
     api.screenPermission()
@@ -92,6 +93,7 @@
       );
     };
     void listen<string[]>("history", (e) => {
+      historyEventRevision += 1;
       historyRevision += 1;
       applyHistory(e.payload);
     })
@@ -155,10 +157,35 @@
   function removeCard(path: string) {
     status = null;
     const prev = $history;
+    const removedIndex = prev.indexOf(path);
+    const eventRevisionAtRemoval = historyEventRevision;
     historyRevision += 1;
     history.update((list) => list.filter((p) => p !== path));
     api.removeHistory(path).catch((err) => {
-      history.set(prev);
+      const current = $history;
+      if (
+        removedIndex >= 0 &&
+        historyEventRevision === eventRevisionAtRemoval &&
+        !current.includes(path)
+      ) {
+        const nextNeighbor = prev
+          .slice(Math.max(removedIndex + 1, 0))
+          .find((candidate) => current.includes(candidate));
+        const previousNeighbor = prev
+          .slice(0, Math.max(removedIndex, 0))
+          .reverse()
+          .find((candidate) => current.includes(candidate));
+        const restored = [...current];
+        if (nextNeighbor) {
+          restored.splice(restored.indexOf(nextNeighbor), 0, path);
+        } else if (previousNeighbor) {
+          restored.splice(restored.indexOf(previousNeighbor) + 1, 0, path);
+        } else {
+          restored.splice(Math.min(Math.max(removedIndex, 0), restored.length), 0, path);
+        }
+        history.set(restored);
+        historyRevision += 1;
+      }
       status = `${t.settings.removeFailed}: ${String(err)}`;
     });
   }

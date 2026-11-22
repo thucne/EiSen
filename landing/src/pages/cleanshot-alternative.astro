@@ -3,11 +3,13 @@ import Layout from '../layouts/Layout.astro';
 import AppleIcon from '../components/AppleIcon.astro';
 import WindowsIcon from '../components/WindowsIcon.astro';
 import GithubIcon from '../components/GithubIcon.astro';
-import { dmgDownloadPath, exeDownloadPath, getDictionary, githubUrl, microsoftStoreUrl } from '../i18n/utils';
+import { dmgDownloadPath, exeDownloadPath, formatArtifactSize, getDictionary, githubUrl, microsoftStoreUrl, releaseMetadata } from '../i18n/utils';
 
 const dmgUrl = dmgDownloadPath;
 const exeUrl = exeDownloadPath;
 const downloadCopy = getDictionary('en').downloadSection;
+const macDownloadSize = formatArtifactSize(releaseMetadata.mac.sizeBytes, 'en');
+const windowsDirectDownloadSize = formatArtifactSize(releaseMetadata.windowsDirect.sizeBytes, 'en');
 
 const title = 'Free CleanShot X Alternative for Mac & Windows | EiSen';
 const description = 'Looking for a free, open-source CleanShot X alternative for Mac or Windows? EiSen gives you screen capture, step markers, blur, and on-device OCR with no subscription.';
@@ -20,7 +22,7 @@ const comparisonRows = [
   { feature: 'Cover sensitive content', eisen: 'Solid Redact and Blur', cleanshot: 'Pixelate and Blur' },
   { feature: 'Screen recording', eisen: 'No', cleanshot: 'Yes, with a video editor' },
   { feature: 'Scrolling capture', eisen: 'No', cleanshot: 'Yes' },
-  { feature: 'Download Package Size', eisen: '4.61 MB macOS DMG / 2.73 MB Windows NSIS fallback; Store package varies', cleanshot: 'Varies by release' },
+  { feature: 'Download Package Size', eisen: `${macDownloadSize} macOS DMG / ${windowsDirectDownloadSize} Windows NSIS fallback; Store package varies`, cleanshot: 'Varies by release' },
   { feature: 'Account or license', eisen: 'None', cleanshot: 'License key' },
   { feature: 'Platform Support', eisen: 'macOS 11+ (Apple Silicon download) & Windows 10/11 (64-bit)', cleanshot: 'macOS 13+' },
 ];
@@ -76,7 +78,7 @@ const faqs = [
           >
             <AppleIcon class="w-5 h-5 shrink-0" size={20} />
             <span>Download EiSen Free for Mac</span>
-            <span class="text-xs px-2 py-0.5 rounded-full bg-white/20 font-mono font-medium">DMG (4.61 MB)</span>
+            <span class="text-xs px-2 py-0.5 rounded-full bg-white/20 font-mono font-medium">DMG ({macDownloadSize})</span>
           </a>
 
           <a

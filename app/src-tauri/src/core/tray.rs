@@ -111,7 +111,7 @@ fn build_menu<R: Runtime>(app: &AppHandle<R>, lang: Lang) -> Result<Menu<R>, Str
 
 /// Reveal and focus the main window (Settings / History surface).
 /// Re-creates the window dynamically if it was destroyed.
-fn show_main_window(app: &AppHandle) {
+pub(crate) fn show_main_window(app: &AppHandle) {
     #[cfg(target_os = "macos")]
     {
         use objc2::MainThreadMarker;

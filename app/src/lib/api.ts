@@ -57,12 +57,12 @@ export async function showFeedback(
   }
 }
 
-export function hideFeedback(): Promise<void> {
-  return invoke("cmd_hide_feedback");
+export function hideFeedback(feedbackId: number, preview: string | null): Promise<void> {
+  return invoke("cmd_hide_feedback", { feedbackId, preview });
 }
 
-export function startPreviewDrag(): Promise<void> {
-  return invoke("cmd_start_preview_drag");
+export function startPreviewDrag(feedbackId: number, preview: string): Promise<void> {
+  return invoke("cmd_start_preview_drag", { feedbackId, preview });
 }
 
 export function revealPath(path: string): Promise<void> {
@@ -204,6 +204,11 @@ export function copyPath(path: string): Promise<void> {
  */
 export function extractText(): Promise<string> {
   return invoke("cmd_extract_text");
+}
+
+/** Extract text from the editor's pinned image using native OCR. */
+export function extractEditorText(): Promise<string> {
+  return invoke("cmd_extract_editor_text");
 }
 
 /**

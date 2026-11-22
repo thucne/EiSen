@@ -15,7 +15,10 @@ pub fn default_filename() -> String {
     let (y, mo, d) = civil_from_days((secs / 86_400) as i64);
     let rem = secs % 86_400;
     let (h, mi, s) = (rem / 3_600, rem % 3_600 / 60, rem % 60);
-    format!("EiSen_{}.png", build_timestamp(y as u32, mo, d, h as u32, mi as u32, s as u32))
+    format!(
+        "EiSen_{}.png",
+        build_timestamp(y as u32, mo, d, h as u32, mi as u32, s as u32)
+    )
 }
 
 /// Days since 1970-01-01 -> (year, month, day).
@@ -39,7 +42,7 @@ fn civil_from_days(z: i64) -> (i64, u32, u32) {
 /// before the extension until a free name is found.
 pub fn unique_path(dir: &Path, desired: &str) -> PathBuf {
     let first = dir.join(desired);
-    if !first.exists() {
+    if !path_entry_exists(&first) {
         return first;
     }
     let (stem, ext) = match desired.rsplit_once('.') {
@@ -48,11 +51,18 @@ pub fn unique_path(dir: &Path, desired: &str) -> PathBuf {
     };
     for n in 1u32.. {
         let candidate = dir.join(format!("{}_{}{}", stem, n, ext));
-        if !candidate.exists() {
+        if !path_entry_exists(&candidate) {
             return candidate;
         }
     }
     unreachable!("u32 collision counter exhausted")
+}
+
+fn path_entry_exists(path: &Path) -> bool {
+    // `Path::exists` follows symlinks and reports false for dangling ones.
+    // A dangling symlink still occupies the name and `create_new` will reject
+    // it, so inspect the directory entry itself.
+    std::fs::symlink_metadata(path).is_ok()
 }
 
 #[cfg(test)]
@@ -109,5 +119,13 @@ mod tests {
     fn unique_path_returns_desired_when_free() {
         let dir = tempfile::tempdir().unwrap();
         assert_eq!(unique_path(dir.path(), "s.png"), dir.path().join("s.png"));
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn unique_path_skips_dangling_symlinks() {
+        let dir = tempfile::tempdir().unwrap();
+        std::os::unix::fs::symlink(dir.path().join("missing"), dir.path().join("s.png")).unwrap();
+        assert_eq!(unique_path(dir.path(), "s.png"), dir.path().join("s_1.png"));
     }
 }

@@ -10,10 +10,14 @@
   const DISMISS_MS = 2200;
   const DISMISS_WITH_PATH_MS = 5000;
   const DEFAULT_DISMISS_THUMBNAIL_MS = 1500;
-  const DRAG_THRESHOLD_PX = 4;
+  const DRAG_THRESHOLD_PX = 8;
+  const DIAGONAL_DIRECTION_LOCK_PX = 16;
   const SWIPE_DISMISS_THRESHOLD_PX = 50;
+  const WHEEL_DISMISS_THRESHOLD_PX = 28;
+  const WHEEL_GESTURE_IDLE_MS = 160;
 
   type Feedback = {
+    id: number;
     message: string;
     kind: "ok" | "err";
     path: string | null;
@@ -23,45 +27,80 @@
 
   const t = $derived($i18n);
   let feedback = $state<Feedback | null>(null);
-  let timer: ReturnType<typeof setTimeout> | undefined;
+  let dismissTimer: ReturnType<typeof setTimeout> | undefined;
+  let slideTimer: ReturnType<typeof setTimeout> | undefined;
+  let wheelResetTimer: ReturnType<typeof setTimeout> | undefined;
+  let feedbackRevision = 0;
+  let activeDragRevision: number | null = null;
+  let wheelDistance = 0;
+  let wheelDirection = 0;
   let pressedAt: { x: number; y: number } | null = null;
+  let suppressNextClick = false;
   let dragging = false;
   let swiping = $state(false);
   let swipeOffset = $state(0);
   let isSlidingOut = $state(false);
 
+  function clearFeedbackTimers() {
+    clearTimeout(dismissTimer);
+    clearTimeout(slideTimer);
+    dismissTimer = undefined;
+    slideTimer = undefined;
+  }
+
+  function resetWheelGesture() {
+    clearTimeout(wheelResetTimer);
+    wheelResetTimer = undefined;
+    wheelDistance = 0;
+    wheelDirection = 0;
+  }
+
   function dismiss() {
-    clearTimeout(timer);
+    const dismissedFeedback = feedback;
+    if (!dismissedFeedback) return;
+    clearFeedbackTimers();
+    resetWheelGesture();
+    feedbackRevision += 1;
+    activeDragRevision = null;
     feedback = null;
     swiping = false;
     isSlidingOut = false;
     swipeOffset = 0;
     pressedAt = null;
-    void hideFeedback();
+    void hideFeedback(dismissedFeedback.id, dismissedFeedback.preview ?? null);
   }
 
   function dismissWithSlide() {
-    if (isSlidingOut) return;
+    if (isSlidingOut || !feedback) return;
     isSlidingOut = true;
     swiping = false;
     pressedAt = null;
     pauseDismiss();
-    setTimeout(dismiss, 180);
+    clearTimeout(slideTimer);
+    const revision = feedbackRevision;
+    const slideDelay = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ? 0 : 180;
+    slideTimer = setTimeout(() => {
+      if (revision === feedbackRevision) dismiss();
+    }, slideDelay);
   }
 
   function pauseDismiss() {
-    clearTimeout(timer);
+    clearTimeout(dismissTimer);
+    dismissTimer = undefined;
   }
 
   function scheduleDismiss() {
-    clearTimeout(timer);
+    pauseDismiss();
     if (!feedback || dragging || swiping || isSlidingOut) return;
     const delay = feedback.preview
       ? (feedback.duration_ms ?? DEFAULT_DISMISS_THUMBNAIL_MS)
       : feedback.path
         ? DISMISS_WITH_PATH_MS
         : DISMISS_MS;
-    timer = setTimeout(dismiss, delay);
+    const revision = feedbackRevision;
+    dismissTimer = setTimeout(() => {
+      if (revision === feedbackRevision) dismiss();
+    }, delay);
   }
 
   function showError(err: unknown) {
@@ -71,18 +110,22 @@
   }
 
   async function reveal() {
-    if (!feedback?.path) return;
+    const path = feedback?.path;
+    if (!path) return;
+    const revision = feedbackRevision;
     try {
-      await revealPath(feedback.path);
+      await revealPath(path);
+      if (revision !== feedbackRevision) return;
       dismiss();
     } catch (err) {
-      showError(err);
+      if (revision === feedbackRevision) showError(err);
     }
   }
 
   function onPreviewPointerDown(e: PointerEvent) {
     if (e.button === 0) {
       pressedAt = { x: e.clientX, y: e.clientY };
+      suppressNextClick = false;
       swiping = false;
       swipeOffset = 0;
       try {
@@ -110,7 +153,14 @@
 
     if (Math.hypot(dx, dy) < DRAG_THRESHOLD_PX) return;
 
-    if (dx > 0 && dx > Math.abs(dy)) {
+    suppressNextClick = true;
+
+    const absDy = Math.abs(dy);
+    const movement = Math.hypot(dx, dy);
+    const nearDiagonal = Math.abs(Math.abs(dx) - absDy) <= 3;
+    if (nearDiagonal && movement < DIAGONAL_DIRECTION_LOCK_PX) return;
+
+    if (dx > 0 && dx > absDy) {
       swiping = true;
       swipeOffset = dx;
       pauseDismiss();
@@ -124,7 +174,17 @@
     pressedAt = null;
     dragging = true;
     pauseDismiss();
-    startPreviewDrag().catch((err) => {
+    const revision = feedbackRevision;
+    const currentFeedback = feedback;
+    if (!currentFeedback?.preview) {
+      dragging = false;
+      scheduleDismiss();
+      return;
+    }
+    activeDragRevision = revision;
+    startPreviewDrag(currentFeedback.id, currentFeedback.preview).catch((err) => {
+      if (revision !== feedbackRevision || activeDragRevision !== revision) return;
+      activeDragRevision = null;
       dragging = false;
       showError(err);
     });
@@ -151,34 +211,77 @@
   }
 
   function onWheel(e: WheelEvent) {
-    if (e.deltaX > 20 && !isSlidingOut) {
+    if (isSlidingOut || e.ctrlKey) {
+      resetWheelGesture();
+      return;
+    }
+
+    const unit = e.deltaMode === WheelEvent.DOM_DELTA_LINE
+      ? 16
+      : e.deltaMode === WheelEvent.DOM_DELTA_PAGE
+        ? window.innerHeight
+        : 1;
+    const deltaX = e.deltaX * unit;
+    const deltaY = e.deltaY * unit;
+    if (deltaX === 0 || Math.abs(deltaX) <= Math.abs(deltaY)) {
+      resetWheelGesture();
+      return;
+    }
+
+    const direction = Math.sign(deltaX);
+    if (wheelDirection !== 0 && wheelDirection !== direction) wheelDistance = 0;
+    wheelDirection = direction;
+    wheelDistance += Math.abs(deltaX);
+    clearTimeout(wheelResetTimer);
+    wheelResetTimer = setTimeout(resetWheelGesture, WHEEL_GESTURE_IDLE_MS);
+
+    if (wheelDistance >= WHEEL_DISMISS_THRESHOLD_PX) {
+      resetWheelGesture();
       dismissWithSlide();
     }
   }
 
   async function openPreview() {
     pressedAt = null;
-    if (!feedback?.preview || dragging || swiping || isSlidingOut || swipeOffset > 0) return;
+    if (suppressNextClick) {
+      suppressNextClick = false;
+      return;
+    }
+    const preview = feedback?.preview;
+    if (!preview || dragging || swiping || isSlidingOut || swipeOffset > 0) return;
+    const revision = feedbackRevision;
     try {
-      await openInEditor(feedback.preview);
+      await openInEditor(preview);
+      if (revision !== feedbackRevision) return;
       dismiss();
     } catch (err) {
-      showError(err);
+      if (revision === feedbackRevision) showError(err);
     }
   }
 
   onMount(() => {
     void initLang();
     const un = listen<Feedback>("feedback-show", (event) => {
+      clearFeedbackTimers();
+      resetWheelGesture();
+      feedbackRevision += 1;
+      activeDragRevision = null;
       feedback = event.payload;
       dragging = false;
       swiping = false;
       isSlidingOut = false;
       swipeOffset = 0;
       pressedAt = null;
+      suppressNextClick = false;
       scheduleDismiss();
     });
-    const unDrag = listen("feedback-drag-ended", () => {
+    const unDrag = listen<number>("feedback-drag-ended", (event) => {
+      if (
+        event.payload !== feedback?.id ||
+        activeDragRevision === null ||
+        activeDragRevision !== feedbackRevision
+      ) return;
+      activeDragRevision = null;
       dragging = false;
       swiping = false;
       isSlidingOut = false;
@@ -186,7 +289,10 @@
       scheduleDismiss();
     });
     return () => {
-      clearTimeout(timer);
+      clearFeedbackTimers();
+      resetWheelGesture();
+      feedbackRevision += 1;
+      activeDragRevision = null;
       void un.then((fn) => fn());
       void unDrag.then((fn) => fn());
     };
@@ -380,6 +486,13 @@
     gap: 8px;
     height: 44px;
     padding: 0 8px 0 12px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .thumbnail,
+    .thumbnail.sliding-out {
+      transition: none !important;
+    }
   }
 
   .thumbnail-err .thumbnail-row {

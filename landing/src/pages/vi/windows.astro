@@ -4,7 +4,7 @@ import WindowsIcon from '../../components/WindowsIcon.astro';
 import AppleIcon from '../../components/AppleIcon.astro';
 import GithubIcon from '../../components/GithubIcon.astro';
 import MacFirstNote from '../../components/MacFirstNote.astro';
-import { exeDownloadPath, githubUrl, microsoftStoreUrl } from '../../i18n/utils';
+import { exeDownloadPath, githubUrl, microsoftStoreUrl, releaseMetadata } from '../../i18n/utils';
 import { vi } from '../../i18n/vi';
 
 const t = vi.windowsPage;
@@ -23,7 +23,7 @@ const comparisonRows = [
 const faqs = [
   {
     q: 'EiSen hỗ trợ các phiên bản Windows nào?',
-    a: 'EiSen 1.0.2 trên Microsoft Store hỗ trợ Windows 10 64-bit (phiên bản 2004 trở lên) và Windows 11. Bản cài trực tiếp v1.0.2 cũng có trên GitHub Releases. Ứng dụng tận dụng trực tiếp API WinRT hiện đại và Rust để tối ưu hóa hiệu suất.',
+    a: `EiSen ${releaseMetadata.windowsStore.version} trên Microsoft Store hỗ trợ Windows 10 64-bit (phiên bản 2004 trở lên) và Windows 11. Bản cài trực tiếp v${releaseMetadata.windowsDirect.version} cũng có trên GitHub Releases. Ứng dụng tận dụng trực tiếp API WinRT hiện đại và Rust để tối ưu hóa hiệu suất.`,
   },
   {
     q: 'Có cần quyền Administrator để cài đặt EiSen trên Windows không?',

@@ -1,6 +1,6 @@
 ---
 import type { Locale } from '../i18n/utils';
-import { getDictionary, dmgDownloadPath, exeDownloadPath, githubUrl, microsoftStoreUrl } from '../i18n/utils';
+import { getDictionary, dmgDownloadPath, exeDownloadPath, formatArtifactSize, githubUrl, microsoftStoreUrl, releaseMetadata } from '../i18n/utils';
 import AppleIcon from './AppleIcon.astro';
 import WindowsIcon from './WindowsIcon.astro';
 import GithubIcon from './GithubIcon.astro';
@@ -16,7 +16,8 @@ const t = getDictionary(locale);
 const dmgUrl = dmgDownloadPath;
 const exeUrl = exeDownloadPath;
 const winStoreUrl = microsoftStoreUrl;
-const dmgBadge = locale === 'vi' ? '4,61 MB' : '4.61 MB';
+const dmgBadge = formatArtifactSize(releaseMetadata.mac.sizeBytes, locale);
+const switchToMacFallback = `On a Mac? Download EiSen ${releaseMetadata.mac.version}`;
 
 const tools = [
   { label: 'Arrow', path: 'M5 19L19 5m0 0H9m10 0v10' },
@@ -130,6 +131,7 @@ const tools = [
           data-win-label={t.hero.downloadWin}
           data-switch-to-win={t.hero.switchToWin}
           data-switch-to-mac={t.hero.switchToMac}
+          data-switch-to-mac-fallback={switchToMacFallback}
           class="inline-flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-xl bg-zinc-100 hover:bg-white text-zinc-900 font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-100 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0f1015]"
         >
           <span id="hero-mac-icon"><AppleIcon class="w-5 h-5 shrink-0" size={20} /></span>
@@ -227,7 +229,7 @@ const tools = [
           if (title && title.dataset.winText) title.textContent = title.dataset.winText;
           if (subtitle && subtitle.dataset.winText) subtitle.textContent = subtitle.dataset.winText;
           if (switchLink && btn) switchLink.href = btn.dataset.macUrl || '#';
-          if (switchText) switchText.textContent = btn?.dataset.switchToMac || 'On a Mac? Download EiSen 1.0.2';
+          if (switchText) switchText.textContent = btn?.dataset.switchToMac || btn?.dataset.switchToMacFallback || 'On a Mac?';
           if (windowsNote) windowsNote.classList.remove('hidden');
           if (windowsWarning) {
             windowsWarning.classList.remove('hidden');

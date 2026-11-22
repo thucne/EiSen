@@ -33,6 +33,9 @@
     kind: "ok" | "err";
     sticky: boolean;
   } | null>(null);
+  let confirmedCfg: api.AppConfig | null = null;
+  let configRevision = 0;
+  let configQueue: Promise<void> = Promise.resolve();
 
   function showToast(message: string, kind: "ok" | "err", sticky = false) {
     toast = { message, kind, sticky };
@@ -57,6 +60,7 @@
   async function load() {
     try {
       const loaded = await api.getConfig();
+      confirmedCfg = loaded;
       const hotkey = normalizeHotkey(isWindows, loaded.hotkey);
       cfg = hotkey === loaded.hotkey ? loaded : { ...loaded, hotkey };
       setLang(uiLangFromConfig(cfg.lang));
@@ -73,15 +77,71 @@
     }
   }
 
-  async function save(next: api.AppConfig) {
-    const prev = cfg;
+  function enqueueConfig<T>(operation: () => Promise<T>): Promise<T> {
+    const pending = configQueue.then(operation, operation);
+    configQueue = pending.then(() => undefined, () => undefined);
+    return pending;
+  }
+
+  function configPatch(previous: api.AppConfig, next: api.AppConfig): Partial<api.AppConfig> {
+    const patch: Partial<api.AppConfig> = {};
+    if (previous.lang !== next.lang) patch.lang = next.lang;
+    if (previous.save_dir !== next.save_dir) patch.save_dir = next.save_dir;
+    if (previous.launch_at_login !== next.launch_at_login) patch.launch_at_login = next.launch_at_login;
+    if (previous.hotkey !== next.hotkey) patch.hotkey = next.hotkey;
+    if (previous.play_sounds !== next.play_sounds) patch.play_sounds = next.play_sounds;
+    if (previous.show_thumbnail !== next.show_thumbnail) patch.show_thumbnail = next.show_thumbnail;
+    if (previous.thumbnail_duration !== next.thumbnail_duration) {
+      patch.thumbnail_duration = next.thumbnail_duration;
+    }
+    if (previous.pen_smoothing !== next.pen_smoothing) patch.pen_smoothing = next.pen_smoothing;
+    return patch;
+  }
+
+  function setLaunchAtLogin(enabled: boolean): Promise<void> {
+    return enabled ? enable() : disable();
+  }
+
+  async function save(next: api.AppConfig, reconcileLaunchAtLogin = false) {
+    const previous = cfg;
+    if (!previous) return;
+    const patch = configPatch(previous, next);
+    const revision = ++configRevision;
     cfg = next;
     try {
-      const persisted = await api.setConfig(next);
-      cfg = persisted ?? next;
-      showToast(t.settings.saved, "ok");
+      const persisted = await enqueueConfig(async () => {
+        const baseline = confirmedCfg ?? previous;
+        const target = { ...baseline, ...patch };
+        const reconcileLaunch =
+          reconcileLaunchAtLogin || patch.launch_at_login !== undefined;
+        try {
+          if (reconcileLaunch) await setLaunchAtLogin(target.launch_at_login);
+          const result = await api.setConfig(target);
+          confirmedCfg = result ?? target;
+          return confirmedCfg;
+        } catch (error) {
+          if (reconcileLaunch) {
+            try {
+              await setLaunchAtLogin(baseline.launch_at_login);
+            } catch (rollbackError) {
+              throw new Error(
+                `${String(error)}; failed to restore launch-at-login: ${String(rollbackError)}`,
+              );
+            }
+          }
+          throw error;
+        }
+      });
+      if (revision === configRevision) {
+        cfg = persisted;
+        setLang(uiLangFromConfig(persisted.lang));
+        showToast(t.settings.saved, "ok");
+      }
     } catch (err) {
-      cfg = prev; // the binding did not change
+      if (revision === configRevision) {
+        cfg = confirmedCfg ?? previous;
+        setLang(uiLangFromConfig(cfg.lang));
+      }
       showToast(String(err), "err", true);
     }
   }
@@ -89,10 +149,8 @@
   async function onLangChange(e: Event) {
     const value = (e.target as HTMLSelectElement).value as api.Lang;
     if (!cfg || (value !== "En" && value !== "Vi")) return;
-    const previous = cfg.lang;
     setLang(uiLangFromConfig(value));
     await save({ ...cfg, lang: value });
-    if (cfg?.lang !== value) setLang(uiLangFromConfig(previous));
   }
 
   async function onHotkeyChange(e: Event) {
@@ -116,15 +174,7 @@
   async function onLaunchToggle(e: Event) {
     if (!cfg) return;
     const on = (e.target as HTMLInputElement).checked;
-    try {
-      if (on) await enable();
-      else await disable();
-      await save({ ...cfg, launch_at_login: on });
-    } catch (err) {
-      showToast(String(err), "err", true);
-      const el = e.target as HTMLInputElement;
-      el.checked = !on;
-    }
+    await save({ ...cfg, launch_at_login: on }, true);
   }
 
   async function onPlaySoundsToggle(e: Event) {
@@ -152,12 +202,38 @@
   }
 
   async function onReset() {
+    if (!cfg) return;
+    const previous = cfg;
+    const revision = ++configRevision;
     try {
-      await disable();
-      cfg = await api.resetConfig();
-      setLang(uiLangFromConfig(cfg.lang));
-      showToast(t.settings.resetDone, "ok");
+      const reset = await enqueueConfig(async () => {
+        const baseline = confirmedCfg ?? previous;
+        try {
+          await disable();
+          const result = await api.resetConfig();
+          confirmedCfg = result;
+          return result;
+        } catch (error) {
+          try {
+            await setLaunchAtLogin(baseline.launch_at_login);
+          } catch (rollbackError) {
+            throw new Error(
+              `${String(error)}; failed to restore launch-at-login: ${String(rollbackError)}`,
+            );
+          }
+          throw error;
+        }
+      });
+      if (revision === configRevision) {
+        cfg = reset;
+        setLang(uiLangFromConfig(reset.lang));
+        showToast(t.settings.resetDone, "ok");
+      }
     } catch (err) {
+      if (revision === configRevision) {
+        cfg = confirmedCfg ?? previous;
+        setLang(uiLangFromConfig(cfg.lang));
+      }
       showToast(String(err), "err", true);
     }
   }

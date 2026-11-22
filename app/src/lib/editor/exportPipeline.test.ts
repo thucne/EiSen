@@ -11,6 +11,7 @@ import {
   MAX_EXPORT_SCALE,
   paintExportedText,
   paintRedaction,
+  renderAnnotatedPng,
   scaleClipRect,
   segmentElementsForExport,
   wrapTextByWidth,
@@ -417,6 +418,143 @@ describe("redaction export", () => {
     const { ctx, fills } = recordingCtx();
     paintRedaction(ctx, redactElement({ x: 10.25, y: 20.25 }, { x: 30.25, y: 40.25 }), 2);
     expect(fills[0].rect).toEqual([20, 40, 41, 41]);
+  });
+
+  it("sanitizes both z-orders and repaints prior masks only inside the blur clip", async () => {
+    type Operation = {
+      kind: string;
+      source?: unknown;
+      rect?: number[];
+      alpha?: number;
+      op?: string;
+      filter?: string;
+      depth?: number;
+    };
+    function recordingCanvas() {
+      const operations: Operation[] = [];
+      let depth = 0;
+      const ctx = {
+        globalAlpha: 0.2,
+        globalCompositeOperation: "multiply",
+        filter: "blur(8px)",
+        fillStyle: "#ffffff",
+        save() {
+          depth++;
+          operations.push({ kind: "save", depth });
+        },
+        restore() {
+          operations.push({ kind: "restore", depth });
+          depth--;
+        },
+        translate: vi.fn(),
+        beginPath: vi.fn(),
+        moveTo: vi.fn(),
+        arcTo: vi.fn(),
+        closePath: vi.fn(),
+        clip() {
+          operations.push({ kind: "clip", depth });
+        },
+        drawImage(source: unknown, ...rect: number[]) {
+          operations.push({ kind: "drawImage", source, rect, filter: ctx.filter, depth });
+        },
+        fillRect(...rect: number[]) {
+          operations.push({
+            kind: "fillRect",
+            rect,
+            alpha: ctx.globalAlpha,
+            op: ctx.globalCompositeOperation,
+            filter: ctx.filter,
+            depth,
+          });
+        },
+      };
+      const canvas = {
+        width: 0,
+        height: 0,
+        getContext: () => ctx,
+        toBlob: (callback: (blob: Blob | null) => void) =>
+          callback({ arrayBuffer: async () => new ArrayBuffer(0) } as Blob),
+      };
+      return { canvas, operations };
+    }
+
+    class ImmediateImage {
+      onload: (() => void) | null = null;
+      onerror: (() => void) | null = null;
+      crossOrigin = "";
+      set src(_value: string) {
+        this.onload?.();
+      }
+    }
+
+    async function renderOrder(elements: Element[]) {
+      const output = recordingCanvas();
+      const safeSource = recordingCanvas();
+      const canvases = [output.canvas, safeSource.canvas];
+      vi.stubGlobal("document", { createElement: vi.fn(() => canvases.shift()) });
+      vi.stubGlobal("Image", ImmediateImage);
+      try {
+        await renderAnnotatedPng({
+          imageSrc: "synthetic://base-image",
+          canvasW: 20,
+          canvasH: 20,
+          exportScale: 2,
+          svgEl: null,
+          getElements: () => elements,
+        });
+        return { output, safeSource };
+      } finally {
+        vi.unstubAllGlobals();
+      }
+    }
+
+    const redact = redactElement({ x: -0.25, y: 5.25 }, { x: 10.25, y: 25.25 });
+    const blur = blurElement({ x: 0, y: 0 }, { x: 12, y: 20 });
+    const beforeBlur = await renderOrder([redact, blur]);
+    const afterBlur = await renderOrder([blur, redact]);
+
+    for (const result of [beforeBlur, afterBlur]) {
+      expect(result.safeSource.operations[0].kind).toBe("drawImage");
+      expect(result.safeSource.operations.find((operation) => operation.kind === "fillRect")).toMatchObject({
+        kind: "fillRect",
+        rect: [-1, 10, 22, 41],
+        alpha: 1,
+        op: "source-over",
+        filter: "none",
+      });
+      const blurDraw = result.output.operations.find(
+        (operation) => operation.kind === "drawImage" && operation.source === result.safeSource.canvas,
+      );
+      expect(blurDraw).toMatchObject({ filter: "blur(16px)" });
+    }
+
+    const beforeOps = beforeBlur.output.operations;
+    const beforeClip = beforeOps.findIndex((operation) => operation.kind === "clip");
+    const beforeDraw = beforeOps.findIndex(
+      (operation) => operation.kind === "drawImage" && operation.source === beforeBlur.safeSource.canvas,
+    );
+    const beforeRepaint = beforeOps.findIndex(
+      (operation, index) => index > beforeDraw && operation.kind === "fillRect" && operation.depth === 2,
+    );
+    const blurRestore = beforeOps.findIndex(
+      (operation, index) => index > beforeRepaint && operation.kind === "restore" && operation.depth === 1,
+    );
+    expect(beforeClip).toBeLessThan(beforeDraw);
+    expect(beforeDraw).toBeLessThan(beforeRepaint);
+    expect(beforeRepaint).toBeLessThan(blurRestore);
+
+    const afterOps = afterBlur.output.operations;
+    const afterDraw = afterOps.findIndex(
+      (operation) => operation.kind === "drawImage" && operation.source === afterBlur.safeSource.canvas,
+    );
+    const afterBlurRestore = afterOps.findIndex(
+      (operation, index) => index > afterDraw && operation.kind === "restore" && operation.depth === 1,
+    );
+    const laterRedaction = afterOps.findIndex(
+      (operation, index) => index > afterDraw && operation.kind === "fillRect" && operation.depth === 1,
+    );
+    expect(afterDraw).toBeLessThan(afterBlurRestore);
+    expect(afterBlurRestore).toBeLessThan(laterRedaction);
   });
 
   it("ignores other element kinds", () => {

@@ -126,6 +126,33 @@ describe("createSessionLoader", () => {
     expect(onError).toHaveBeenCalledWith("Error: boom");
     expect(onLoaded).not.toHaveBeenCalled();
   });
+
+  it("publishes only the latest image after it is prepared", async () => {
+    let current = sessionAt("/tmp/initial.png");
+    let resolveInitial!: () => void;
+    const preparation = new Promise<void>((resolve) => { resolveInitial = resolve; });
+    const prepare = vi.fn(({ path }: LoadedSession) =>
+      path === "/tmp/initial.png" ? preparation : Promise.resolve(),
+    );
+    const onLoaded = vi.fn();
+    const load = createSessionLoader({
+      api: fakeApi(async () => current),
+      toFileSrc: (p) => p,
+      prepare,
+      onLoaded,
+      onError: vi.fn(),
+    });
+    const initial = load();
+    await vi.waitFor(() => expect(prepare).toHaveBeenCalled());
+    expect(onLoaded).not.toHaveBeenCalled();
+
+    current = sessionAt("/tmp/current.png");
+    await load();
+    resolveInitial();
+    await initial;
+    expect(onLoaded).toHaveBeenCalledTimes(1);
+    expect(onLoaded).toHaveBeenCalledWith(expect.objectContaining({ path: current.path }));
+  });
 });
 
 describe("watchFocusReload", () => {

@@ -1,0 +1,19 @@
+{
+  "mac": {
+    "version": "1.0.2",
+    "assetName": "EiSen_{version}_aarch64.dmg",
+    "sizeBytes": 4606653,
+    "architecture": "Apple Silicon"
+  },
+  "windowsStore": {
+    "version": "1.0.2",
+    "sizeBytes": null
+  },
+  "windowsDirect": {
+    "version": "1.0.2",
+    "assetName": "EiSen_{version}_x64-setup.exe",
+    "sizeBytes": 2730567,
+    "format": "NSIS",
+    "signed": false
+  }
+}

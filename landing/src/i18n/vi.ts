@@ -1,3 +1,9 @@
+import { formatArtifactSize, releaseMetadata } from "./release";
+
+const macVersion = releaseMetadata.mac.version;
+const windowsStoreVersion = releaseMetadata.windowsStore.version;
+const windowsDirectVersion = releaseMetadata.windowsDirect.version;
+
 export const vi = {
   meta: {
     title: "EiSen — Ứng Dụng Chụp Màn Hình & Chú Thích Miễn Phí Cho Mac & Windows | Offline & Mã Nguồn Mở",
@@ -32,11 +38,11 @@ export const vi = {
     downloadWin: "Tải từ Microsoft Store",
     windowsFallback: "Cần tải trực tiếp? Dùng bản .exe dự phòng chưa ký số",
     switchToWin: "Dùng Windows? Tải EiSen từ Microsoft Store",
-    switchToMac: "Dùng Mac? Tải EiSen 1.0.2",
-    windowsNote: "EiSen 1.0.2 đã có trên Microsoft Store. Ảnh xem trước nổi và chụp lại vùng trước chỉ có trên Mac.",
+    switchToMac: `Dùng Mac? Tải EiSen ${macVersion}`,
+    windowsNote: `EiSen ${windowsStoreVersion} đã có trên Microsoft Store. Ảnh xem trước nổi và chụp lại vùng trước chỉ có trên Mac.`,
     windowsWarning: "Bản Microsoft Store là lựa chọn cài đặt chính cho Windows và được Store tự quản lý cập nhật. Bản .exe trực tiếp chỉ là fallback chưa ký số; SmartScreen có thể báo Unknown publisher hoặc Windows protected your PC, và máy công ty có thể chặn. Hãy kiểm tra sidecar SHA-256 trên GitHub Releases trước khi chạy.",
     githubCta: "Xem mã nguồn",
-    requirements: "Phiên bản 1.0.2 • macOS 11 trở lên • Apple Silicon",
+    requirements: `Phiên bản ${macVersion} • macOS 11 trở lên • Apple Silicon`,
     copyLink: "Chép link để mở trên máy tính",
     copied: "Đã chép link",
     phoneNote: "EiSen chạy trên Mac và Windows. Hãy chép link rồi mở trên máy tính của bạn.",
@@ -54,9 +60,9 @@ export const vi = {
       link: "Đọc ghi chú phát hành",
     },
     size: {
-      value: "4,61 MB",
+      value: formatArtifactSize(releaseMetadata.mac.sizeBytes, "vi"),
       label: "dung lượng file DMG",
-      sub: "Bản Apple Silicon v1.0.2, có công bố mã SHA-256.",
+      sub: `Bản Apple Silicon v${macVersion}, có công bố mã SHA-256.`,
       link: "Xem bản phát hành",
     },
     network: {
@@ -144,7 +150,7 @@ export const vi = {
     items: [
       {
         q: "EiSen hỗ trợ những hệ điều hành nào?",
-        a: "Có. EiSen hỗ trợ macOS 11 trở lên và Windows 10, 11 (64-bit). Bản macOS và Windows tải trực tiếp hiện là v1.0.2, còn Microsoft Store hiện có v1.0.2. Ảnh xem trước nổi và chụp lại vùng trước chỉ có trên Mac.",
+        a: `Có. EiSen hỗ trợ macOS 11 trở lên và Windows 10, 11 (64-bit). Bản macOS hiện là v${macVersion}, bản Windows tải trực tiếp hiện là v${windowsDirectVersion}, còn Microsoft Store hiện có v${windowsStoreVersion}. Ảnh xem trước nổi và chụp lại vùng trước chỉ có trên Mac.`,
       },
       {
         q: "Vì sao EiSen ưu tiên Mac?",
@@ -191,12 +197,12 @@ export const vi = {
   },
   downloadSection: {
     title: "Thử ngay với ảnh chụp tiếp theo của bạn.",
-    subtitle: "Miễn phí, không tài khoản, chỉ 4,61 MB.",
+    subtitle: `Miễn phí, không tài khoản, chỉ ${formatArtifactSize(releaseMetadata.mac.sizeBytes, "vi")}.`,
     buttonMac: "Tải cho Mac",
     buttonWin: "Tải từ Microsoft Store",
     buttonWinDirect: "Dùng bản .exe trực tiếp chưa ký số",
-    detailsMac: "Phiên bản 1.0.2 • macOS 11 trở lên • Apple Silicon",
-    detailsWin: "Microsoft Store: phiên bản 1.0.2 • Bộ cài trực tiếp: phiên bản 1.0.2 • Windows 10/11 (64-bit)",
+    detailsMac: `Phiên bản ${macVersion} • macOS 11 trở lên • Apple Silicon`,
+    detailsWin: `Microsoft Store: phiên bản ${windowsStoreVersion} • Bộ cài trực tiếp: phiên bản ${windowsDirectVersion} • Windows 10/11 (64-bit)`,
     windowsSummary: "Dùng Windows? EiSen có trên Microsoft Store",
     windowsWarningTitle: "Lưu ý bản tải trực tiếp cho Windows",
     windowsWarning: "Bản Microsoft Store là lựa chọn cài đặt chính cho Windows và được Store tự quản lý cập nhật. Bản NSIS .exe trực tiếp chỉ là fallback chưa ký số; SmartScreen có thể hiển thị Unknown publisher hoặc Windows protected your PC, máy công ty có thể chặn. Hãy kiểm tra sidecar SHA-256 trên GitHub Releases trước khi chạy.",
@@ -217,7 +223,7 @@ export const vi = {
     subtitle: "EiSen cho bạn chụp bằng phím PrtScn với Ctrl + Shift + 5 dự phòng tự động, đánh số bước hướng dẫn, làm mờ bảo mật và nhận diện chữ Windows OCR trên máy — được phân phối qua Microsoft Store.",
     downloadCta: "Tải từ Microsoft Store",
     directDownloadCta: "Tải bản .exe trực tiếp (fallback)",
-    downloadSub: "Microsoft Store: v1.0.2 • NSIS .exe trực tiếp chưa ký số: v1.0.2 • Windows 10 / 11 (64-bit)",
+    downloadSub: `Microsoft Store: v${windowsStoreVersion} • NSIS .exe trực tiếp chưa ký số: v${windowsDirectVersion} • Windows 10 / 11 (64-bit)`,
     installWarningTitle: "Lưu ý bản tải trực tiếp cho Windows",
     installWarning: "Bản Microsoft Store là lựa chọn cài đặt chính cho Windows và được Store tự quản lý cập nhật. Bản NSIS .exe trực tiếp chỉ là fallback chưa ký số; Windows SmartScreen có thể hiển thị Unknown publisher hoặc Windows protected your PC, máy công ty có thể chặn. Hãy kiểm tra sidecar SHA-256 trên GitHub Releases trước khi chạy.",
     whyTitle: "Vì sao nên dùng EiSen trên Windows",

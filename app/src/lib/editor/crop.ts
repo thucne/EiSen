@@ -54,6 +54,33 @@ export function storedCrop(r: Rect, canvasW: number, canvasH: number): Rect | nu
   return r.x <= 0 && r.y <= 0 && r.width >= canvasW && r.height >= canvasH ? null : r;
 }
 
+/** The crop to render while a draft is visible, normalized like a committed crop. */
+export function effectiveCrop(
+  draft: Rect | null,
+  committed: Rect | null,
+  canvasW: number,
+  canvasH: number,
+): Rect | null {
+  return draft ? storedCrop(draft, canvasW, canvasH) : committed;
+}
+
+/** Whether a visible draft differs from the last committed crop. */
+export function hasPendingCropChange(
+  draft: Rect | null,
+  committed: Rect | null,
+  canvasW: number,
+  canvasH: number,
+): boolean {
+  const next = effectiveCrop(draft, committed, canvasW, canvasH);
+  if (next == null || committed == null) return next !== committed;
+  return (
+    next.x !== committed.x ||
+    next.y !== committed.y ||
+    next.width !== committed.width ||
+    next.height !== committed.height
+  );
+}
+
 export function cropGesture(r: Rect, p: Point): ResizeHandle | "move" | "draw" {
   const handle = handleAt(cornerHandles(r), p);
   if (handle) return handle;

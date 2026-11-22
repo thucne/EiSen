@@ -197,6 +197,30 @@ describe("hub card actions", () => {
     );
     expect(await screen.findByText(/Could not remove capture/)).toBeInTheDocument();
   });
+
+  it("does not roll back over a newer history event after removal fails", async () => {
+    let rejectRemove!: (e: unknown) => void;
+    h.invoke.mockImplementation((cmd: string) =>
+      cmd === "cmd_remove_history"
+        ? new Promise((_resolve, reject) => {
+            rejectRemove = reject;
+          })
+        : configOk(cmd)
+          ? Promise.resolve({ lang: "En", save_dir: "/tmp", launch_at_login: false, hotkey: "DoubleOption" })
+          : Promise.resolve(undefined),
+    );
+    await renderTwoCards();
+    fireEvent.click(screen.getAllByRole("button", { name: en.hub.removeFromGallery })[0]);
+    await tick();
+
+    emitHistory(["/tmp/b.png", "/tmp/c.png"]);
+    rejectRemove(new Error("boom"));
+
+    await waitFor(() =>
+      expect(document.querySelectorAll(".history-card").length).toBe(2),
+    );
+    expect(historyRows()).toEqual(["b.png", "c.png"]);
+  });
 });
 
 describe("permission banner", () => {

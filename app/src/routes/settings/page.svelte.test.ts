@@ -51,6 +51,16 @@ beforeEach(() => {
 
 const originalUserAgent = navigator.userAgent;
 
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((res, rej) => {
+    resolve = res;
+    reject = rej;
+  });
+  return { promise, resolve, reject };
+}
+
 afterEach(() => {
   Object.defineProperty(navigator, "userAgent", {
     configurable: true,
@@ -87,6 +97,51 @@ describe("settings autostart toggle contract", () => {
     expect(h.enable).not.toHaveBeenCalled();
   });
 
+  it("restores the previous OS state when enabling autostart cannot be persisted", async () => {
+    h.invoke.mockImplementation((cmd: string) => {
+      if (cmd === "cmd_get_config") return Promise.resolve(CFG);
+      if (cmd === "cmd_set_config") return Promise.reject("persist failed");
+      return Promise.resolve(undefined);
+    });
+    render(SettingsPage);
+    const toggle = (await screen.findByRole("checkbox", { name: "Launch at login" })) as HTMLInputElement;
+    toggle.checked = true;
+    fireEvent.change(toggle);
+
+    await waitFor(() => {
+      expect(h.enable).toHaveBeenCalledTimes(1);
+      expect(h.disable).toHaveBeenCalledTimes(1);
+      expect(screen.getByRole("status")).toHaveTextContent("persist failed");
+    });
+    expect(toggle.checked).toBe(false);
+    const setConfigCall = h.invoke.mock.calls.findIndex(([cmd]) => cmd === "cmd_set_config");
+    expect(h.enable.mock.invocationCallOrder[0]).toBeLessThan(
+      h.invoke.mock.invocationCallOrder[setConfigCall],
+    );
+    expect(h.disable.mock.invocationCallOrder[0]).toBeGreaterThan(
+      h.invoke.mock.invocationCallOrder[setConfigCall],
+    );
+  });
+
+  it("restores autostart when disabling it cannot be persisted", async () => {
+    h.invoke.mockImplementation((cmd: string) => {
+      if (cmd === "cmd_get_config") return Promise.resolve({ ...CFG, launch_at_login: true });
+      if (cmd === "cmd_set_config") return Promise.reject("persist failed");
+      return Promise.resolve(undefined);
+    });
+    render(SettingsPage);
+    const toggle = (await screen.findByRole("checkbox", { name: "Launch at login" })) as HTMLInputElement;
+    toggle.checked = false;
+    fireEvent.change(toggle);
+
+    await waitFor(() => {
+      expect(h.disable).toHaveBeenCalledTimes(1);
+      expect(h.enable).toHaveBeenCalledTimes(1);
+      expect(screen.getByRole("status")).toHaveTextContent("persist failed");
+    });
+    expect(toggle.checked).toBe(true);
+  });
+
   it("toggles sound effects and persists play_sounds=false", async () => {
     render(SettingsPage);
     const toggle = (await screen.findByRole("checkbox", { name: "Sound effects" })) as HTMLInputElement;
@@ -98,6 +153,66 @@ describe("settings autostart toggle contract", () => {
         cfg: { ...CFG, play_sounds: false },
       });
     });
+  });
+});
+
+describe("serialized config updates", () => {
+  it("saves rapid changes in order using the latest confirmed snapshot", async () => {
+    const firstWrite = deferred<typeof CFG>();
+    const snapshots: typeof CFG[] = [];
+    h.invoke.mockImplementation((cmd: string, args?: { cfg?: typeof CFG }) => {
+      if (cmd === "cmd_get_config") return Promise.resolve(CFG);
+      if (cmd === "cmd_set_config") {
+        const snapshot = args?.cfg ?? CFG;
+        snapshots.push(snapshot);
+        return snapshots.length === 1 ? firstWrite.promise : Promise.resolve(snapshot);
+      }
+      return Promise.resolve(undefined);
+    });
+    render(SettingsPage);
+    const sound = (await screen.findByRole("checkbox", { name: "Sound effects" })) as HTMLInputElement;
+    const duration = (await screen.findByRole("combobox", { name: "Thumbnail duration" })) as HTMLSelectElement;
+    sound.checked = false;
+    fireEvent.change(sound);
+    fireEvent.change(duration, { target: { value: "3" } });
+
+    await waitFor(() => expect(snapshots).toHaveLength(1));
+    expect(snapshots[0]).toEqual({ ...CFG, play_sounds: false });
+    firstWrite.resolve(snapshots[0]);
+    await waitFor(() => expect(snapshots).toHaveLength(2));
+    expect(snapshots[1]).toEqual({
+      ...CFG,
+      play_sounds: false,
+      thumbnail_duration: 3,
+    });
+  });
+
+  it("queues reset behind a pending settings save", async () => {
+    const firstWrite = deferred<typeof CFG>();
+    const calls: string[] = [];
+    h.invoke.mockImplementation((cmd: string) => {
+      if (cmd === "cmd_get_config") return Promise.resolve(CFG);
+      if (cmd === "cmd_set_config") {
+        calls.push(cmd);
+        return firstWrite.promise;
+      }
+      if (cmd === "cmd_reset_config") {
+        calls.push(cmd);
+        return Promise.resolve(CFG);
+      }
+      return Promise.resolve(undefined);
+    });
+    render(SettingsPage);
+    const sound = (await screen.findByRole("checkbox", { name: "Sound effects" })) as HTMLInputElement;
+    sound.checked = false;
+    fireEvent.change(sound);
+    await waitFor(() => expect(calls).toEqual(["cmd_set_config"]));
+
+    fireEvent.click(await screen.findByRole("button", { name: "Reset to defaults" }));
+    expect(calls).toEqual(["cmd_set_config"]);
+    firstWrite.resolve({ ...CFG, play_sounds: false });
+
+    await waitFor(() => expect(calls).toEqual(["cmd_set_config", "cmd_reset_config"]));
   });
 });
 
@@ -255,7 +370,9 @@ describe("language", () => {
       expect(h.invoke).toHaveBeenCalledWith("cmd_reset_config");
     });
     expect(get(i18n).settings.title).toBe(viDict.settings.title);
-    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("EiSen — Cài đặt");
+    await waitFor(() =>
+      expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("EiSen — Cài đặt"),
+    );
   });
 
   it("renders version information from cmd_get_app_version", async () => {

@@ -583,6 +583,8 @@ mod screen_capture_kit_tests {
 /// the file away, and the end of the drag is reported to the feedback window.
 #[cfg(target_os = "macos")]
 mod file_drag {
+    use super::FILE_DRAG_SOURCES;
+    use crate::core::capture::PreviewDragLease;
     use objc2::rc::Retained;
     use objc2::runtime::{NSObject, NSObjectProtocol};
     use objc2::{define_class, msg_send, DefinedClass, MainThreadMarker, MainThreadOnly};
@@ -590,11 +592,18 @@ mod file_drag {
     use objc2_foundation::NSPoint;
     use tauri::{Emitter, Manager};
 
+    pub struct DragSourceState {
+        app: tauri::AppHandle,
+        feedback_id: u64,
+        drag_id: u64,
+        _preview: PreviewDragLease,
+    }
+
     define_class!(
         #[unsafe(super(NSObject))]
         #[thread_kind = MainThreadOnly]
         #[name = "EiSenFileDragSource"]
-        #[ivars = tauri::AppHandle]
+        #[ivars = DragSourceState]
         pub struct FileDragSource;
 
         unsafe impl NSObjectProtocol for FileDragSource {}
@@ -611,16 +620,30 @@ mod file_drag {
 
             #[unsafe(method(draggingSession:endedAtPoint:operation:))]
             fn ended(&self, _session: &NSDraggingSession, _at: NSPoint, _operation: NSDragOperation) {
-                if let Some(window) = self.ivars().get_webview_window("feedback") {
-                    let _ = window.emit("feedback-drag-ended", ());
+                let state = self.ivars();
+                if let Some(window) = state.app.get_webview_window("feedback") {
+                    let _ = window.emit("feedback-drag-ended", state.feedback_id);
                 }
+                let _source = FILE_DRAG_SOURCES
+                    .with(|sources| sources.borrow_mut().remove(&state.drag_id));
             }
         }
     );
 
     impl FileDragSource {
-        pub fn new(app: tauri::AppHandle, mtm: MainThreadMarker) -> Retained<Self> {
-            let this = Self::alloc(mtm).set_ivars(app);
+        pub fn new(
+            app: tauri::AppHandle,
+            feedback_id: u64,
+            drag_id: u64,
+            preview: PreviewDragLease,
+            mtm: MainThreadMarker,
+        ) -> Retained<Self> {
+            let this = Self::alloc(mtm).set_ivars(DragSourceState {
+                app,
+                feedback_id,
+                drag_id,
+                _preview: preview,
+            });
             unsafe { msg_send![super(this), init] }
         }
     }
@@ -628,9 +651,9 @@ mod file_drag {
 
 #[cfg(target_os = "macos")]
 thread_local! {
-    /// Keeps the current drag's source alive until the next drag replaces it.
-    static FILE_DRAG_SOURCE: std::cell::RefCell<Option<objc2::rc::Retained<file_drag::FileDragSource>>> =
-        const { std::cell::RefCell::new(None) };
+    /// Keeps each drag source and preview file alive until AppKit reports its end.
+    static FILE_DRAG_SOURCES: std::cell::RefCell<std::collections::HashMap<u64, objc2::rc::Retained<file_drag::FileDragSource>>> =
+        std::cell::RefCell::new(std::collections::HashMap::new());
 }
 
 /// Begin dragging `path` from `window`, using the mouse event being handled.
@@ -639,7 +662,9 @@ thread_local! {
 pub fn start_file_drag(
     app: &tauri::AppHandle,
     window: &tauri::WebviewWindow,
-    path: &Path,
+    feedback_id: u64,
+    drag_id: u64,
+    preview: crate::core::capture::PreviewDragLease,
 ) -> Result<(), String> {
     use objc2::runtime::ProtocolObject;
     use objc2::{AllocAnyThread, MainThreadMarker};
@@ -656,7 +681,7 @@ pub fn start_file_drag(
     let win: &NSWindow = unsafe { &*ns_win };
     let view = win.contentView().ok_or("feedback window has no content view")?;
 
-    let path = NSString::from_str(&path.to_string_lossy());
+    let path = NSString::from_str(&preview.path().to_string_lossy());
     let url = NSURL::fileURLWithPath(&path);
     let image = NSImage::initWithContentsOfFile(NSImage::alloc(), &path)
         .ok_or("failed to load the drag image")?;
@@ -674,13 +699,15 @@ pub fn start_file_drag(
     );
     unsafe { item.setDraggingFrame_contents(frame, Some(&image)) };
 
-    let source = file_drag::FileDragSource::new(app.clone(), mtm);
+    let source = file_drag::FileDragSource::new(app.clone(), feedback_id, drag_id, preview, mtm);
+    FILE_DRAG_SOURCES.with(|sources| {
+        sources.borrow_mut().insert(drag_id, source.clone());
+    });
     view.beginDraggingSessionWithItems_event_source(
         &NSArray::from_retained_slice(&[item]),
         &event,
         ProtocolObject::from_ref(&*source),
     );
-    FILE_DRAG_SOURCE.with(|slot| *slot.borrow_mut() = Some(source));
     Ok(())
 }
 

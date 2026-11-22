@@ -6,7 +6,7 @@
   import { Copy, Download, Edit3, ScanText, X } from "@lucide/svelte";
   import Toast from "$lib/components/Toast.svelte";
   import { i18n, initLang } from "$lib/i18n";
-  import { showFeedback, type SaveResult } from "$lib/api";
+  import { showFeedback, type CaptureSession, type SaveResult } from "$lib/api";
 
   import {
     computeToolbarPosition,
@@ -72,6 +72,10 @@
   let toast = $state<{ message: string; kind: "ok" | "err" } | null>(null);
   let captureReadyAt = 0;
   let loggedFirstPointer = false;
+  let captureVersion = 0;
+  let sourcePath: string | null = null;
+  let pending = $state(false);
+  let committed = $state<CaptureSession | null>(null);
 
   function logOverlayTiming(stage: string, extra = "") {
     if (!import.meta.env.DEV) return;
@@ -104,6 +108,8 @@
 
   async function hideOverlay() {
     imageSrc = null;
+    committed = null;
+    sourcePath = null;
     selectionConfirmed = false;
     interaction = "idle";
     resizeAnchor = null;
@@ -130,50 +136,72 @@
   }
 
   async function commit(rect: Rect, target: "editor" | "copy" | "save" | "ocr") {
+    if (pending) return;
+    const version = captureVersion;
+    pending = true;
     try {
-      const openEditor = target === "editor";
-      await invoke("cmd_commit_region", {
-        rect,
-        // Tauri matches command args by camelCase: Rust's `open_editor` reads
-        // this key. A snake_case key here is silently dropped.
-        openEditor: openEditor,
+      const session = committed ?? await invoke<CaptureSession>("cmd_commit_region", {
+        rect, openEditor: false, holdEditor: target === "editor",
+        ...(sourcePath ? { sourcePath } : {}),
       });
+      if (version !== captureVersion) return;
+      committed = session;
+      const source = { capturePath: session.path };
       if (target === "copy") {
-        await invoke("cmd_copy");
+        await invoke("cmd_copy", source);
+        if (version !== captureVersion) return;
         await hideOverlay();
-        void showFeedback(t.toasts.copied);
+        if (version === captureVersion) void showFeedback(t.toasts.copied);
       } else if (target === "save") {
-        const r = await invoke<SaveResult>("cmd_save");
+        const r = await invoke<SaveResult>("cmd_save", source);
+        if (version !== captureVersion) return;
         await hideOverlay();
-        void showFeedback(`${t.toasts.saved}: ${basename(r.path)}`, "ok", r.path);
+        if (version === captureVersion) {
+          void showFeedback(`${t.toasts.saved}: ${basename(r.path)}`, "ok", r.path);
+        }
       } else if (target === "ocr") {
-        const text = await invoke<string>("cmd_extract_text");
-        if (text) {
-          await navigator.clipboard.writeText(text);
-          void invoke("cmd_play_sound", { effect: "copy" });
+        const text = await invoke<string>("cmd_extract_text", { ...source, copyToClipboard: true });
+        if (version !== captureVersion) return;
+        if (text.trim()) {
           await hideOverlay();
-          void showFeedback(t.ocr.copied);
+          if (version === captureVersion) void showFeedback(t.ocr.copied);
         } else {
           showToast(t.ocr.noText, "err");
           await revealOverlay();
         }
       } else {
+        await invoke("cmd_open_in_editor", { path: session.path, committed: true });
+        if (version !== captureVersion) return;
+        imageSrc = null;
+        committed = null;
+        sourcePath = null;
         selectionConfirmed = false;
         interaction = "idle";
       }
     } catch (err) {
-      showToast(`${t.overlay.actionFailed}: ${err}`, "err");
-      await revealOverlay();
+      if (version === captureVersion) {
+        showToast(`${t.overlay.actionFailed}: ${err}`, "err");
+        await revealOverlay();
+      }
+    } finally {
+      if (version === captureVersion) pending = false;
     }
   }
 
   async function cancelCapture() {
+    if (pending) return;
+    const version = captureVersion;
+    pending = true;
     try {
-      await invoke("cmd_cancel_capture");
+      const path = committed?.path ?? sourcePath;
+      if (path) await invoke("cmd_cancel_capture", { sourcePath: path });
+      else await invoke("cmd_cancel_capture");
+      if (version === captureVersion) await hideOverlay();
     } catch (err) {
       console.error("cmd_cancel_capture failed:", err);
+    } finally {
+      if (version === captureVersion) pending = false;
     }
-    await hideOverlay();
   }
 
   function viewport() {
@@ -191,7 +219,7 @@
   }
 
   function beginResize(e: PointerEvent, corner: Corner) {
-    if (e.button !== 0 || !activeRect) return;
+    if (e.button !== 0 || !activeRect || pending || committed) return;
     e.stopPropagation();
     e.preventDefault();
     resizeAnchor = oppositeCorner(activeRect, corner);
@@ -203,7 +231,7 @@
   }
 
   function beginMove(e: PointerEvent) {
-    if (e.button !== 0 || !selectionConfirmed) return;
+    if (e.button !== 0 || !selectionConfirmed || pending || committed) return;
     e.stopPropagation();
     e.preventDefault();
     interaction = "moving";
@@ -211,6 +239,7 @@
   }
 
   function onPointerDown(e: PointerEvent) {
+    if (pending) return;
     if (!loggedFirstPointer && captureReadyAt > 0) {
       loggedFirstPointer = true;
       logOverlayTiming(
@@ -222,7 +251,7 @@
       void cancelCapture();
       return;
     }
-    if ((e.target as HTMLElement).closest(".floating-toolbar")) return;
+    if (committed || (e.target as HTMLElement).closest(".floating-toolbar")) return;
 
     interaction = "drawing";
     selectionConfirmed = false;
@@ -269,6 +298,7 @@
   }
 
   function onKeyDown(e: KeyboardEvent) {
+    if (pending) return;
     if (e.key === "Escape") {
       e.preventDefault();
       void cancelCapture();
@@ -279,7 +309,7 @@
       spaceDown = true;
       return;
     }
-    if (selectionConfirmed && e.key.startsWith("Arrow")) {
+    if (selectionConfirmed && !committed && e.key.startsWith("Arrow")) {
       const step = e.shiftKey ? 10 : 1;
       const d =
         e.key === "ArrowLeft" ? { x: -step, y: 0 } :
@@ -330,6 +360,10 @@
     void listen("capture-ready", (event) => {
       const ready = readCaptureReady(event.payload);
       if (!ready) return;
+      captureVersion += 1;
+      sourcePath = ready.path;
+      pending = false;
+      committed = null;
       captureReadyAt = performance.now();
       loggedFirstPointer = false;
       logOverlayTiming("capture-ready listener");
@@ -372,8 +406,10 @@
     });
 
     // A capture trigger arrived while this overlay was open.
-    void listen<null>("capture-cancel", () => {
-      void cancelCapture();
+    void listen<string | null>("capture-cancel", ({ payload }) => {
+      if (payload == null || payload === sourcePath || payload === committed?.path) {
+        void cancelCapture();
+      }
     }).then((un) => {
       if (disposed) un();
       else unlistenCancel = un;
@@ -480,6 +516,7 @@
           class="action-btn danger"
           data-tip={`${t.actions.cancel} (Esc)`}
           aria-label={`${t.actions.cancel} (Esc)`}
+          disabled={pending}
           onclick={cancelCapture}
         >
           <X size={15} />
@@ -492,6 +529,7 @@
           class="action-btn"
           data-tip={`${t.actions.extractText} (O)`}
           aria-label={`${t.actions.extractText} (O)`}
+          disabled={pending}
           onclick={() => commit(activeRect, "ocr")}
         >
           <ScanText size={15} />
@@ -502,6 +540,7 @@
           class="action-btn"
           data-tip={`${t.actions.saveFile} (S)`}
           aria-label={`${t.actions.saveFile} (S)`}
+          disabled={pending}
           onclick={() => commit(activeRect, "save")}
         >
           <Download size={15} />
@@ -512,6 +551,7 @@
           class="action-btn"
           data-tip={t.overlay.openEditor}
           aria-label={t.overlay.openEditor}
+          disabled={pending}
           onclick={() => commit(activeRect, "editor")}
         >
           <Edit3 size={15} />
@@ -523,6 +563,7 @@
           class="action-btn primary"
           data-tip={`${t.overlay.copyToClipboard} (Enter / DblClick)`}
           aria-label={`${t.overlay.copyToClipboard} (Enter / DblClick)`}
+          disabled={pending}
           onclick={() => commit(activeRect, "copy")}
         >
           <Copy size={15} />

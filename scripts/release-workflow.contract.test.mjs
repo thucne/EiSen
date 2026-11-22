@@ -42,11 +42,12 @@ assert.match(workflow, /xcrun stapler validate/);
 
 assert.match(storeWorkflow, /^name:\s*Store MSIX\s*$/m);
 assert.match(storeWorkflow, /workflow_dispatch:/);
-assert.match(storeWorkflow, /ref:\s*[\s\S]*default:\s*main/);
+assert.ok(storeWorkflow.includes(`default: v${appVersion}`));
 assert.ok(storeWorkflow.includes(`default: ${appVersion}.0`));
 assert.match(storeWorkflow, /runs-on:\s*windows-latest/);
 assert.match(storeWorkflow, /microsoft\/setup-WinAppCli@v0\.1/);
 assert.match(storeWorkflow, /scripts\/check-version\.sh/);
+assert.ok(storeWorkflow.includes('[[ "$RELEASE_TAG" != "v${MSIX_VERSION%.0}" ]]'));
 assert.match(storeWorkflow, /build-msix\.ps1\s+-Mode\s+test/);
 assert.match(storeWorkflow, /build-msix\.ps1\s+-Mode\s+store/);
 assert.match(storeWorkflow, /Add-AppxPackage/);
