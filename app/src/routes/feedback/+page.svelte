@@ -406,6 +406,14 @@
       suppressNextClick = false;
       scheduleDismiss();
     });
+    const unDropped = listen<number>("feedback-drag-dropped", (event) => {
+      if (
+        event.payload !== feedback?.id ||
+        activeDragRevision === null ||
+        activeDragRevision !== feedbackRevision
+      ) return;
+      dismiss();
+    });
     return () => {
       clearFeedbackTimers();
       resetWheelGesture();
@@ -413,6 +421,7 @@
       activeDragRevision = null;
       void un.then((fn) => fn());
       void unDrag.then((fn) => fn());
+      void unDropped.then((fn) => fn());
     };
   });
 </script>
@@ -421,6 +430,7 @@
   <div
     bind:this={thumbnailEl}
     class="thumbnail thumbnail-{feedback.kind}"
+    class:dragging={dragging}
     class:swiping={swiping}
     class:sliding-out={isSlidingOut}
     style={swipeStyle}
@@ -556,6 +566,18 @@
 
   .thumbnail.swiping {
     transition: none;
+  }
+
+  .thumbnail.dragging {
+    opacity: 0.92;
+    border-color: rgba(255, 255, 255, 0.28);
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.48);
+    transition: none;
+  }
+
+  .thumbnail.dragging .close {
+    opacity: 0;
+    pointer-events: none;
   }
 
   .thumbnail.sliding-out {

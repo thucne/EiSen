@@ -17,9 +17,11 @@ export const changelog: ChangelogEntry[] = [
       ? `macOS, Windows (Microsoft Store v${releaseMetadata.windowsStore.version})`
       : 'macOS',
     en: [
+      'Dragging the floating capture preview on Mac now moves the entire preview card frame smoothly with the cursor, gliding back if released or fading out on drop.',
       'macOS Dock & Recent Applications stay hidden from initial launch by configuring Accessory activation policy before the event loop starts.',
     ],
     vi: [
+      'Kéo-thả ảnh xem trước nổi trên Mac giờ di chuyển nguyên cả khung preview theo con trỏ thay vì bóng mờ mặc định, tự trượt về góc nếu buông ra hoặc mờ dần khi thả vào ứng dụng khác.',
       'Sửa lỗi icon EiSen còn xuất hiện ở mục Mở gần đây trên Dock macOS bằng cách thiết lập chế độ chạy nền Accessory trước khi khởi chạy event loop.',
     ],
   },

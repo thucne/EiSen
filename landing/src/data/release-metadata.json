@@ -1,8 +1,8 @@
 {
   "mac": {
-    "version": "1.1.2",
+    "version": "1.1.3",
     "assetName": "EiSen_{version}_aarch64.dmg",
-    "sizeBytes": 4649195,
+    "sizeBytes": 4653477,
     "architecture": "Apple Silicon"
   },
   "windowsStore": {

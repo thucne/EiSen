@@ -1116,6 +1116,8 @@ fn cmd_show_feedback(
     let mut active_feedback = ACTIVE_FEEDBACK_ID.lock().unwrap_or_else(|e| e.into_inner());
     let feedback_id = NEXT_FEEDBACK_ID.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
     *active_feedback = Some(feedback_id);
+    #[cfg(target_os = "macos")]
+    platform::mac_adapter::prepare_feedback_window(&window);
     match &preview {
         Some(image) => place_thumbnail_window(&app, &window, image),
         None => {
@@ -1161,6 +1163,8 @@ fn cmd_hide_feedback(app: tauri::AppHandle, feedback_id: u64, preview: Option<St
     }
     *active_feedback = None;
     if let Some(window) = app.get_webview_window("feedback") {
+        #[cfg(target_os = "macos")]
+        platform::mac_adapter::prepare_feedback_window(&window);
         let _ = window.hide();
     }
     if let Some(preview) = preview {

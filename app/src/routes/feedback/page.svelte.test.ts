@@ -211,6 +211,23 @@ describe("floating thumbnail", () => {
     }
   });
 
+  it("applies lifted dragging state on the card and dismisses after a successful drop", async () => {
+    const preview = await showThumbnail();
+    const card = preview.parentElement!;
+
+    await fireEvent.pointerDown(preview, { button: 0, clientX: 10, clientY: 50 });
+    await fireEvent.pointerMove(preview, { clientX: 20, clientY: 20 });
+    await tick();
+    expect(card.classList.contains("dragging")).toBe(true);
+
+    h.listeners.get("feedback-drag-dropped")!({ payload: 1 });
+    await tick();
+    expect(h.invoke).toHaveBeenCalledWith("cmd_hide_feedback", {
+      feedbackId: 1,
+      preview: "/tmp/eisen/preview/a.png",
+    });
+  });
+
   it("follows pointer swipe right live and waits for release before dismissing", async () => {
     const preview = await showThumbnail();
     vi.useFakeTimers();

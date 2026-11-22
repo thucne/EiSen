@@ -356,18 +356,69 @@ pub fn elevate_feedback_window(window: &tauri::WebviewWindow) {
     }
 }
 
+/// Cancel any in-flight AppKit frame or opacity animation on `win`.
+#[cfg(target_os = "macos")]
+fn stop_feedback_animations(win: &objc2_app_kit::NSWindow, reset_alpha: bool) {
+    use objc2_app_kit::{NSAnimatablePropertyContainer, NSAnimationContext};
+
+    NSAnimationContext::beginGrouping();
+    NSAnimationContext::currentContext().setDuration(0.0);
+    if reset_alpha {
+        win.animator().setAlphaValue(1.0);
+    }
+    win.animator().setFrame_display(win.frame(), false);
+    NSAnimationContext::endGrouping();
+}
+
+/// Clear drag/fade state cleanly whenever the feedback window resets or hides.
+#[cfg(target_os = "macos")]
+fn reset_feedback_window_state(win: &objc2_app_kit::NSWindow) {
+    FEEDBACK_WINDOW_GEN.with(|slot| slot.set(slot.get().wrapping_add(1)));
+    ACTIVE_FEEDBACK_DRAG_ID.with(|slot| slot.set(None));
+    FEEDBACK_HOME_FRAME.with(|slot| slot.set(None));
+    stop_feedback_animations(win, true);
+    win.setIgnoresMouseEvents(false);
+    win.setAlphaValue(1.0);
+}
+
+#[cfg(target_os = "macos")]
+fn with_ns_window_on_main<F>(window: &tauri::WebviewWindow, op: F)
+where
+    F: FnOnce(&objc2_app_kit::NSWindow) + Send + 'static,
+{
+    use objc2::MainThreadMarker;
+    use objc2_app_kit::NSWindow;
+
+    let invoke = |win_ref: &tauri::WebviewWindow, f: F| {
+        if let Ok(ns_win_ptr) = win_ref.ns_window() {
+            let win: &NSWindow = unsafe { &*(ns_win_ptr as *mut NSWindow) };
+            f(win);
+        }
+    };
+
+    if MainThreadMarker::new().is_some() {
+        invoke(window, op);
+    } else {
+        let win_clone = window.clone();
+        let _ = window.run_on_main_thread(move || {
+            invoke(&win_clone, op);
+        });
+    }
+}
+
+/// Cancel any lingering drag animation and restore hit-testing/opacity on the feedback window.
+#[cfg(target_os = "macos")]
+pub fn prepare_feedback_window(window: &tauri::WebviewWindow) {
+    with_ns_window_on_main(window, reset_feedback_window_state);
+}
+
 /// Show a window without making it key, so typing stays in the user's app.
 #[cfg(target_os = "macos")]
 pub fn show_without_activation(window: &tauri::WebviewWindow) {
-    use objc2_app_kit::NSWindow;
-
-    if let Ok(ns_win_ptr) = window.ns_window() {
-        let ns_win = ns_win_ptr as *mut NSWindow;
-        unsafe {
-            let win: &NSWindow = &*ns_win;
-            win.orderFrontRegardless();
-        }
-    }
+    with_ns_window_on_main(window, |win| {
+        reset_feedback_window_state(win);
+        win.orderFrontRegardless();
+    });
 }
 
 /// Full-display grabs through `SCScreenshotManager` (macOS 14). The framework is
@@ -619,23 +670,34 @@ mod screen_capture_kit_tests {
 }
 
 /// Answers AppKit during a file drag: dropping copies, so Finder never moves
-/// the file away, and the end of the drag is reported to the feedback window.
+/// the file away, moves the floating preview window with the pointer, and
+/// returns it smoothly on cancel or fades it out cleanly on drop.
 #[cfg(target_os = "macos")]
 mod file_drag {
-    use super::FILE_DRAG_SOURCES;
+    use super::{drag_outcome_for_operation, feedback_drag_is_current, DragOutcome, FILE_DRAG_SOURCES};
     use crate::core::capture::PreviewDragLease;
+    use block2::RcBlock;
     use objc2::rc::Retained;
     use objc2::runtime::{NSObject, NSObjectProtocol};
     use objc2::{define_class, msg_send, DefinedClass, MainThreadMarker, MainThreadOnly};
-    use objc2_app_kit::{NSDragOperation, NSDraggingContext, NSDraggingSession, NSDraggingSource};
-    use objc2_foundation::NSPoint;
+    use objc2_app_kit::{
+        NSAnimatablePropertyContainer, NSAnimationContext, NSDragOperation, NSDraggingContext,
+        NSDraggingSession, NSDraggingSource, NSEvent, NSWindow,
+    };
+    use objc2_foundation::{NSPoint, NSRect};
+    use std::cell::RefCell;
+    use std::ptr::NonNull;
     use tauri::{Emitter, Manager};
 
     pub struct DragSourceState {
         app: tauri::AppHandle,
         feedback_id: u64,
         drag_id: u64,
-        _preview: PreviewDragLease,
+        window_gen: u64,
+        home_frame: NSRect,
+        drag_start_origin: NSPoint,
+        start_mouse: NSPoint,
+        preview: RefCell<Option<PreviewDragLease>>,
     }
 
     define_class!(
@@ -657,11 +719,115 @@ mod file_drag {
                 NSDragOperation::Copy
             }
 
-            #[unsafe(method(draggingSession:endedAtPoint:operation:))]
-            fn ended(&self, _session: &NSDraggingSession, _at: NSPoint, _operation: NSDragOperation) {
+            #[unsafe(method(draggingSession:willBeginAtPoint:))]
+            fn will_begin(&self, _session: &NSDraggingSession, _at: NSPoint) {
                 let state = self.ivars();
-                if let Some(window) = state.app.get_webview_window("feedback") {
-                    let _ = window.emit("feedback-drag-ended", state.feedback_id);
+                if !feedback_drag_is_current(state.drag_id, state.window_gen) {
+                    return;
+                }
+                if let Some(win_ref) = state.app.get_webview_window("feedback") {
+                    if let Ok(ns_win_ptr) = win_ref.ns_window() {
+                        let win: &NSWindow = unsafe { &*(ns_win_ptr as *mut NSWindow) };
+                        super::stop_feedback_animations(win, false);
+                        win.setIgnoresMouseEvents(true);
+                    }
+                }
+            }
+
+            #[unsafe(method(draggingSession:movedToPoint:))]
+            fn moved_to(&self, _session: &NSDraggingSession, _screen_point: NSPoint) {
+                let state = self.ivars();
+                if !feedback_drag_is_current(state.drag_id, state.window_gen) {
+                    return;
+                }
+                if let Some(win_ref) = state.app.get_webview_window("feedback") {
+                    if let Ok(ns_win_ptr) = win_ref.ns_window() {
+                        let win: &NSWindow = unsafe { &*(ns_win_ptr as *mut NSWindow) };
+                        let mouse = NSEvent::mouseLocation();
+                        let (x, y) = super::window_origin_for_drag(
+                            (state.drag_start_origin.x, state.drag_start_origin.y),
+                            (state.start_mouse.x, state.start_mouse.y),
+                            (mouse.x, mouse.y),
+                        );
+                        win.setFrameOrigin(NSPoint::new(x, y));
+                    }
+                }
+            }
+
+            #[unsafe(method(draggingSession:endedAtPoint:operation:))]
+            fn ended(&self, _session: &NSDraggingSession, _at: NSPoint, operation: NSDragOperation) {
+                let state = self.ivars();
+                if feedback_drag_is_current(state.drag_id, state.window_gen) {
+                    if let Some(window) = state.app.get_webview_window("feedback") {
+                        if let Ok(ns_win_ptr) = window.ns_window() {
+                            let win: &NSWindow = unsafe { &*(ns_win_ptr as *mut NSWindow) };
+                            win.setIgnoresMouseEvents(false);
+
+                            match drag_outcome_for_operation(operation.0) {
+                                DragOutcome::Cancelled => {
+                                    let _ = window.emit("feedback-drag-ended", state.feedback_id);
+                                    let home_frame = state.home_frame;
+                                    let drag_id = state.drag_id;
+                                    let window_gen = state.window_gen;
+                                    let changes = RcBlock::new(
+                                        move |ctx: NonNull<NSAnimationContext>| {
+                                            let ctx = unsafe { ctx.as_ref() };
+                                            ctx.setDuration(0.22);
+                                            win.animator().setFrame_display(home_frame, true);
+                                        },
+                                    );
+                                    let completion = RcBlock::new(move || {
+                                        if feedback_drag_is_current(drag_id, window_gen) {
+                                            super::ACTIVE_FEEDBACK_DRAG_ID
+                                                .with(|slot| slot.set(None));
+                                            super::FEEDBACK_HOME_FRAME
+                                                .with(|slot| slot.set(None));
+                                        }
+                                    });
+                                    NSAnimationContext::runAnimationGroup_completionHandler(
+                                        &changes,
+                                        Some(&completion),
+                                    );
+                                }
+                                DragOutcome::Dropped => {
+                                    super::ACTIVE_FEEDBACK_DRAG_ID.with(|slot| slot.set(None));
+                                    super::FEEDBACK_HOME_FRAME.with(|slot| slot.set(None));
+                                    let lease = state.preview.borrow_mut().take();
+                                    let app = state.app.clone();
+                                    let feedback_id = state.feedback_id;
+                                    let window_gen = state.window_gen;
+                                    let changes = RcBlock::new(
+                                        move |ctx: NonNull<NSAnimationContext>| {
+                                            let ctx = unsafe { ctx.as_ref() };
+                                            ctx.setDuration(0.12);
+                                            win.animator().setAlphaValue(0.0);
+                                        },
+                                    );
+                                    let completion = RcBlock::new(move || {
+                                        let _keep_lease = &lease;
+                                        let still_same_window = super::FEEDBACK_WINDOW_GEN
+                                            .with(|slot| slot.get() == window_gen);
+                                        if still_same_window {
+                                            if let Some(win_ref) =
+                                                app.get_webview_window("feedback")
+                                            {
+                                                let _ = win_ref
+                                                    .emit("feedback-drag-dropped", feedback_id);
+                                            }
+                                        }
+                                    });
+                                    NSAnimationContext::runAnimationGroup_completionHandler(
+                                        &changes,
+                                        Some(&completion),
+                                    );
+                                }
+                            }
+                        } else {
+                            super::ACTIVE_FEEDBACK_DRAG_ID.with(|slot| slot.set(None));
+                            super::FEEDBACK_HOME_FRAME.with(|slot| slot.set(None));
+                            let _ = window.emit("feedback-drag-ended", state.feedback_id);
+                        }
+                    }
                 }
                 let _source = FILE_DRAG_SOURCES
                     .with(|sources| sources.borrow_mut().remove(&state.drag_id));
@@ -670,10 +836,15 @@ mod file_drag {
     );
 
     impl FileDragSource {
+        #[allow(clippy::too_many_arguments)]
         pub fn new(
             app: tauri::AppHandle,
             feedback_id: u64,
             drag_id: u64,
+            window_gen: u64,
+            home_frame: NSRect,
+            drag_start_origin: NSPoint,
+            start_mouse: NSPoint,
             preview: PreviewDragLease,
             mtm: MainThreadMarker,
         ) -> Retained<Self> {
@@ -681,11 +852,43 @@ mod file_drag {
                 app,
                 feedback_id,
                 drag_id,
-                _preview: preview,
+                window_gen,
+                home_frame,
+                drag_start_origin,
+                start_mouse,
+                preview: RefCell::new(Some(preview)),
             });
             unsafe { msg_send![super(this), init] }
         }
     }
+}
+
+#[cfg(any(target_os = "macos", test))]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum DragOutcome {
+    Cancelled,
+    Dropped,
+}
+
+#[cfg(any(target_os = "macos", test))]
+fn drag_outcome_for_operation(operation_bits: usize) -> DragOutcome {
+    if operation_bits == 0 {
+        DragOutcome::Cancelled
+    } else {
+        DragOutcome::Dropped
+    }
+}
+
+#[cfg(any(target_os = "macos", test))]
+fn window_origin_for_drag(
+    start_origin: (f64, f64),
+    start_mouse: (f64, f64),
+    current_mouse: (f64, f64),
+) -> (f64, f64) {
+    (
+        start_origin.0 + (current_mouse.0 - start_mouse.0),
+        start_origin.1 + (current_mouse.1 - start_mouse.1),
+    )
 }
 
 #[cfg(any(target_os = "macos", test))]
@@ -703,18 +906,28 @@ fn matches_feedback_drag_event(
 }
 
 #[cfg(target_os = "macos")]
+fn feedback_drag_is_current(drag_id: u64, window_gen: u64) -> bool {
+    ACTIVE_FEEDBACK_DRAG_ID.with(|slot| slot.get() == Some(drag_id))
+        && FEEDBACK_WINDOW_GEN.with(|slot| slot.get() == window_gen)
+}
+
+#[cfg(target_os = "macos")]
 thread_local! {
     /// Keeps each drag source and preview file alive until AppKit reports its end.
     static FILE_DRAG_SOURCES: std::cell::RefCell<std::collections::HashMap<u64, objc2::rc::Retained<file_drag::FileDragSource>>> =
         std::cell::RefCell::new(std::collections::HashMap::new());
     static FEEDBACK_WINDOW_NUMBER: std::cell::Cell<Option<isize>> = const { std::cell::Cell::new(None) };
+    static ACTIVE_FEEDBACK_DRAG_ID: std::cell::Cell<Option<u64>> = const { std::cell::Cell::new(None) };
+    static FEEDBACK_WINDOW_GEN: std::cell::Cell<u64> = const { std::cell::Cell::new(0) };
+    static FEEDBACK_HOME_FRAME: std::cell::Cell<Option<objc2_foundation::NSRect>> =
+        const { std::cell::Cell::new(None) };
     static FEEDBACK_DRAG_EVENT: std::cell::RefCell<Option<objc2::rc::Retained<objc2_app_kit::NSEvent>>> =
         const { std::cell::RefCell::new(None) };
     static FEEDBACK_EVENT_MONITOR: std::cell::RefCell<Option<objc2::rc::Retained<objc2::runtime::AnyObject>>> =
         const { std::cell::RefCell::new(None) };
 }
 
-/// Begin dragging `path` from `window`, using the mouse event being handled.
+/// Begin dragging `path` from `window`, moving the whole preview window with the pointer.
 /// Must run on the main thread.
 #[cfg(target_os = "macos")]
 pub fn start_file_drag(
@@ -729,9 +942,13 @@ pub fn start_file_drag(
     use objc2_app_kit::{
         NSApplication, NSDraggingItem, NSEvent, NSEventType, NSImage, NSWindow,
     };
-    use objc2_foundation::{NSArray, NSPoint, NSRect, NSSize, NSString, NSURL};
+    use objc2_foundation::{NSArray, NSData, NSPoint, NSRect, NSSize, NSString, NSURL};
 
-    const DRAG_IMAGE_WIDTH: f64 = 140.0;
+    const TRANSPARENT_PNG_1X1: &[u8] = &[
+        137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82, 0, 0, 0, 1, 0, 0, 0, 1, 8, 6,
+        0, 0, 0, 31, 21, 196, 137, 0, 0, 0, 11, 73, 68, 65, 84, 120, 156, 99, 96, 0, 2, 0, 0, 5, 0,
+        1, 122, 94, 171, 63, 0, 0, 0, 0, 73, 69, 78, 68, 174, 66, 96, 130,
+    ];
 
     let mtm = MainThreadMarker::new().ok_or("file drag must start on the main thread")?;
     if !left_mouse_button_is_pressed(NSEvent::pressedMouseButtons()) {
@@ -766,15 +983,11 @@ pub fn start_file_drag(
 
     let path = NSString::from_str(&preview.path().to_string_lossy());
     let url = NSURL::fileURLWithPath(&path);
-    let image = NSImage::initWithContentsOfFile(NSImage::alloc(), &path)
-        .ok_or("failed to load the drag image")?;
-    let size = image.size();
-    let height = DRAG_IMAGE_WIDTH * size.height / size.width.max(1.0);
+    let transparent_data = NSData::with_bytes(TRANSPARENT_PNG_1X1);
+    let image = NSImage::initWithData(NSImage::alloc(), &transparent_data)
+        .ok_or("failed to create transparent drag proxy image")?;
     let at = view.convertPoint_fromView(event.locationInWindow(), None);
-    let frame = NSRect::new(
-        NSPoint::new(at.x - DRAG_IMAGE_WIDTH / 2.0, at.y - height / 2.0),
-        NSSize::new(DRAG_IMAGE_WIDTH, height),
-    );
+    let frame = NSRect::new(NSPoint::new(at.x, at.y), NSSize::new(1.0, 1.0));
 
     let item = NSDraggingItem::initWithPasteboardWriter(
         NSDraggingItem::alloc(),
@@ -782,7 +995,27 @@ pub fn start_file_drag(
     );
     unsafe { item.setDraggingFrame_contents(frame, Some(&image)) };
 
-    let source = file_drag::FileDragSource::new(app.clone(), feedback_id, drag_id, preview, mtm);
+    let drag_start_frame = win.frame();
+    let home_frame = FEEDBACK_HOME_FRAME.with(|slot| {
+        let home = slot.get().unwrap_or(drag_start_frame);
+        slot.set(Some(home));
+        home
+    });
+    let start_mouse = NSEvent::mouseLocation();
+    let window_gen = FEEDBACK_WINDOW_GEN.with(|slot| slot.get());
+    ACTIVE_FEEDBACK_DRAG_ID.with(|slot| slot.set(Some(drag_id)));
+
+    let source = file_drag::FileDragSource::new(
+        app.clone(),
+        feedback_id,
+        drag_id,
+        window_gen,
+        home_frame,
+        drag_start_frame.origin,
+        start_mouse,
+        preview,
+        mtm,
+    );
     FILE_DRAG_SOURCES.with(|sources| {
         sources.borrow_mut().insert(drag_id, source.clone());
     });
@@ -791,7 +1024,7 @@ pub fn start_file_drag(
         &event,
         ProtocolObject::from_ref(&*source),
     );
-    session.setAnimatesToStartingPositionsOnCancelOrFail(true);
+    session.setAnimatesToStartingPositionsOnCancelOrFail(false);
     FEEDBACK_DRAG_EVENT.with(|slot| *slot.borrow_mut() = None);
     Ok(())
 }
@@ -1258,7 +1491,8 @@ pub fn apply_monitor_action(
 #[cfg(test)]
 mod tests {
     use super::{
-        left_mouse_button_is_pressed, matches_feedback_drag_event, screen_index_containing,
+        drag_outcome_for_operation, left_mouse_button_is_pressed, matches_feedback_drag_event,
+        screen_index_containing, window_origin_for_drag, DragOutcome,
     };
 
     #[test]
@@ -1281,6 +1515,21 @@ mod tests {
         assert!(matches_feedback_drag_event(true, 42, 42));
         assert!(!matches_feedback_drag_event(false, 42, 42));
         assert!(!matches_feedback_drag_event(true, 41, 42));
+    }
+
+    #[test]
+    fn window_origin_tracks_cursor_delta_without_jump() {
+        assert_eq!(
+            window_origin_for_drag((1000.0, 40.0), (1120.0, 95.0), (880.0, 320.0)),
+            (760.0, 265.0)
+        );
+    }
+
+    #[test]
+    fn drag_outcome_distinguishes_cancelled_and_dropped_operations() {
+        assert_eq!(drag_outcome_for_operation(0), DragOutcome::Cancelled);
+        assert_eq!(drag_outcome_for_operation(1), DragOutcome::Dropped);
+        assert_eq!(drag_outcome_for_operation(16), DragOutcome::Dropped);
     }
 }
 
