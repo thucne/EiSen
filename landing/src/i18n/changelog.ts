@@ -17,6 +17,19 @@ export const changelog: ChangelogEntry[] = [
       ? `macOS, Windows (Microsoft Store v${releaseMetadata.windowsStore.version})`
       : 'macOS',
     en: [
+      'Floating preview swipe-to-dismiss on Mac now follows your pointer or two-finger trackpad motion 1:1 and springs back if released early.',
+      'Diagonal and upward drags on the floating preview start file drag-and-drop reliably, animating back to the preview if released without dropping.',
+    ],
+    vi: [
+      'Thao tác quẹt ngang để đóng ảnh xem trước trên Mac giờ đi theo chuyển động chuột hoặc hai ngón tay 1:1 và tự bật về vị trí cũ nếu buông sớm.',
+      'Kéo chéo hoặc kéo lên để kéo-thả file ảnh xem trước sang ứng dụng khác mượt mà hơn, tự quay lại khung xem trước nếu thả ra ngoài.',
+    ],
+  },
+  {
+    version: '1.1.0',
+    date: '2026-11-22',
+    platform: 'macOS',
+    en: [
       'The editor waits for the image to load and offers fit-to-view and 100% zoom.',
       'Dismiss the floating preview on Mac with a continuous two-finger horizontal swipe. Click to edit and drag to share still work.',
       'Redact stays opaque with overlapping blur, and OCR uses the image and crop shown in the editor.',

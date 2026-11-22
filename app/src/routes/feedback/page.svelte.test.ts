@@ -122,15 +122,43 @@ describe("floating thumbnail", () => {
     expect(h.invoke.mock.calls.filter(([cmd]) => cmd === "cmd_start_preview_drag")).toHaveLength(1);
   });
 
-  it("waits for a near-diagonal pointer gesture to become clear", async () => {
+  it("initiates file drag on diagonal or upward-right drags instead of swiping to dismiss", async () => {
+    const preview = await showThumbnail();
+    await fireEvent.pointerDown(preview, { button: 0, clientX: 10, clientY: 50 });
+    await fireEvent.pointerMove(preview, { clientX: 22, clientY: 38 });
+    expect(h.invoke).toHaveBeenCalledWith("cmd_start_preview_drag", {
+      feedbackId: 1,
+      preview: "/tmp/eisen/preview/a.png",
+    });
+    expect(invoked("cmd_hide_feedback")).toBe(false);
+  });
+
+  it("switches from a slight rightward start into file drag when pulled vertically", async () => {
+    const preview = await showThumbnail();
+    await fireEvent.pointerDown(preview, { button: 0, clientX: 10, clientY: 50 });
+    await fireEvent.pointerMove(preview, { clientX: 24, clientY: 50 });
+    expect(invoked("cmd_start_preview_drag")).toBe(false);
+    expect(preview.parentElement?.getAttribute("style")).toContain("translateX(14px)");
+
+    await fireEvent.pointerMove(preview, { clientX: 28, clientY: 12 });
+    expect(h.invoke).toHaveBeenCalledWith("cmd_start_preview_drag", {
+      feedbackId: 1,
+      preview: "/tmp/eisen/preview/a.png",
+    });
+    expect(preview.parentElement?.getAttribute("style") ?? "").not.toContain("translateX");
+  });
+
+  it("allows clicking to open the editor after a cancelled native file drag", async () => {
     const preview = await showThumbnail();
     await fireEvent.pointerDown(preview, { button: 0, clientX: 10, clientY: 10 });
-    await fireEvent.pointerMove(preview, { clientX: 18, clientY: 18 });
-    await fireEvent.pointerUp(preview);
-    await fireEvent.click(preview);
+    await fireEvent.pointerMove(preview, { clientX: 0, clientY: 10 });
+    h.listeners.get("feedback-drag-ended")!({ payload: 1 });
+    await tick();
 
-    expect(invoked("cmd_start_preview_drag")).toBe(false);
-    expect(h.invoke).not.toHaveBeenCalledWith("cmd_open_in_editor", expect.anything());
+    await fireEvent.click(preview);
+    await waitFor(() =>
+      expect(h.invoke).toHaveBeenCalledWith("cmd_open_in_editor", { path: "/tmp/eisen/preview/a.png" }),
+    );
   });
 
   it("does not dismiss while hovered or dragged, and resumes after the drag", async () => {
@@ -183,14 +211,19 @@ describe("floating thumbnail", () => {
     }
   });
 
-  it("swipes right to dismiss past 50px threshold", async () => {
+  it("follows pointer swipe right live and waits for release before dismissing", async () => {
     const preview = await showThumbnail();
     vi.useFakeTimers();
     try {
       await fireEvent.pointerDown(preview, { button: 0, clientX: 10, clientY: 10 });
-      await fireEvent.pointerMove(preview, { clientX: 70, clientY: 10 });
+      await fireEvent.pointerMove(preview, { clientX: 130, clientY: 10 });
       expect(invoked("cmd_start_preview_drag")).toBe(false);
-      // Slide animation runs, then dismisses
+      expect(preview.parentElement?.getAttribute("style")).toContain("translateX(120px)");
+      // Still holding pointer down: must NOT auto-dismiss before release
+      vi.advanceTimersByTime(500);
+      expect(invoked("cmd_hide_feedback")).toBe(false);
+
+      await fireEvent.pointerUp(preview, { clientX: 130, clientY: 10 });
       vi.advanceTimersByTime(250);
       expect(invoked("cmd_hide_feedback")).toBe(true);
     } finally {
@@ -198,45 +231,116 @@ describe("floating thumbnail", () => {
     }
   });
 
-  it("snaps back on swipe under threshold without dismissing", async () => {
+  it("snaps back on release under dismiss threshold or when pulled back left", async () => {
     const preview = await showThumbnail();
     vi.useFakeTimers();
     try {
       await fireEvent.pointerDown(preview, { button: 0, clientX: 10, clientY: 10 });
-      await fireEvent.pointerMove(preview, { clientX: 30, clientY: 10 });
-      await fireEvent.pointerUp(preview);
-      vi.advanceTimersByTime(100);
+      await fireEvent.pointerMove(preview, { clientX: 130, clientY: 10 });
+      expect(preview.parentElement?.getAttribute("style")).toContain("translateX(120px)");
+
+      // Pull back inside threshold before releasing
+      await fireEvent.pointerMove(preview, { clientX: 50, clientY: 10 });
+      expect(preview.parentElement?.getAttribute("style")).toContain("translateX(40px)");
+
+      await fireEvent.pointerUp(preview, { clientX: 50, clientY: 10 });
+      await fireEvent.click(preview);
+      vi.advanceTimersByTime(300);
+      expect(preview.parentElement?.getAttribute("style") ?? "").not.toContain("translateX");
+      expect(invoked("cmd_hide_feedback")).toBe(false);
+      expect(h.invoke).not.toHaveBeenCalledWith("cmd_open_in_editor", expect.anything());
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("dismisses on a brisk rightward flick when released past minimum flick distance", async () => {
+    const preview = await showThumbnail();
+    vi.useFakeTimers();
+    try {
+      await fireEvent.pointerDown(preview, { button: 0, clientX: 10, clientY: 10 });
+      vi.advanceTimersByTime(20);
+      await fireEvent.pointerMove(preview, { clientX: 45, clientY: 10 });
+      vi.advanceTimersByTime(20);
+      await fireEvent.pointerMove(preview, { clientX: 80, clientY: 10 });
+      vi.advanceTimersByTime(5);
+      await fireEvent.pointerUp(preview, { clientX: 80, clientY: 10 });
+      vi.advanceTimersByTime(250);
+      expect(invoked("cmd_hide_feedback")).toBe(true);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("does not dismiss on a slow or paused short swipe under threshold", async () => {
+    const preview = await showThumbnail();
+    vi.useFakeTimers();
+    try {
+      await fireEvent.pointerDown(preview, { button: 0, clientX: 10, clientY: 10 });
+      vi.advanceTimersByTime(20);
+      await fireEvent.pointerMove(preview, { clientX: 80, clientY: 10 });
+      // Pause > 90ms before releasing: velocity decays so short distance snaps back
+      vi.advanceTimersByTime(150);
+      await fireEvent.pointerUp(preview, { clientX: 80, clientY: 10 });
+      await tick();
+      vi.advanceTimersByTime(250);
+      expect(preview.parentElement?.getAttribute("style") ?? "").not.toContain("translateX");
       expect(invoked("cmd_hide_feedback")).toBe(false);
     } finally {
       vi.useRealTimers();
     }
   });
 
-  it("dismisses on trackpad horizontal swipe right", async () => {
-    const preview = await showThumbnail();
-    vi.useFakeTimers();
-    try {
-      await fireEvent.wheel(preview.parentElement!, { deltaX: 30 });
-      vi.advanceTimersByTime(250);
-      expect(invoked("cmd_hide_feedback")).toBe(true);
-    } finally {
-      vi.useRealTimers();
-    }
-  });
+  it.each([false, true])(
+    "follows trackpad horizontal swipe and snaps back when under threshold (natural=%s)",
+    async (natural) => {
+      const preview = await showThumbnail();
+      vi.useFakeTimers();
+      try {
+        const sign = natural ? -1 : 1;
+        // Swiping left from rest does nothing
+        const leftWheel = new WheelEvent("wheel", { deltaX: sign * -120, deltaY: 0 });
+        Object.defineProperty(leftWheel, "webkitDirectionInvertedFromDevice", { value: natural });
+        await fireEvent(preview.parentElement!, leftWheel);
+        vi.advanceTimersByTime(200);
+        await tick();
+        expect(invoked("cmd_hide_feedback")).toBe(false);
 
-  it.each([1, -1])("accumulates smooth horizontal wheel movement (%s)", async (direction) => {
-    const preview = await showThumbnail();
-    vi.useFakeTimers();
-    try {
-      for (let i = 0; i < 7; i += 1) {
-        await fireEvent.wheel(preview.parentElement!, { deltaX: direction * 4, deltaY: 0 });
+        // Small swipe right follows live, then snaps back cleanly without dismissing
+        const smallWheel = new WheelEvent("wheel", { deltaX: sign * 35, deltaY: 0 });
+        Object.defineProperty(smallWheel, "webkitDirectionInvertedFromDevice", { value: natural });
+        await fireEvent(preview.parentElement!, smallWheel);
+        expect(preview.parentElement?.getAttribute("style")).toContain("translateX(35px)");
+        vi.advanceTimersByTime(150);
+        await tick();
+        expect(preview.parentElement?.getAttribute("style") ?? "").not.toContain("translateX");
+        expect(invoked("cmd_hide_feedback")).toBe(false);
+      } finally {
+        vi.useRealTimers();
       }
-      vi.advanceTimersByTime(250);
-      expect(invoked("cmd_hide_feedback")).toBe(true);
-    } finally {
-      vi.useRealTimers();
-    }
-  });
+    },
+  );
+
+  it.each([false, true])(
+    "accumulates smooth horizontal wheel movement to dismiss (natural=%s)",
+    async (natural) => {
+      const preview = await showThumbnail();
+      vi.useFakeTimers();
+      try {
+        const sign = natural ? -1 : 1;
+        for (let i = 0; i < 6; i += 1) {
+          const ev = new WheelEvent("wheel", { deltaX: sign * 20, deltaY: 0 });
+          Object.defineProperty(ev, "webkitDirectionInvertedFromDevice", { value: natural });
+          await fireEvent(preview.parentElement!, ev);
+        }
+        expect(preview.parentElement?.getAttribute("style")).toContain("translateX(120px)");
+        vi.advanceTimersByTime(350);
+        expect(invoked("cmd_hide_feedback")).toBe(true);
+      } finally {
+        vi.useRealTimers();
+      }
+    },
+  );
 
   it("ignores vertical wheel movement and resets small deltas after a pause", async () => {
     const preview = await showThumbnail();
@@ -249,8 +353,8 @@ describe("floating thumbnail", () => {
       Object.defineProperty(zoomEvent, "ctrlKey", { value: true });
       await fireEvent(preview.parentElement!, zoomEvent);
       for (let i = 0; i < 4; i += 1) {
-        await fireEvent.wheel(preview.parentElement!, { deltaX: 10, deltaY: 0 });
-        vi.advanceTimersByTime(200);
+        await fireEvent.wheel(preview.parentElement!, { deltaX: 25, deltaY: 0 });
+        vi.advanceTimersByTime(150);
       }
       expect(invoked("cmd_hide_feedback")).toBe(false);
     } finally {
@@ -263,7 +367,8 @@ describe("floating thumbnail", () => {
     vi.useFakeTimers();
     try {
       await fireEvent.pointerDown(preview, { button: 0, clientX: 10, clientY: 10 });
-      await fireEvent.pointerMove(preview, { clientX: 70, clientY: 10 });
+      await fireEvent.pointerMove(preview, { clientX: 130, clientY: 10 });
+      await fireEvent.pointerUp(preview, { clientX: 130, clientY: 10 });
       show({ message: "New capture", kind: "ok", path: null, preview: "/tmp/new.png" });
       await tick();
 

@@ -6,12 +6,12 @@ on:
       ref:
         description: Published release tag to package
         required: true
-        default: v1.1.0
+        default: v1.1.1
         type: string
       version:
         description: Four-part MSIX version for the Store package
         required: true
-        default: 1.1.0.0
+        default: 1.1.1.0
         type: string
 
 permissions:

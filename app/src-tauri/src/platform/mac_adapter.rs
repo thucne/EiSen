@@ -298,10 +298,17 @@ pub fn reveal_in_file_manager(path: &Path) -> Result<(), String> {
         .map_err(|e| format!("failed to open Finder: {e}"))
 }
 
-/// Keep the feedback window above other apps, full-screen ones included.
+/// Keep the feedback window above other apps, full-screen ones included, and
+/// monitor local left-mouse events so async drag initiation always has a valid
+/// AppKit mouse event even if the cursor moves fast or exits the card.
 #[cfg(target_os = "macos")]
 pub fn elevate_feedback_window(window: &tauri::WebviewWindow) {
-    use objc2_app_kit::{NSWindow, NSWindowCollectionBehavior};
+    use block2::RcBlock;
+    use objc2::rc::Retained;
+    use objc2_app_kit::{
+        NSEvent, NSEventMask, NSEventType, NSWindow, NSWindowCollectionBehavior,
+    };
+    use std::ptr::NonNull;
 
     if let Ok(ns_win_ptr) = window.ns_window() {
         let ns_win = ns_win_ptr as *mut NSWindow;
@@ -313,6 +320,38 @@ pub fn elevate_feedback_window(window: &tauri::WebviewWindow) {
                     | NSWindowCollectionBehavior::Stationary
                     | NSWindowCollectionBehavior::FullScreenAuxiliary,
             );
+            FEEDBACK_WINDOW_NUMBER.with(|slot| slot.set(Some(win.windowNumber())));
+            let needs_monitor = FEEDBACK_EVENT_MONITOR.with(|slot| slot.borrow().is_none());
+            if needs_monitor {
+                let mask = NSEventMask::LeftMouseDown
+                    | NSEventMask::LeftMouseDragged
+                    | NSEventMask::LeftMouseUp;
+                let block = RcBlock::new(move |event: NonNull<NSEvent>| -> *mut NSEvent {
+                    let ev = event.as_ref();
+                    let matches_window = FEEDBACK_WINDOW_NUMBER
+                        .with(|slot| slot.get() == Some(ev.windowNumber()));
+                    if matches_window {
+                        match ev.r#type() {
+                            NSEventType::LeftMouseDown | NSEventType::LeftMouseDragged => {
+                                if let Some(retained) = Retained::retain(event.as_ptr()) {
+                                    FEEDBACK_DRAG_EVENT
+                                        .with(|slot| *slot.borrow_mut() = Some(retained));
+                                }
+                            }
+                            NSEventType::LeftMouseUp => {
+                                FEEDBACK_DRAG_EVENT.with(|slot| *slot.borrow_mut() = None);
+                            }
+                            _ => {}
+                        }
+                    }
+                    event.as_ptr()
+                });
+                if let Some(monitor) =
+                    NSEvent::addLocalMonitorForEventsMatchingMask_handler(mask, &block)
+                {
+                    FEEDBACK_EVENT_MONITOR.with(|slot| *slot.borrow_mut() = Some(monitor));
+                }
+            }
         }
     }
 }
@@ -649,11 +688,30 @@ mod file_drag {
     }
 }
 
+#[cfg(any(target_os = "macos", test))]
+fn left_mouse_button_is_pressed(pressed_buttons: usize) -> bool {
+    (pressed_buttons & 1) != 0
+}
+
+#[cfg(any(target_os = "macos", test))]
+fn matches_feedback_drag_event(
+    is_left_down_or_dragged: bool,
+    event_window_number: isize,
+    target_window_number: isize,
+) -> bool {
+    is_left_down_or_dragged && event_window_number == target_window_number
+}
+
 #[cfg(target_os = "macos")]
 thread_local! {
     /// Keeps each drag source and preview file alive until AppKit reports its end.
     static FILE_DRAG_SOURCES: std::cell::RefCell<std::collections::HashMap<u64, objc2::rc::Retained<file_drag::FileDragSource>>> =
         std::cell::RefCell::new(std::collections::HashMap::new());
+    static FEEDBACK_WINDOW_NUMBER: std::cell::Cell<Option<isize>> = const { std::cell::Cell::new(None) };
+    static FEEDBACK_DRAG_EVENT: std::cell::RefCell<Option<objc2::rc::Retained<objc2_app_kit::NSEvent>>> =
+        const { std::cell::RefCell::new(None) };
+    static FEEDBACK_EVENT_MONITOR: std::cell::RefCell<Option<objc2::rc::Retained<objc2::runtime::AnyObject>>> =
+        const { std::cell::RefCell::new(None) };
 }
 
 /// Begin dragging `path` from `window`, using the mouse event being handled.
@@ -668,18 +726,43 @@ pub fn start_file_drag(
 ) -> Result<(), String> {
     use objc2::runtime::ProtocolObject;
     use objc2::{AllocAnyThread, MainThreadMarker};
-    use objc2_app_kit::{NSApplication, NSDraggingItem, NSImage, NSWindow};
+    use objc2_app_kit::{
+        NSApplication, NSDraggingItem, NSEvent, NSEventType, NSImage, NSWindow,
+    };
     use objc2_foundation::{NSArray, NSPoint, NSRect, NSSize, NSString, NSURL};
 
     const DRAG_IMAGE_WIDTH: f64 = 140.0;
 
     let mtm = MainThreadMarker::new().ok_or("file drag must start on the main thread")?;
-    let event = NSApplication::sharedApplication(mtm)
-        .currentEvent()
-        .ok_or("no mouse event to start the drag from")?;
+    if !left_mouse_button_is_pressed(NSEvent::pressedMouseButtons()) {
+        return Err("left mouse button already released".to_string());
+    }
+
     let ns_win = window.ns_window().map_err(|e| e.to_string())? as *mut NSWindow;
     let win: &NSWindow = unsafe { &*ns_win };
+    let win_num = win.windowNumber();
+    FEEDBACK_WINDOW_NUMBER.with(|slot| slot.set(Some(win_num)));
     let view = win.contentView().ok_or("feedback window has no content view")?;
+
+    let is_drag_event = |ev: &NSEvent| {
+        matches!(
+            ev.r#type(),
+            NSEventType::LeftMouseDown | NSEventType::LeftMouseDragged
+        )
+    };
+    let current = NSApplication::sharedApplication(mtm)
+        .currentEvent()
+        .filter(|ev| matches_feedback_drag_event(is_drag_event(ev), ev.windowNumber(), win_num));
+    let event = current
+        .or_else(|| {
+            FEEDBACK_DRAG_EVENT.with(|slot| {
+                slot.borrow().as_ref().and_then(|ev| {
+                    matches_feedback_drag_event(is_drag_event(ev), ev.windowNumber(), win_num)
+                        .then(|| ev.clone())
+                })
+            })
+        })
+        .ok_or("no active mouse drag event for feedback window")?;
 
     let path = NSString::from_str(&preview.path().to_string_lossy());
     let url = NSURL::fileURLWithPath(&path);
@@ -703,11 +786,13 @@ pub fn start_file_drag(
     FILE_DRAG_SOURCES.with(|sources| {
         sources.borrow_mut().insert(drag_id, source.clone());
     });
-    view.beginDraggingSessionWithItems_event_source(
+    let session = view.beginDraggingSessionWithItems_event_source(
         &NSArray::from_retained_slice(&[item]),
         &event,
         ProtocolObject::from_ref(&*source),
     );
+    session.setAnimatesToStartingPositionsOnCancelOrFail(true);
+    FEEDBACK_DRAG_EVENT.with(|slot| *slot.borrow_mut() = None);
     Ok(())
 }
 
@@ -1172,7 +1257,9 @@ pub fn apply_monitor_action(
 
 #[cfg(test)]
 mod tests {
-    use super::screen_index_containing;
+    use super::{
+        left_mouse_button_is_pressed, matches_feedback_drag_event, screen_index_containing,
+    };
 
     #[test]
     fn screen_index_containing_picks_the_second_of_two_disjoint_frames() {
@@ -1184,6 +1271,16 @@ mod tests {
     fn screen_index_containing_falls_back_to_zero_when_point_is_in_no_frame() {
         let frames = [(0.0, 0.0, 100.0, 100.0), (200.0, 0.0, 100.0, 100.0)];
         assert_eq!(screen_index_containing((150.0, 50.0), &frames), 0);
+    }
+
+    #[test]
+    fn feedback_drag_requires_pressed_left_button_and_matching_window() {
+        assert!(!left_mouse_button_is_pressed(0));
+        assert!(left_mouse_button_is_pressed(1));
+        assert!(!left_mouse_button_is_pressed(2));
+        assert!(matches_feedback_drag_event(true, 42, 42));
+        assert!(!matches_feedback_drag_event(false, 42, 42));
+        assert!(!matches_feedback_drag_event(true, 41, 42));
     }
 }
 
